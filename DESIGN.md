@@ -224,7 +224,7 @@ A housed row of split-flap cells. **Shape:** flap-black housing, padding equal t
 6pt circle. Unlit, a dark lens. Lit, it fills with its color and glows. Row lamps light only from HOT up, in the row's heat color; tab lamps light amber for the selected option.
 
 ### Lamp Meter
-Three minutes of history as a bank of 30 time columns (peak per 6s slice, newest right) by 8 rows, 1.5pt gaps, 46pt tall, inside a board panel headed LAST 3 MIN with the low to high range at right. Rows are fitted to the window's readings with a minimum span (10° for temperature, 20% for load). A lit lens takes the heat color at its row's value; unlit lenses in HOT and BURN rows show that color at 16% so the danger zone is visible empty. Under two readings it shows COLLECTING READINGS.
+Three minutes of history as a bank of 30 time columns (peak per 6s slice by nearest slice, newest right; an empty slice after the first reading holds the previous value, so the bank never shows holes) by 8 rows, 1.5pt gaps, 46pt tall, inside a board panel headed LAST 3 MIN with the low to high range at right. Rows are fitted to the window's readings with a minimum span (10° for temperature, 20% for load). A lit lens takes the heat color at its row's value; unlit lenses in HOT and BURN rows show that color at 16% so the danger zone is visible empty. Under two readings it shows COLLECTING READINGS.
 
 ### Load Bar
 The lamp meter's row vocabulary turned sideways: 8 lenses at fixed load floors (1 to 87.5%), 10pt tall, lit up to the core's load, same lit and dim-danger treatment.

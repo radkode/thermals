@@ -197,16 +197,21 @@ struct LampMeter: View {
         }
     }
 
-    /// Peak reading per equal slice of the window, newest slice last and ending at the newest reading; empty slices are nil.
+    /// Peak reading per equal slice of the window, newest slice last. Readings go to the nearest slice so timer jitter can't
+    /// double one slice and skip the next; slices with no reading after the first one hold the previous value. Before the first reading, nil.
     static func columnPeaks(_ readings: [TimedValue], window: TimeInterval = Monitor.historyWindow) -> [Double?] {
         var peaks = [Double?](repeating: nil, count: columns)
         guard let newest = readings.last?.date else { return peaks }
         let slice = window / Double(columns)
         for reading in readings {
-            let age = newest.timeIntervalSince(reading.date)
-            guard age >= 0, age < window else { continue }
-            let column = columns - 1 - Int(age / slice)
+            let column = columns - 1 - Int((newest.timeIntervalSince(reading.date) / slice).rounded())
+            guard peaks.indices.contains(column) else { continue }
             peaks[column] = max(peaks[column] ?? -.infinity, reading.value)
+        }
+        if let first = peaks.firstIndex(where: { $0 != nil }) {
+            for column in peaks.indices.dropFirst(first + 1) where peaks[column] == nil {
+                peaks[column] = peaks[column - 1]
+            }
         }
         return peaks
     }

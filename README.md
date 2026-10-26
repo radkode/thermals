@@ -25,7 +25,7 @@ The Xcode project is generated and not committed; edit `project.yml`, then rerun
 - **Per-core load** comes from the same ticks per logical CPU. Performance and efficiency clusters come from the device tree (`IODeviceTree:/cpus`, `cluster-type` and `logical-cpu-id`) in `Thermals/Sensors/CoreLayout.swift`; without cluster data, cores show as CPU1, CPU2 and so on.
 - **Processes** come from `proc_pidinfo` CPU-time deltas in `Thermals/Sensors/ProcessSampler.swift`, summed by name, smoothed, and shown as percent of one core. Only processes the current user may inspect are visible; root and system processes such as `WindowServer` are not. Sampling runs only while the CPU board is open.
 
-Readings refresh every 3, 6 (default) or 10 seconds, set with the UPDATE EVERY tabs in the popover. The LAST 3 MIN meters bin readings into 30 six-second slices by time, so they cover three minutes at any rate.
+Readings refresh every 3, 6 (default) or 10 seconds, set with the UPDATE EVERY tabs in the popover. The LAST 3 MIN meters bin readings into 30 six-second slices by time, so they cover three minutes at any rate. Each reading goes to its nearest slice, so timer jitter can't leave holes, and a slice with no reading (at 10 s, or after the Mac sleeps) holds the previous value.
 
 ## Boards
 

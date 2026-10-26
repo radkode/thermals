@@ -96,11 +96,24 @@ struct LampMeterTests {
     }
 
     @Test func columnsAreTimeSlicesEndingAtTheNewestReading() {
-        let peaks = LampMeter.columnPeaks([reading(7, 50), reading(3, 61), reading(0, 55)])
+        let peaks = LampMeter.columnPeaks([reading(7, 50), reading(2, 61), reading(0, 55)])
         #expect(peaks.count == LampMeter.columns)
         #expect(peaks.last == 61)
         #expect(peaks[LampMeter.columns - 2] == 50)
         #expect(peaks.dropLast(2).allSatisfy { $0 == nil })
+    }
+
+    @Test func timerJitterAtTheSliceRateLeavesNoGaps() {
+        let peaks = LampMeter.columnPeaks([reading(17.8, 1), reading(12.0, 2), reading(5.9, 3), reading(0, 4)])
+        #expect(Array(peaks.suffix(4)) == [1, 2, 3, 4])
+    }
+
+    @Test func slowerRatesHoldTheLastValueAcrossEmptySlices() {
+        let readings = stride(from: 60.0, through: 0, by: -10).enumerated().map { reading($0.element, Double($0.offset)) }
+        let peaks = LampMeter.columnPeaks(readings)
+        let firstFilled = peaks.firstIndex { $0 != nil }!
+        #expect(peaks[firstFilled...].allSatisfy { $0 != nil })
+        #expect(peaks.last == 6)
     }
 
     @Test func readingsOlderThanTheWindowAreDropped() {
