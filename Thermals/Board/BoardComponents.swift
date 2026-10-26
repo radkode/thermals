@@ -195,7 +195,11 @@ struct LampMeter: View {
     }
 }
 
-enum BoardKind: String, CaseIterable {
+protocol FlapTabOption: CaseIterable, Hashable where AllCases: RandomAccessCollection {
+    var title: String { get }
+}
+
+enum BoardKind: String, FlapTabOption {
     case heat, cpu
 
     var title: String {
@@ -206,25 +210,45 @@ enum BoardKind: String, CaseIterable {
     }
 }
 
-/// Flap-strip tabs; the selected board's lamp is lit. ⌘1 and ⌘2 switch boards.
-struct BoardSwitcher: View {
-    @Binding var selection: BoardKind
+/// What the menu bar item shows.
+enum MenuBarItem: String, FlapTabOption {
+    case temperature, load, both
+
+    var title: String {
+        switch self {
+        case .temperature: "TEMP"
+        case .load: "LOAD"
+        case .both: "BOTH"
+        }
+    }
+}
+
+/// Flap-strip tabs; the selected option's lamp is lit. With `shortcuts`, ⌘1, ⌘2… select in order.
+struct FlapTabs<Option: FlapTabOption>: View {
+    @Binding var selection: Option
+    var shortcuts = false
+    let noun: String
 
     var body: some View {
         HStack(spacing: 10) {
-            ForEach(Array(BoardKind.allCases.enumerated()), id: \.element) { index, kind in
-                let selected = kind == selection
-                Button { selection = kind } label: {
+            ForEach(Array(Option.allCases.enumerated()), id: \.element) { index, option in
+                let selected = option == selection
+                let button = Button { selection = option } label: {
                     HStack(spacing: 5) {
                         Lamp(lit: selected, color: Board.amber)
-                        FlapText(text: kind.title, cells: 4, ink: selected ? Board.letterWhite : Board.steelLight)
+                        FlapText(text: option.title, cells: 4, ink: selected ? Board.letterWhite : Board.steelLight)
                     }
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: .command)
-                .accessibilityLabel("\(kind.title.capitalized) board")
+                .accessibilityLabel("\(option.title.capitalized) \(noun)")
                 .accessibilityAddTraits(selected ? .isSelected : [])
+
+                if shortcuts {
+                    button.keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: .command)
+                } else {
+                    button
+                }
             }
         }
     }

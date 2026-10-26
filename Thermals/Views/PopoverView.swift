@@ -14,12 +14,13 @@ struct PopoverView: View {
     var pinnedBoard: BoardKind?
 
     @AppStorage("board") private var storedBoard = BoardKind.heat
+    @AppStorage("menuBarItem") private var menuBarItem = MenuBarItem.temperature
 
     private var board: BoardKind { pinnedBoard ?? storedBoard }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            BoardSwitcher(selection: Binding(get: { board }, set: { storedBoard = $0 }))
+            FlapTabs(selection: Binding(get: { board }, set: { storedBoard = $0 }), shortcuts: true, noun: "board")
             // Both boards stay laid out so the popover keeps the taller one's height and Quit never moves on switch.
             ZStack(alignment: .topLeading) {
                 ForEach(BoardKind.allCases, id: \.self) { kind in
@@ -34,6 +35,11 @@ struct PopoverView: View {
                     .allowsHitTesting(shown)
                     .accessibilityHidden(!shown)
                 }
+            }
+            HStack {
+                ColumnLabel("MENU BAR")
+                Spacer()
+                FlapTabs(selection: $menuBarItem, noun: "in menu bar")
             }
             footer
         }

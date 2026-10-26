@@ -35,13 +35,14 @@ enum Board {
         band >= .hot ? ink(for: band) : letterWhite
     }
 
-    /// Menu bar tint, deepened on a light menu bar to keep contrast.
+    /// Menu bar heat ramp, always colored; deepened on a light menu bar to keep contrast.
     static func menuBarInk(for band: HeatBand, scheme: ColorScheme) -> Color {
-        switch (band >= .burn, scheme) {
-        case (true, .light): deepRed
-        case (true, _): burnRed
-        case (false, .light): deepAmber
-        case (false, _): amber
+        let light = scheme == .light
+        return switch band {
+        case .cool: light ? Color(red: 0x1F / 255, green: 0x5F / 255, blue: 0xA8 / 255) : Color(red: 0x6C / 255, green: 0xB4 / 255, blue: 0xFF / 255)
+        case .warm: light ? Color(red: 0x7A / 255, green: 0x62 / 255, blue: 0x00 / 255) : Color(red: 0xF5 / 255, green: 0xD5 / 255, blue: 0x47 / 255)
+        case .hot: light ? deepAmber : amber
+        case .burn: light ? deepRed : burnRed
         }
     }
 }

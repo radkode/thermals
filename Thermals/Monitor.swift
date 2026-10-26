@@ -43,7 +43,7 @@ final class Monitor {
     @ObservationIgnored private var previousTicks: [CPUTicks]?
     @ObservationIgnored private var timer: Timer?
 
-    var menuBarBand: HeatBand? { HeatBand.menuBar(celsius: cpuTemperature, thermalState: thermalState) }
+    var menuBarBand: HeatBand? { HeatBand.menuBar(celsius: cpuTemperature?.rounded(), thermalState: thermalState) }
 
     /// Fixed readings with no sampling, for previews and snapshots.
     init(
