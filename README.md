@@ -44,3 +44,9 @@ TEST_RUNNER_SNAPSHOT_DIR=$PWD/.impeccable/shots xcodebuild -project Thermals.xco
 ```
 
 This writes `popover-cool.png`, `popover-hot.png`, `popover-no-sensors.png`, `popover-cpu-cool.png` and `popover-cpu-hot.png`. Scroll views draw blank offscreen, so snapshots set `snapshotRendering` to lay the rows out unscrolled. Swift Charts doesn't draw in these offscreen renders, which is one reason the history strip is a `Canvas`.
+
+## Releasing
+
+Thermals ships as a Homebrew cask from the public tap `radkode/homebrew-thermals`, which hosts the signed release zips so this repo can stay private. `scripts/release.sh` takes the version from `MARKETING_VERSION` in `project.yml`, builds Release, signs with a Developer ID and hardened runtime, notarizes and staples, uploads `Thermals-<version>.zip` as a release in the tap, writes `Casks/thermals.rb`, and tags `v<version>` here.
+
+One-time setup on the release Mac: a "Developer ID Application" certificate in the keychain and a notary profile (`xcrun notarytool store-credentials thermals-notary`). Then bump `MARKETING_VERSION`, commit, and run `scripts/release.sh` from a clean `main`. `scripts/release.sh --dry-run` builds, ad-hoc signs and writes the cask to `build/release/<version>/` without notarizing or publishing.
