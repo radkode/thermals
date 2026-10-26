@@ -112,7 +112,7 @@ struct BoardStat: View {
 struct LampMeter: View {
     let values: [Double]
     let rowFloors: [Double]
-    let band: (Double) -> HeatBand
+    let level: (Double) -> HeatLevel
     let unit: String
     let accessibilityName: String
 
@@ -154,7 +154,7 @@ struct LampMeter: View {
 
     private var lamps: some View {
         let columns = Self.columnPeaks(values)
-        let rows = rowFloors.map { (floor: $0, band: band($0)) }
+        let rows = rowFloors.map { (floor: $0, level: level($0)) }
         return Canvas { context, size in
             let gap: CGFloat = 1.5
             let cellWidth = (size.width - gap * CGFloat(Self.columns - 1)) / CGFloat(Self.columns)
@@ -169,7 +169,7 @@ struct LampMeter: View {
                         width: cellWidth,
                         height: cellHeight
                     )
-                    let lens = lit ? Board.ink(for: row.band) : (row.band >= .hot ? Board.ink(for: row.band).opacity(0.16) : Board.lens)
+                    let lens = lit ? Board.heat(row.level) : (row.level.band >= .hot ? Board.heat(row.level).opacity(0.16) : Board.lens)
                     context.fill(Path(roundedRect: rect, cornerRadius: 1), with: .color(lens))
                 }
             }

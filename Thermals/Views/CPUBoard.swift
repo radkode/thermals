@@ -10,7 +10,7 @@ struct CPUBoard: View {
             LampMeter(
                 values: monitor.loadHistory,
                 rowFloors: LampMeter.loadRows,
-                band: HeatBand.init(loadPercent:),
+                level: HeatLevel.init(loadPercent:),
                 unit: "%",
                 accessibilityName: "CPU load"
             )
@@ -27,7 +27,7 @@ struct CPUBoard: View {
                     text: monitor.cpuLoad.map(Format.percent) ?? "--%",
                     cells: 4,
                     size: .hero,
-                    ink: monitor.cpuLoad.map { Board.heroInk(for: HeatBand(loadPercent: ($0 * 100).rounded())) } ?? Board.steelLight,
+                    ink: monitor.cpuLoad.map { Board.heat(HeatLevel(loadPercent: ($0 * 100).rounded())) } ?? Board.steelLight,
                     alignment: .trailing
                 )
             }
@@ -37,7 +37,7 @@ struct CPUBoard: View {
                     label: "CPU DIE",
                     value: monitor.cpuTemperature.map(Format.degrees) ?? "--",
                     cells: 4,
-                    ink: monitor.cpuTemperature.map { Board.ink(for: HeatBand(celsius: $0.rounded())) } ?? Board.steelLight
+                    ink: monitor.cpuTemperature.map { Board.heat(HeatLevel(celsius: $0.rounded())) } ?? Board.steelLight
                 )
                 BoardStat(label: "PRESSURE", value: monitor.thermalState.boardTitle, cells: 8, ink: monitor.thermalState.ink)
             }
@@ -86,12 +86,13 @@ private struct CoreRow: View {
 
     var body: some View {
         let percent = (core.usage * 100).rounded()
-        let band = HeatBand(loadPercent: percent)
+        let level = HeatLevel(loadPercent: percent)
+        let band = level.band
         HStack(spacing: 5) {
-            Lamp(lit: band >= .hot, color: Board.ink(for: band))
-            FlapText(text: core.name, cells: nameCells, ink: band == .burn ? Board.burnRed : Board.steelLight)
+            Lamp(lit: band >= .hot, color: Board.heat(level))
+            FlapText(text: core.name, cells: nameCells, ink: band == .burn ? Board.heat(level) : Board.steelLight)
             LoadBar(percent: percent)
-            FlapText(text: "\(Int(percent))", cells: 3, ink: Board.ink(for: band), alignment: .trailing)
+            FlapText(text: "\(Int(percent))", cells: 3, ink: Board.heat(level), alignment: .trailing)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Core \(core.name), \(Int(percent)) percent, \(band.title.lowercased())")
@@ -108,10 +109,10 @@ private struct LoadBar: View {
             let gap: CGFloat = 1.5
             let width = (size.width - gap * CGFloat(floors.count - 1)) / CGFloat(floors.count)
             for (index, floor) in floors.enumerated() {
-                let band = HeatBand(loadPercent: floor)
+                let level = HeatLevel(loadPercent: floor)
                 let lit = percent >= floor
                 let rect = CGRect(x: CGFloat(index) * (width + gap), y: 0, width: width, height: size.height)
-                let lens = lit ? Board.ink(for: band) : (band >= .hot ? Board.ink(for: band).opacity(0.16) : Board.lens)
+                let lens = lit ? Board.heat(level) : (level.band >= .hot ? Board.heat(level).opacity(0.16) : Board.lens)
                 context.fill(Path(roundedRect: rect, cornerRadius: 1), with: .color(lens))
             }
         }
@@ -168,12 +169,13 @@ private struct ProcessBoard: View {
 
     private func row(name: String, percent: Double, label: String) -> some View {
         let shown = percent.rounded()
-        let band = HeatBand(loadPercent: shown)
+        let level = HeatLevel(loadPercent: shown)
+        let band = level.band
         return columns(
-            Lamp(lit: band >= .hot, color: Board.ink(for: band)),
-            FlapText(text: name, cells: Self.nameCells, ink: band == .burn ? Board.burnRed : Board.steelLight),
-            FlapText(text: "\(Int(shown))", cells: Self.percentCells, ink: Board.ink(for: band), alignment: .trailing),
-            FlapText(text: band.title, cells: Self.statusCells, ink: Board.ink(for: band))
+            Lamp(lit: band >= .hot, color: Board.heat(level)),
+            FlapText(text: name, cells: Self.nameCells, ink: band == .burn ? Board.heat(level) : Board.steelLight),
+            FlapText(text: "\(Int(shown))", cells: Self.percentCells, ink: Board.heat(level), alignment: .trailing),
+            FlapText(text: band.title, cells: Self.statusCells, ink: Board.heat(level))
         )
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)

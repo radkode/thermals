@@ -33,7 +33,7 @@ The popover has two boards, switched with the HEAT / CPU tabs or ⌘1 / ⌘2: HE
 
 ## Heat bands
 
-`Thermals/Sensors/HeatBand.swift` maps a reading to COOL (under 50°C), WARM (under 75°C), HOT (under 90°C) or BURN. Load uses the same bands at 25%, 60% and 85%. Bands drive board colors and row lamps. The menu bar shows temperature, load or both (MENU BAR tabs in the popover), each colored by its band on a blue, yellow, amber, red ramp, deepened on a light menu bar. Serious or critical thermal pressure raises the temperature band to at least HOT.
+`Thermals/Sensors/HeatBand.swift` places every reading on one continuous heat scale (`HeatLevel`, 0 to 1). Band edges sit at fixed positions: 50°C, 75°C and 90°C for temperature, 25%, 60% and 85% for load, so the same color always means the same heat. Bands (COOL, WARM, HOT, BURN) drive the status words and row lamps; color comes from one gradient, `Board.heat`, steel blue through white and amber to red, used by the boards, meters and the menu bar alike. A deeper copy of the gradient keeps contrast on a light menu bar. The menu bar shows temperature, load or both (MENU BAR tabs in the popover); serious or critical thermal pressure raises the temperature to at least HOT.
 
 ## Design snapshots
 

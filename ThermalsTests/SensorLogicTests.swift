@@ -53,17 +53,17 @@ struct HeatBandTests {
     }
 
     @Test func menuBarStaysCalmWhenCoolAndNominal() {
-        #expect(HeatBand.menuBar(celsius: 45, thermalState: .nominal) == .cool)
+        #expect(HeatLevel.menuBar(celsius: 45, thermalState: .nominal)?.band == .cool)
     }
 
     @Test func menuBarRisesWithThermalPressure() {
-        #expect(HeatBand.menuBar(celsius: 45, thermalState: .serious) == .hot)
-        #expect(HeatBand.menuBar(celsius: 80, thermalState: .critical) == .burn)
-        #expect(HeatBand.menuBar(celsius: 95, thermalState: .serious) == .burn)
+        #expect(HeatLevel.menuBar(celsius: 45, thermalState: .serious)?.band == .hot)
+        #expect(HeatLevel.menuBar(celsius: 80, thermalState: .critical)?.band == .burn)
+        #expect(HeatLevel.menuBar(celsius: 95, thermalState: .serious)?.band == .burn)
     }
 
     @Test func menuBarHasNoBandWithoutReadingOrPressure() {
-        #expect(HeatBand.menuBar(celsius: nil, thermalState: .nominal) == nil)
+        #expect(HeatLevel.menuBar(celsius: nil, thermalState: .nominal) == nil)
     }
 }
 
@@ -195,5 +195,38 @@ struct HiddenLoadTests {
 
     @Test func hiddenLoadNeverNegative() {
         #expect(Monitor.hiddenLoad(totalFraction: 0.1, cores: 4, visibleTotal: 120) == 0)
+    }
+}
+
+struct HeatLevelTests {
+    @Test func bandEdgesLandOnFixedPositions() {
+        #expect(HeatLevel(celsius: 50).position == HeatLevel.warmStart)
+        #expect(HeatLevel(celsius: 75).position == HeatLevel.hotStart)
+        #expect(HeatLevel(celsius: 90).position == HeatLevel.burnStart)
+        #expect(HeatLevel(loadPercent: 25).position == HeatLevel.warmStart)
+        #expect(HeatLevel(loadPercent: 60).position == HeatLevel.hotStart)
+        #expect(HeatLevel(loadPercent: 85).position == HeatLevel.burnStart)
+    }
+
+    @Test func clampsOutsideTheScale() {
+        #expect(HeatLevel(celsius: 20).position == 0)
+        #expect(HeatLevel(celsius: 120).position == 1)
+        #expect(HeatLevel(loadPercent: 400).position == 1)
+    }
+
+    @Test func risesSmoothlyWithinABand() {
+        let positions = stride(from: 30.0, through: 105, by: 1).map { HeatLevel(celsius: $0).position }
+        #expect(zip(positions, positions.dropFirst()).allSatisfy { $0 < $1 })
+        #expect(HeatLevel(celsius: 52).position < HeatLevel(celsius: 73).position)
+        #expect(HeatLevel(celsius: 52).band == HeatLevel(celsius: 73).band)
+    }
+
+    @Test func gradientStopsSitOnBandEdgesInBothSchemes() {
+        for stops in [Board.darkHeatStops, Board.lightHeatStops] {
+            let positions = stops.map(\.position)
+            #expect(positions == positions.sorted())
+            #expect(positions.first == 0 && positions.last == 1)
+            #expect([HeatLevel.warmStart, HeatLevel.hotStart, HeatLevel.burnStart].allSatisfy(positions.contains))
+        }
     }
 }

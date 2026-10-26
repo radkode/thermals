@@ -11,19 +11,19 @@ struct ThermalsApp: App {
         } label: {
             MenuBarReading(
                 item: menuBarItem,
-                temperature: monitor.cpuTemperature.map { ($0, monitor.menuBarBand ?? HeatBand(celsius: $0.rounded())) },
-                load: monitor.cpuLoad.map { ($0, HeatBand(loadPercent: ($0 * 100).rounded())) }
+                temperature: monitor.cpuTemperature.map { ($0, monitor.menuBarLevel ?? HeatLevel(celsius: $0.rounded())) },
+                load: monitor.cpuLoad.map { ($0, HeatLevel(loadPercent: ($0 * 100).rounded())) }
             )
         }
         .menuBarExtraStyle(.window)
     }
 }
 
-/// The chosen reading(s), each colored by its heat band.
+/// The chosen reading(s), each colored from the same heat gradient as the popover.
 private struct MenuBarReading: View {
     let item: MenuBarItem
-    let temperature: (celsius: Double, band: HeatBand)?
-    let load: (fraction: Double, band: HeatBand)?
+    let temperature: (celsius: Double, level: HeatLevel)?
+    let load: (fraction: Double, level: HeatLevel)?
 
     @Environment(\.colorScheme) private var scheme
 
@@ -36,9 +36,9 @@ private struct MenuBarReading: View {
         }
     }
 
-    private var parts: [(String, HeatBand)] {
-        let temp = temperature.map { (Format.degrees($0.celsius), $0.band) }
-        let cpu = load.map { (Format.percent($0.fraction), $0.band) }
+    private var parts: [(String, HeatLevel)] {
+        let temp = temperature.map { (Format.degrees($0.celsius), $0.level) }
+        let cpu = load.map { (Format.percent($0.fraction), $0.level) }
         return switch item {
         case .temperature: [temp].compactMap { $0 }
         case .load: [cpu].compactMap { $0 }
@@ -47,7 +47,7 @@ private struct MenuBarReading: View {
     }
 
     private var text: Text? {
-        let pieces = parts.map { Text($0.0).foregroundStyle(Board.menuBarInk(for: $0.1, scheme: scheme)) }
+        let pieces = parts.map { Text($0.0).foregroundStyle(Board.heat($0.1, scheme: scheme)) }
         guard let first = pieces.first else { return nil }
         return pieces.dropFirst().reduce(first) { $0 + Text(" ") + $1 }
     }

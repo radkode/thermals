@@ -9,7 +9,7 @@ struct HeatBoard: View {
             LampMeter(
                 values: monitor.history.map(\.celsius),
                 rowFloors: LampMeter.temperatureRows,
-                band: HeatBand.init(celsius:),
+                level: HeatLevel.init(celsius:),
                 unit: "°",
                 accessibilityName: "CPU temperature"
             )
@@ -25,7 +25,7 @@ struct HeatBoard: View {
                     text: monitor.cpuTemperature.map(Format.degrees) ?? "--°",
                     cells: 3,
                     size: .hero,
-                    ink: monitor.cpuTemperature.map { Board.heroInk(for: HeatBand(celsius: $0.rounded())) } ?? Board.steelLight,
+                    ink: monitor.cpuTemperature.map { Board.heat(HeatLevel(celsius: $0.rounded())) } ?? Board.steelLight,
                     alignment: .trailing
                 )
             }
@@ -88,12 +88,13 @@ private struct SensorBoard: View {
     }
 
     private func row(_ sensor: SensorReading) -> some View {
-        let band = HeatBand(celsius: sensor.celsius.rounded())
+        let level = HeatLevel(celsius: sensor.celsius.rounded())
+        let band = level.band
         return columns(
-            Lamp(lit: band >= .hot, color: Board.ink(for: band)),
-            FlapText(text: sensor.name, cells: Self.nameCells, ink: band == .burn ? Board.burnRed : Board.steelLight),
-            FlapText(text: "\(Int(sensor.celsius.rounded()))", cells: Self.tempCells, ink: Board.ink(for: band), alignment: .trailing),
-            FlapText(text: band.title, cells: Self.statusCells, ink: Board.ink(for: band))
+            Lamp(lit: band >= .hot, color: Board.heat(level)),
+            FlapText(text: sensor.name, cells: Self.nameCells, ink: band == .burn ? Board.heat(level) : Board.steelLight),
+            FlapText(text: "\(Int(sensor.celsius.rounded()))", cells: Self.tempCells, ink: Board.heat(level), alignment: .trailing),
+            FlapText(text: band.title, cells: Self.statusCells, ink: Board.heat(level))
         )
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(sensor.name), \(Format.degrees(sensor.celsius)), \(band.title.lowercased())")

@@ -12,8 +12,6 @@ enum Board {
     static let letterWhite = Color(red: 0xF2 / 255, green: 0xF2 / 255, blue: 0xF2 / 255)
     static let amber = Color(red: 0xFF / 255, green: 0xB0 / 255, blue: 0x00 / 255)
     static let burnRed = Color(red: 0xE5 / 255, green: 0x38 / 255, blue: 0x3B / 255)
-    static let deepAmber = Color(red: 0xA0 / 255, green: 0x4A / 255, blue: 0x00 / 255)
-    static let deepRed = Color(red: 0xB3 / 255, green: 0x14 / 255, blue: 0x1A / 255)
 
     static func flapFont(_ size: CGFloat) -> Font { .custom("BarlowCondensed-SemiBold", size: size) }
     static func labelFont(_ size: CGFloat) -> Font { .custom("BarlowCondensed-Medium", size: size) }
@@ -21,29 +19,44 @@ enum Board {
     /// Settle for rows moving to a new rank: fast start, long exponential tail.
     static let settle = Animation.timingCurve(0.16, 1, 0.3, 1, duration: 0.5)
 
-    static func ink(for band: HeatBand) -> Color {
-        switch band {
-        case .cool: steelLight
-        case .warm: letterWhite
-        case .hot: amber
-        case .burn: burnRed
-        }
+    /// The one heat gradient: steel blue (cool) → white (warm) → amber (hot) → red (burn), used by every heat-colored
+    /// element and the menu bar. Stop positions match `HeatLevel`'s band edges; the light-scheme ramp keeps contrast on a light menu bar.
+    static func heat(_ level: HeatLevel, scheme: ColorScheme = .dark) -> Color {
+        let stops = scheme == .light ? lightHeatStops : darkHeatStops
+        let t = level.position
+        guard let upper = stops.firstIndex(where: { $0.position >= t }) else { return color(stops[stops.count - 1].rgb) }
+        guard upper > 0 else { return color(stops[0].rgb) }
+        let (low, high) = (stops[upper - 1], stops[upper])
+        let f = (t - low.position) / (high.position - low.position)
+        return color((
+            low.rgb.0 + (high.rgb.0 - low.rgb.0) * f,
+            low.rgb.1 + (high.rgb.1 - low.rgb.1) * f,
+            low.rgb.2 + (high.rgb.2 - low.rgb.2) * f
+        ))
     }
 
-    /// The headline never reads dimmer than letter white.
-    static func heroInk(for band: HeatBand) -> Color {
-        band >= .hot ? ink(for: band) : letterWhite
-    }
+    typealias HeatStop = (position: Double, rgb: (Double, Double, Double))
 
-    /// Menu bar heat ramp, always colored; deepened on a light menu bar to keep contrast.
-    static func menuBarInk(for band: HeatBand, scheme: ColorScheme) -> Color {
-        let light = scheme == .light
-        return switch band {
-        case .cool: light ? Color(red: 0x1F / 255, green: 0x5F / 255, blue: 0xA8 / 255) : Color(red: 0x6C / 255, green: 0xB4 / 255, blue: 0xFF / 255)
-        case .warm: light ? Color(red: 0x7A / 255, green: 0x62 / 255, blue: 0x00 / 255) : Color(red: 0xF5 / 255, green: 0xD5 / 255, blue: 0x47 / 255)
-        case .hot: light ? deepAmber : amber
-        case .burn: light ? deepRed : burnRed
-        }
+    static let darkHeatStops: [HeatStop] = [
+        (0, (0x6F, 0x9C, 0xC8)),
+        (HeatLevel.warmStart, (0xDC, 0xE6, 0xEE)),
+        (0.55, (0xFF, 0xE3, 0xA3)),
+        (HeatLevel.hotStart, (0xFF, 0xB0, 0x00)),
+        (HeatLevel.burnStart, (0xF2, 0x5A, 0x2D)),
+        (1, (0xE5, 0x38, 0x3B)),
+    ]
+
+    static let lightHeatStops: [HeatStop] = [
+        (0, (0x2E, 0x62, 0x99)),
+        (HeatLevel.warmStart, (0x4A, 0x55, 0x60)),
+        (0.55, (0x8A, 0x64, 0x00)),
+        (HeatLevel.hotStart, (0xA0, 0x4A, 0x00)),
+        (HeatLevel.burnStart, (0xB8, 0x36, 0x0F)),
+        (1, (0xB3, 0x14, 0x1A)),
+    ]
+
+    private static func color(_ rgb: (Double, Double, Double)) -> Color {
+        Color(red: rgb.0 / 255, green: rgb.1 / 255, blue: rgb.2 / 255)
     }
 }
 
