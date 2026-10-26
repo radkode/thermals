@@ -52,6 +52,10 @@ struct FlapSize {
     static let row = FlapSize(width: 11.5, height: 19, fontSize: 15, spacing: 1.5)
 
     var isLarge: Bool { height > 30 }
+
+    /// Outer size of a housed `FlapText` strip.
+    func stripWidth(cells: Int) -> CGFloat { CGFloat(cells) * width + CGFloat(cells + 1) * spacing }
+    var stripHeight: CGFloat { height + 2 * spacing }
 }
 
 /// A housed strip of split-flap cells; pads with blanks or truncates to `cells`, and flips cell by cell when the text changes.

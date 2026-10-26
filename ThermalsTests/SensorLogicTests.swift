@@ -67,24 +67,23 @@ struct HeatBandTests {
     }
 }
 
-struct HottestByNameTests {
-    @Test func keepsHottestPerNameSortedHottestFirst() {
+struct ByNameTests {
+    @Test func keepsHottestReadingPerName() {
         let input = [
             SensorReading(id: 0, name: "PMU tdie2", celsius: 46.1),
             SensorReading(id: 1, name: "PMU tdie2", celsius: 46.3),
-            SensorReading(id: 2, name: "PMU tdie6", celsius: 46.5),
-            SensorReading(id: 3, name: "NAND CH0 temp", celsius: 40),
         ]
-        let result = TemperatureSensors.hottestByName(input)
-        #expect(result.map(\.id) == [2, 1, 3])
+        #expect(TemperatureSensors.byName(input).map(\.id) == [1])
     }
 
-    @Test func breaksTiesByName() {
+    @Test func ordersByNaturalNameRegardlessOfTemperature() {
         let input = [
-            SensorReading(id: 0, name: "PMU tdie9", celsius: 45),
-            SensorReading(id: 1, name: "PMU tdie1", celsius: 45),
+            SensorReading(id: 0, name: "PMU tdie10", celsius: 40),
+            SensorReading(id: 1, name: "PMU tdie2", celsius: 90),
+            SensorReading(id: 2, name: "NAND CH0 temp", celsius: 60),
+            SensorReading(id: 3, name: "PMU tdie1", celsius: 70),
         ]
-        #expect(TemperatureSensors.hottestByName(input).map(\.name) == ["PMU tdie1", "PMU tdie9"])
+        #expect(TemperatureSensors.byName(input).map(\.name) == ["NAND CH0 temp", "PMU tdie1", "PMU tdie2", "PMU tdie10"])
     }
 }
 

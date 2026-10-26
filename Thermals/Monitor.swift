@@ -28,8 +28,8 @@ final class Monitor {
 
     /// Fixed readings with no sampling, for previews and snapshots.
     init(sensors: [SensorReading], cpuLoad: Double?, thermalState: ProcessInfo.ThermalState, history: [TemperatureSample]) {
-        self.sensors = sensors
-        self.cpuTemperature = TemperatureSensors.cpuTemperature(from: sensors)
+        self.sensors = TemperatureSensors.byName(sensors)
+        self.cpuTemperature = TemperatureSensors.cpuTemperature(from: self.sensors)
         self.cpuLoad = cpuLoad
         self.thermalState = thermalState
         self.history = history
@@ -45,7 +45,7 @@ final class Monitor {
     }
 
     private func refresh() {
-        sensors = TemperatureSensors.hottestByName(TemperatureSensors.usable(reader?.read() ?? []))
+        sensors = TemperatureSensors.byName(TemperatureSensors.usable(reader?.read() ?? []))
         cpuTemperature = TemperatureSensors.cpuTemperature(from: sensors)
         thermalState = ProcessInfo.processInfo.thermalState
         updatedAt = .now

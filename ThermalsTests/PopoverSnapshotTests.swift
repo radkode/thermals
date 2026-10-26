@@ -17,7 +17,7 @@ struct PopoverSnapshotTests {
             ("no-sensors", PreviewMonitors.noSensors()),
         ]
         for (name, monitor) in states {
-            let renderer = ImageRenderer(content: PopoverView(monitor: monitor))
+            let renderer = ImageRenderer(content: PopoverView(monitor: monitor).environment(\.snapshotRendering, true))
             renderer.scale = 2
             let image = try #require(renderer.cgImage)
             let png = try #require(NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]))

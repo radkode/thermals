@@ -1,8 +1,8 @@
 /*
- THESIS: A rail concourse departure board where sensors are departures ranked by heat; refuses the stock stats popover of gauges, rings and system-gray rows.
+ THESIS: A rail concourse departure board where sensors are departures in fixed name order, lit by heat; refuses the stock stats popover of gauges, rings and system-gray rows.
  OWN-WORLD: Matte flap cells with a hinge gap and axle pins in black housings on a steel frame; Barlow Condensed caps; steel light for cool, letter white for warm, amber lamps for hot, red type for burn.
- STORY: One glance at the big flaps says how hot the CPU is; the ranked board says which sensor is driving it; the lamp meter says whether it is climbing.
- FIRST VIEWPORT: Big three-cell CPU flaps top left with load and pressure flaps right, a segmented lamp meter of the last three minutes whose hot rows keep amber and red lenses, then eight ranked sensor rows and a footer with update time and Quit.
+ STORY: One glance at the big flaps says how hot the CPU is; the lamps and amber or red rows say which sensors are driving it; the lamp meter says whether it is climbing.
+ FIRST VIEWPORT: Big three-cell CPU flaps top left with load and pressure flaps right, a segmented lamp meter of the last three minutes whose hot rows keep amber and red lenses, then a fixed-order sensor board, eight rows visible and scrolling, and a footer with update time and Quit.
  FORM: Split-flap concourse board, challenger chosen by the owner over assigned #4 (liquid-crystal strip); seed key 7dbf3ed9.
  FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
  */
@@ -25,13 +25,12 @@ enum Format {
 struct PopoverView: View {
     let monitor: Monitor
 
-    static let boardRows = 8
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             header
             LampMeter(history: monitor.history)
-            SensorBoard(sensors: Array(monitor.sensors.prefix(Self.boardRows)))
+            SensorBoard(sensors: monitor.sensors)
             footer
         }
         .padding(14)
@@ -187,37 +186,70 @@ private struct SensorBoard: View {
     let sensors: [SensorReading]
 
     static let nameCells = 12
+    static let tempCells = 3
+    static let statusCells = 4
+    static let columnSpacing: CGFloat = 6
+    static let rowSpacing: CGFloat = 3
+    static let visibleRows = 8
+
+    @Environment(\.snapshotRendering) private var snapshotRendering
 
     var body: some View {
         BoardPanel {
-            Grid(alignment: .leading, horizontalSpacing: 6, verticalSpacing: 3) {
-                GridRow {
-                    Color.clear.frame(width: 6, height: 1)
-                    ColumnLabel("SENSOR")
-                    ColumnLabel("°C").gridColumnAlignment(.trailing)
+            VStack(alignment: .leading, spacing: Self.rowSpacing) {
+                columns(
+                    Color.clear,
+                    ColumnLabel("SENSOR"),
+                    ColumnLabel("°C"),
                     ColumnLabel("STATUS")
-                }
+                )
                 if sensors.isEmpty {
-                    GridRow {
-                        Lamp(lit: false, color: Board.steelLight)
-                        FlapText(text: "UNAVAILABLE", cells: Self.nameCells, ink: Board.steelLight)
-                        FlapText(text: "--", cells: 3, ink: Board.steelLight, alignment: .trailing)
-                        FlapText(text: "", cells: 4)
-                    }
+                    columns(
+                        Lamp(lit: false, color: Board.steelLight),
+                        FlapText(text: "UNAVAILABLE", cells: Self.nameCells, ink: Board.steelLight),
+                        FlapText(text: "--", cells: Self.tempCells, ink: Board.steelLight, alignment: .trailing),
+                        FlapText(text: "", cells: Self.statusCells)
+                    )
+                } else if snapshotRendering {
+                    rows.frame(height: listHeight, alignment: .top).clipped()
                 } else {
-                    ForEach(sensors) { sensor in
-                        let band = HeatBand(celsius: sensor.celsius)
-                        GridRow {
-                            Lamp(lit: band >= .hot, color: Board.ink(for: band))
-                            FlapText(text: sensor.name, cells: Self.nameCells, ink: band == .burn ? Board.burnRed : Board.steelLight)
-                            FlapText(text: "\(Int(sensor.celsius.rounded()))", cells: 3, ink: Board.ink(for: band), alignment: .trailing)
-                            FlapText(text: band.title, cells: 4, ink: Board.ink(for: band))
-                        }
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel("\(sensor.name), \(Format.degrees(sensor.celsius)), \(band.title.lowercased())")
-                    }
+                    ScrollView(.vertical) { rows }
+                        .frame(height: listHeight)
                 }
             }
+        }
+    }
+
+    private var rows: some View {
+        VStack(alignment: .leading, spacing: Self.rowSpacing) {
+            ForEach(sensors, id: \.name, content: row)
+        }
+    }
+
+    private var listHeight: CGFloat {
+        let rows = CGFloat(min(sensors.count, Self.visibleRows))
+        return rows * FlapSize.row.stripHeight + max(0, rows - 1) * Self.rowSpacing
+    }
+
+    private func row(_ sensor: SensorReading) -> some View {
+        let band = HeatBand(celsius: sensor.celsius)
+        return columns(
+            Lamp(lit: band >= .hot, color: Board.ink(for: band)),
+            FlapText(text: sensor.name, cells: Self.nameCells, ink: band == .burn ? Board.burnRed : Board.steelLight),
+            FlapText(text: "\(Int(sensor.celsius.rounded()))", cells: Self.tempCells, ink: Board.ink(for: band), alignment: .trailing),
+            FlapText(text: band.title, cells: Self.statusCells, ink: Board.ink(for: band))
+        )
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(sensor.name), \(Format.degrees(sensor.celsius)), \(band.title.lowercased())")
+    }
+
+    /// Lamp, name, temperature and status columns at fixed widths, so the header lines up with the scrolling rows.
+    private func columns(_ lamp: some View, _ name: some View, _ temp: some View, _ status: some View) -> some View {
+        HStack(spacing: Self.columnSpacing) {
+            lamp.frame(width: 6)
+            name.frame(width: FlapSize.row.stripWidth(cells: Self.nameCells), alignment: .leading)
+            temp.frame(width: FlapSize.row.stripWidth(cells: Self.tempCells), alignment: .trailing)
+            status.frame(width: FlapSize.row.stripWidth(cells: Self.statusCells), alignment: .leading)
         }
     }
 }
@@ -270,4 +302,9 @@ extension ProcessInfo.ThermalState {
         @unknown default: Board.steelLight
         }
     }
+}
+
+extension EnvironmentValues {
+    /// Set by offscreen renders, where scroll views draw blank.
+    @Entry var snapshotRendering = false
 }
