@@ -1,0 +1,111 @@
+import SwiftUI
+
+struct HeatBoard: View {
+    let monitor: Monitor
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            header
+            LampMeter(
+                values: monitor.history.map(\.celsius),
+                rowFloors: LampMeter.temperatureRows,
+                band: HeatBand.init(celsius:),
+                unit: "°",
+                accessibilityName: "CPU temperature"
+            )
+            SensorBoard(sensors: monitor.sensors)
+        }
+    }
+
+    private var header: some View {
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 5) {
+                ColumnLabel("CPU DIE")
+                FlapText(
+                    text: monitor.cpuTemperature.map(Format.degrees) ?? "--°",
+                    cells: 3,
+                    size: .hero,
+                    ink: monitor.cpuTemperature.map { Board.heroInk(for: HeatBand(celsius: $0)) } ?? Board.steelLight,
+                    alignment: .trailing
+                )
+            }
+            Spacer(minLength: 12)
+            VStack(alignment: .trailing, spacing: 9) {
+                BoardStat(label: "LOAD", value: monitor.cpuLoad.map(Format.percent) ?? "--", cells: 4, ink: Board.letterWhite)
+                BoardStat(label: "PRESSURE", value: monitor.thermalState.boardTitle, cells: 8, ink: monitor.thermalState.ink)
+            }
+        }
+    }
+}
+
+private struct SensorBoard: View {
+    let sensors: [SensorReading]
+
+    static let nameCells = 12
+    static let tempCells = 3
+    static let statusCells = 4
+    static let columnSpacing: CGFloat = 6
+    static let rowSpacing: CGFloat = 3
+    static let visibleRows = 8
+
+    @Environment(\.snapshotRendering) private var snapshotRendering
+
+    var body: some View {
+        BoardPanel {
+            VStack(alignment: .leading, spacing: Self.rowSpacing) {
+                columns(
+                    Color.clear,
+                    ColumnLabel("SENSOR"),
+                    ColumnLabel("°C"),
+                    ColumnLabel("STATUS")
+                )
+                if sensors.isEmpty {
+                    columns(
+                        Lamp(lit: false, color: Board.steelLight),
+                        FlapText(text: "UNAVAILABLE", cells: Self.nameCells, ink: Board.steelLight),
+                        FlapText(text: "--", cells: Self.tempCells, ink: Board.steelLight, alignment: .trailing),
+                        FlapText(text: "", cells: Self.statusCells)
+                    )
+                } else if snapshotRendering {
+                    rows.frame(height: listHeight, alignment: .top).clipped()
+                } else {
+                    ScrollView(.vertical) { rows }
+                        .frame(height: listHeight)
+                }
+            }
+        }
+    }
+
+    private var rows: some View {
+        VStack(alignment: .leading, spacing: Self.rowSpacing) {
+            ForEach(sensors, id: \.name, content: row)
+        }
+    }
+
+    private var listHeight: CGFloat {
+        let rows = CGFloat(min(sensors.count, Self.visibleRows))
+        return rows * FlapSize.row.stripHeight + max(0, rows - 1) * Self.rowSpacing
+    }
+
+    private func row(_ sensor: SensorReading) -> some View {
+        let band = HeatBand(celsius: sensor.celsius)
+        return columns(
+            Lamp(lit: band >= .hot, color: Board.ink(for: band)),
+            FlapText(text: sensor.name, cells: Self.nameCells, ink: band == .burn ? Board.burnRed : Board.steelLight),
+            FlapText(text: "\(Int(sensor.celsius.rounded()))", cells: Self.tempCells, ink: Board.ink(for: band), alignment: .trailing),
+            FlapText(text: band.title, cells: Self.statusCells, ink: Board.ink(for: band))
+        )
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(sensor.name), \(Format.degrees(sensor.celsius)), \(band.title.lowercased())")
+    }
+
+    /// Lamp, name, temperature and status columns at fixed widths, so the header lines up with the scrolling rows.
+    private func columns(_ lamp: some View, _ name: some View, _ temp: some View, _ status: some View) -> some View {
+        HStack(spacing: Self.columnSpacing) {
+            lamp.frame(width: 6)
+            name.frame(width: FlapSize.row.stripWidth(cells: Self.nameCells), alignment: .leading)
+            temp.frame(width: FlapSize.row.stripWidth(cells: Self.tempCells), alignment: .trailing)
+            status.frame(width: FlapSize.row.stripWidth(cells: Self.statusCells), alignment: .leading)
+        }
+    }
+}

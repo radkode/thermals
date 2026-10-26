@@ -89,12 +89,8 @@ struct ByNameTests {
 
 @MainActor
 struct LampMeterTests {
-    private func samples(_ values: [Double]) -> [TemperatureSample] {
-        values.enumerated().map { TemperatureSample(date: Date(timeIntervalSince1970: Double($0.offset)), celsius: $0.element) }
-    }
-
     @Test func newestReadingsFillRightmostColumns() {
-        let peaks = LampMeter.columnPeaks(samples([40, 55, 50, 61]))
+        let peaks = LampMeter.columnPeaks([40, 55, 50, 61])
         #expect(peaks.count == LampMeter.columns)
         #expect(peaks.suffix(2) == [40, 61])
         #expect(peaks.dropLast(2).allSatisfy { $0 == nil })
@@ -102,8 +98,68 @@ struct LampMeterTests {
 
     @Test func fullHistoryUsesPeakPerColumn() {
         let values = (0..<Monitor.historyLength).map { Double($0) }
-        let peaks = LampMeter.columnPeaks(samples(values))
+        let peaks = LampMeter.columnPeaks(values)
         #expect(peaks.first == 2)
         #expect(peaks.last == Double(Monitor.historyLength - 1))
+    }
+}
+
+struct LoadBandTests {
+    @Test(arguments: [(24.9, HeatBand.cool), (25, .warm), (59.9, .warm), (60, .hot), (84.9, .hot), (85, .burn), (240, .burn)])
+    func bandBoundaries(percent: Double, expected: HeatBand) {
+        #expect(HeatBand(loadPercent: percent) == expected)
+    }
+}
+
+struct CoreLayoutTests {
+    @Test func namesPerformanceCoresFirstThenEfficiencyByLogicalID() {
+        let cores = [
+            CoreInfo(logicalID: 0, cluster: .efficiency),
+            CoreInfo(logicalID: 1, cluster: .efficiency),
+            CoreInfo(logicalID: 3, cluster: .performance),
+            CoreInfo(logicalID: 2, cluster: .performance),
+        ]
+        let names = CoreLayout.names(for: cores)
+        #expect(names.map(\.name) == ["P1", "P2", "E1", "E2"])
+        #expect(names.map(\.logicalID) == [2, 3, 0, 1])
+    }
+
+    @Test func fallsBackToNumberedCoresWithoutClusterData() {
+        let cores = [CoreInfo(logicalID: 1, cluster: nil), CoreInfo(logicalID: 0, cluster: .performance)]
+        #expect(CoreLayout.names(for: cores).map(\.name) == ["CPU1", "CPU2"])
+    }
+}
+
+struct ProcessSamplerTests {
+    @Test func percentOfOneCoreSummedByName() {
+        let previous: [pid_t: ProcessTimes] = [
+            1: ProcessTimes(name: "Helper", cpuNanoseconds: 1_000),
+            2: ProcessTimes(name: "Helper", cpuNanoseconds: 5_000),
+            3: ProcessTimes(name: "Xcode", cpuNanoseconds: 0),
+        ]
+        let current: [pid_t: ProcessTimes] = [
+            1: ProcessTimes(name: "Helper", cpuNanoseconds: 1_000_000_000 + 1_000),
+            2: ProcessTimes(name: "Helper", cpuNanoseconds: 500_000_000 + 5_000),
+            3: ProcessTimes(name: "Xcode", cpuNanoseconds: 3_000_000_000),
+            4: ProcessTimes(name: "New", cpuNanoseconds: 9_000_000_000),
+        ]
+        let percents = ProcessSampler.percents(previous: previous, current: current, elapsedNanoseconds: 2_000_000_000)
+        #expect(percents == ["Helper": 75, "Xcode": 150])
+    }
+
+    @Test func reusedPidWithNewNameHasNoBaseline() {
+        let previous: [pid_t: ProcessTimes] = [7: ProcessTimes(name: "old", cpuNanoseconds: 0)]
+        let current: [pid_t: ProcessTimes] = [7: ProcessTimes(name: "new", cpuNanoseconds: 1_000_000_000)]
+        #expect(ProcessSampler.percents(previous: previous, current: current, elapsedNanoseconds: 1_000_000_000).isEmpty)
+    }
+
+    @Test func smoothingHalvesTowardNewValueAndDropsQuietNames() {
+        let result = ProcessSampler.smooth(previous: ["A": 100, "B": 0.06], current: ["A": 50, "C": 20])
+        #expect(result == ["A": 75, "C": 20])
+    }
+
+    @Test func rankedHighestFirstThenByName() {
+        let ranked = ProcessSampler.ranked(["b": 10, "a": 10, "c": 30])
+        #expect(ranked.map(\.name) == ["c", "a", "b"])
     }
 }

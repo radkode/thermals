@@ -13,14 +13,36 @@ enum PreviewMonitors {
             SensorReading(id: index, name: name, celsius: peak - Double(index) * (peak > 80 ? 4.5 : 1.4))
         }
         let now = Date.now
-        let history = (0..<Monitor.historyLength).map { step in
+        let steps = 0..<Monitor.historyLength
+        let curve = steps.map { step -> Double in
             let t = Double(step) / Double(Monitor.historyLength)
-            return TemperatureSample(date: now.addingTimeInterval(Double(step - Monitor.historyLength) * Monitor.interval), celsius: peak - 28 * (1 - t) * (1 - t) + 1.5 * sin(Double(step) / 3))
+            return (1 - t) * (1 - t)
         }
-        return Monitor(sensors: sensors, cpuLoad: load, thermalState: state, history: history)
+        let history = steps.map { step in
+            TemperatureSample(
+                date: now.addingTimeInterval(Double(step - Monitor.historyLength) * Monitor.interval),
+                celsius: peak - 28 * curve[step] + 1.5 * sin(Double(step) / 3)
+            )
+        }
+        let loadHistory = steps.map { step in max(0, min(100, load * 100 - 60 * load * curve[step] + 6 * sin(Double(step) / 2))) }
+        let coreLoads = (1...6).map { CoreLoad(name: "P\($0)", cluster: .performance, usage: min(1, load * (1.1 - Double($0) * 0.08))) }
+            + (1...6).map { CoreLoad(name: "E\($0)", cluster: .efficiency, usage: min(1, load * (0.5 - Double($0) * 0.05))) }
+        let processes = [("Xcode", 3.1), ("swift-frontend", 2.4), ("Google Chrome Helper", 0.9), ("Music", 0.45), ("Slack", 0.2), ("Finder", 0.04)]
+            .map { ProcessLoad(name: $0.0, percent: $0.1 * load * 100) }
+        return Monitor(
+            sensors: sensors,
+            cpuLoad: load,
+            thermalState: state,
+            history: history,
+            coreLoads: coreLoads,
+            loadHistory: loadHistory,
+            processes: processes
+        )
     }
 }
 
-#Preview("Cool") { PopoverView(monitor: PreviewMonitors.cool()) }
-#Preview("Hot") { PopoverView(monitor: PreviewMonitors.hot()) }
-#Preview("No sensors") { PopoverView(monitor: PreviewMonitors.noSensors()) }
+#Preview("Heat, cool") { PopoverView(monitor: PreviewMonitors.cool(), pinnedBoard: .heat) }
+#Preview("Heat, hot") { PopoverView(monitor: PreviewMonitors.hot(), pinnedBoard: .heat) }
+#Preview("CPU, cool") { PopoverView(monitor: PreviewMonitors.cool(), pinnedBoard: .cpu) }
+#Preview("CPU, hot") { PopoverView(monitor: PreviewMonitors.hot(), pinnedBoard: .cpu) }
+#Preview("No sensors") { PopoverView(monitor: PreviewMonitors.noSensors(), pinnedBoard: .heat) }

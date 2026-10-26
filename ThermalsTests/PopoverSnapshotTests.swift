@@ -11,13 +11,15 @@ struct PopoverSnapshotTests {
 
     @Test(.enabled(if: directory != nil))
     func renderStates() throws {
-        let states: [(String, Monitor)] = [
-            ("cool", PreviewMonitors.cool()),
-            ("hot", PreviewMonitors.hot()),
-            ("no-sensors", PreviewMonitors.noSensors()),
+        let states: [(String, Monitor, BoardKind)] = [
+            ("cool", PreviewMonitors.cool(), .heat),
+            ("hot", PreviewMonitors.hot(), .heat),
+            ("no-sensors", PreviewMonitors.noSensors(), .heat),
+            ("cpu-cool", PreviewMonitors.cool(), .cpu),
+            ("cpu-hot", PreviewMonitors.hot(), .cpu),
         ]
-        for (name, monitor) in states {
-            let renderer = ImageRenderer(content: PopoverView(monitor: monitor).environment(\.snapshotRendering, true))
+        for (name, monitor, board) in states {
+            let renderer = ImageRenderer(content: PopoverView(monitor: monitor, pinnedBoard: board).environment(\.snapshotRendering, true))
             renderer.scale = 2
             let image = try #require(renderer.cgImage)
             let png = try #require(NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]))

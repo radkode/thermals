@@ -13,6 +13,16 @@ enum HeatBand: Int, Comparable, CaseIterable {
         }
     }
 
+    /// Load as heat: `percent` is of one core for a single core or process, or of the whole CPU for the total.
+    init(loadPercent percent: Double) {
+        switch percent {
+        case ..<25: self = .cool
+        case ..<60: self = .warm
+        case ..<85: self = .hot
+        default: self = .burn
+        }
+    }
+
     /// Band shown in the menu bar: the reading's band, raised to at least `hot` under serious thermal pressure.
     static func menuBar(celsius: Double?, thermalState: ProcessInfo.ThermalState) -> HeatBand? {
         let reading = celsius.map(HeatBand.init(celsius:))
