@@ -150,7 +150,16 @@ private struct ProcessBoard: View {
                     }
                 }
                 if let hiddenLoad {
-                    row(name: "SYSTEM + OTHERS", percent: hiddenLoad, label: "System and other users' processes, derived from total load, \(Int(hiddenLoad.rounded())) percent CPU")
+                    // An aggregate of many processes, so it is never banded with the per-process thresholds.
+                    columns(
+                        Lamp(lit: false, color: Board.steelLight),
+                        FlapText(text: "SYSTEM + OTHERS", cells: Self.nameCells, ink: Board.steelLight),
+                        FlapText(text: "\(Int(hiddenLoad.rounded()))", cells: Self.percentCells, ink: Board.steelLight, alignment: .trailing),
+                        FlapText(text: "", cells: Self.statusCells)
+                    )
+                    .padding(.top, 6)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel("System and other users' processes, derived from total load, \(Int(hiddenLoad.rounded())) percent CPU")
                 }
             }
             .animation(reduceMotion ? nil : Board.settle, value: shown.map(\.name))
