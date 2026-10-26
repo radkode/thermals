@@ -1,0 +1,48 @@
+name: Thermals
+options:
+  bundleIdPrefix: com.radkode
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  Thermals:
+    type: application
+    platform: macOS
+    sources: [Thermals]
+    info:
+      path: Thermals/Info.plist
+      properties:
+        CFBundleDisplayName: Thermals
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSUIElement: true
+        LSApplicationCategoryType: public.app-category.utilities
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.radkode.thermals
+        CODE_SIGN_IDENTITY: "-"
+        ENABLE_HARDENED_RUNTIME: true
+        GENERATE_INFOPLIST_FILE: false
+  ThermalsTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources: [ThermalsTests]
+    dependencies:
+      - target: Thermals
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.radkode.thermals.tests
+        CODE_SIGN_IDENTITY: "-"
+        GENERATE_INFOPLIST_FILE: true
+schemes:
+  Thermals:
+    build:
+      targets:
+        Thermals: all
+    test:
+      targets: [ThermalsTests]
