@@ -80,6 +80,10 @@ final class Monitor {
         rate = UserDefaults.standard.string(forKey: Self.rateKey).flatMap(SampleRate.init(rawValue:)) ?? .six
         refresh()
         schedule()
+        // Load needs two samples; take the second one quickly instead of a full interval later.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
+            MainActor.assumeIsolated { self?.refresh() }
+        }
     }
 
     private func schedule() {

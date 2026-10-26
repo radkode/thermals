@@ -60,7 +60,8 @@ private struct MenuBarReading: View {
 
     // Menu bar text is rendered as a template; a pre-rendered non-template image keeps its color.
     @MainActor private func tinted(_ text: Text) -> NSImage? {
-        let renderer = ImageRenderer(content: text.font(.system(size: 13, weight: .semibold)).monospacedDigit())
+        // Barlow Condensed runs small for its size; 15pt matches the menu bar's 13pt system cap height.
+        let renderer = ImageRenderer(content: text.font(Board.flapFont(15)).tracking(0.4).monospacedDigit())
         renderer.scale = NSScreen.main?.backingScaleFactor ?? 2
         guard let image = renderer.nsImage else { return nil }
         image.isTemplate = false
