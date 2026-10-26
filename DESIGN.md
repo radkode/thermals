@@ -130,7 +130,7 @@ components:
 
 Thermals is a rail concourse departure board where sensors, cores and processes are departures and heat is what lights them. Every reading is set in matte split-flap cells (two leaves with a hinge gap, axle pins on the large cells) inside black housings, mounted on a steel frame. Type is Barlow Condensed in capitals throughout the board. Color is not decoration: a cell's ink and a lamp's glow come from one continuous heat gradient, so the board reads hot or cool before a single number is parsed.
 
-The board is dense and ordered the way a real departures board is. Rows hold their position (sensors by natural name, cores P1.. then E1..) so the eye can return to the same slot; only the user's processes are ranked, and they slide to their new rank rather than jumping. The popover is a fixed 400pt wide, and both boards (HEAT and CPU) share one height so the footer and Quit never move when switching. The board is always rendered dark, regardless of system appearance; only the menu bar reading adapts to a light scheme.
+The board is dense and ordered the way a real departures board is. Rows hold their position (sensors by natural name, cores P1.. then E1..) so the eye can return to the same slot; only the user's processes are ranked, and they slide to their new rank rather than jumping. The popover is a fixed 400pt wide, and all three boards (HEAT, CPU and RAM) share one height so the footer and Quit never move when switching. The board is always rendered dark, regardless of system appearance; only the menu bar reading adapts to a light scheme.
 
 This world was chosen by the owner over a liquid-crystal strip. It refuses the stock stats popover (gauges, rings, system-gray list rows) and refuses gamer RGB: no rainbow cycling, no neon, no glow beyond a lit lamp.
 
@@ -169,7 +169,7 @@ A near-black and steel board where all chroma belongs to heat: steel blue for co
 
 **The Always Colored Rule.** The menu bar reading is always heat-colored (rendered as a non-template image), in both appearances, and its level is raised to at least HOT under serious and BURN under critical thermal pressure.
 
-**The Pressure Is A State Rule.** Thermal pressure is a discrete OS state, not a reading, so it uses four fixed inks (NOMINAL steel light, FAIR letter white, SERIOUS amber, CRITICAL burn red), not the gradient.
+**The Pressure Is A State Rule.** Thermal and memory pressure are discrete OS states, not readings, so they use fixed inks, not the gradient: thermal NOMINAL steel light, FAIR letter white, SERIOUS amber, CRITICAL burn red; memory NORMAL steel light, WARN amber, CRITICAL burn red.
 
 ## Typography
 
@@ -193,13 +193,13 @@ A near-black and steel board where all chroma belongs to heat: steel blue for co
 
 ## Layout
 
-A single vertical column inside a 400pt-wide popover with a 14pt frame and 14pt between sections: flap tabs (HEAT, CPU; Cmd-1, Cmd-2), the selected board, MENU BAR tabs (TEMP, LOAD, BOTH), UPDATE EVERY tabs (3 S, 6 S, 10 S), then a footer with UPDATED clock left and Quit right.
+A single vertical column inside a 400pt-wide popover with a 14pt frame and 14pt between sections: flap tabs (HEAT, CPU, RAM; Cmd-1 to Cmd-3), the selected board, MENU BAR tabs (TEMP, LOAD, BOTH), UPDATE EVERY tabs (3 S, 6 S, 10 S), then a footer with UPDATED clock left and Quit right.
 
-Each board opens with a header (hero flap strip left under its label, two right-aligned stats stacked 9pt apart on the right), then the lamp meter, then board panels. Board panels pad 8pt; rows stack 3pt apart; columns sit 6pt apart at widths computed from cell counts (lamp 6pt, name 18 cells on HEAT or 17 on CPU processes, value 3 or 4 cells, STATUS 4 cells), so headers align with rows exactly. The CPU board splits cores into PERFORMANCE and EFFICIENCY platforms side by side, 12pt apart.
+Each board opens with a header (hero flap strip left under its label, two right-aligned stats stacked 9pt apart on the right), then the lamp meter, then board panels. Board panels pad 8pt; rows stack 3pt apart; columns sit 6pt apart at widths computed from cell counts (lamp 6pt, name 18 cells on HEAT or 17 on CPU processes, value 3 or 4 cells, STATUS 4 cells), so headers align with rows exactly. The CPU board splits cores into PERFORMANCE and EFFICIENCY platforms side by side, 12pt apart. The RAM board's hero is MEMORY USED (app + wired + compressed) with SWAP and PRESSURE stats, then a MEMORY breakdown panel (APP, WIRED, COMPRESSED, CACHED, FREE in fixed order, each with a share bar and GB), then YOUR APPS ranked by footprint.
 
-**The Fixed Platform Rule.** Measured rows keep a fixed order: sensors by natural name, cores P1.. then E1... Rows never re-sort by value; ranked rows that jump were rejected.
+**The Fixed Platform Rule.** Measured rows keep a fixed order: sensors by natural name, cores P1.. then E1.., memory parts APP to FREE. Rows never re-sort by value; ranked rows that jump were rejected.
 
-**The Still Footer Rule.** Both boards are laid out at all times and the popover takes the taller height, so switching boards never moves the footer. The HEAT board fills spare height with blank flap rows (unlit lamp, empty strips), never with empty space; past the space available, sensors scroll.
+**The Still Footer Rule.** Every board is laid out at all times and the popover takes the tallest height, so switching boards never moves the footer. The HEAT and RAM boards fill spare height with rows, never with empty space: HEAT pads its sensors with blank flap rows (unlit lamp, empty strips) and scrolls past the space available; RAM shows as many ranked apps as fit, then blank rows.
 
 ## Elevation & Depth
 
@@ -224,19 +224,19 @@ A housed row of split-flap cells. **Shape:** flap-black housing, padding equal t
 6pt circle. Unlit, a dark lens. Lit, it fills with its color and glows. Row lamps light only from HOT up, in the row's heat color; tab lamps light amber for the selected option.
 
 ### Lamp Meter
-Three minutes of history as a bank of 30 time columns (peak per 6s slice by nearest slice, newest right; an empty slice after the first reading holds the previous value, so the bank never shows holes) by 8 rows, 1.5pt gaps, 46pt tall, inside a board panel headed LAST 3 MIN with the low to high range at right. Rows are fitted to the window's readings with a minimum span (10° for temperature, 20% for load). A lit lens takes the heat color at its row's value; unlit lenses in HOT and BURN rows show that color at 16% so the danger zone is visible empty. Under two readings it shows COLLECTING READINGS.
+Three minutes of history as a bank of 30 time columns (peak per 6s slice by nearest slice, newest right; an empty slice after the first reading holds the previous value, so the bank never shows holes) by 8 rows, 1.5pt gaps, 46pt tall, inside a board panel headed LAST 3 MIN with the low to high range at right. Rows are fitted to the window's readings with a minimum span (10° for temperature, 20% for load, 10% for memory). Lenses take the reading's own level, never the pressure-raised one: pressure raises only the hero (and the menu bar), since the meter keeps no per-sample pressure. A lit lens takes the heat color at its row's value; unlit lenses in HOT and BURN rows show that color at 16% so the danger zone is visible empty. Under two readings it shows COLLECTING READINGS.
 
-### Load Bar
-The lamp meter's row vocabulary turned sideways: 8 lenses at fixed load floors (1 to 87.5%), 10pt tall, lit up to the core's load, same lit and dim-danger treatment.
+### Lens Bar
+The lamp meter's row vocabulary turned sideways: 8 lenses, 10pt tall. On a core it lights up to the core's load at fixed floors (1 to 87.5%), with the lit and dim-danger heat treatment. On the memory breakdown each lens is an eighth of physical memory, apportioned across the five parts by largest remainder so the bars never light more than the whole; it is a share, not a reading, so it is unbanded: steel light for the used parts (APP, WIRED, COMPRESSED), steel mid for the reclaimable ones (CACHED, FREE). Breakdown rows carry an unlit lamp and no STATUS.
 
 ### Board Panel
-Flap-black, 5pt radius, 1pt steel-mid hairline at 45%, 8pt padding. Holds the lamp meter, the sensor board, the core platforms and the process board.
+Flap-black, 5pt radius, 1pt steel-mid hairline at 45%, 8pt padding. Holds the lamp meter, the sensor board, the core platforms, the process boards and the memory breakdown.
 
 ### Departure Row
-Lamp, name strip, value strip, STATUS strip. The name is steel light until BURN, when it takes the heat color too. Process rows animate to a new rank with the settle curve (cubic-bezier 0.16, 1, 0.3, 1 over 0.5s), disabled under Reduce Motion; the top 5 processes show, then SYSTEM + OTHERS pinned last, 6pt apart, in neutral steel.
+Lamp, name strip, value strip, STATUS strip. The name is steel light until BURN, when it takes the heat color too. Process rows animate to a new rank with the settle curve (cubic-bezier 0.16, 1, 0.3, 1 over 0.5s), disabled under Reduce Motion; on CPU the top 5 processes show, then SYSTEM + OTHERS pinned last, 6pt apart, in neutral steel. On RAM, app rows show GB and band by share of physical memory (WARM 10%, HOT 25%, BURN 40%); there is no derived remainder row, since footprints don't add up to memory used.
 
 ### Flap Tabs
-Lamp plus 4-cell flap strip per option, 10pt apart. Selected: amber lamp lit, letter-white text. Unselected: unlit lamp, steel-light text. The board tabs carry Cmd-1 and Cmd-2.
+Lamp plus 4-cell flap strip per option, 10pt apart. Selected: amber lamp lit, letter-white text. Unselected: unlit lamp, steel-light text. The board tabs carry Cmd-1 to Cmd-3.
 
 ### Quit Button
 A QUIT flap strip with a separate key segment (command symbol and Q on a flap-top face). Hover turns both amber over 0.12s ease-out. Bound to Cmd-Q.

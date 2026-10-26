@@ -85,26 +85,38 @@ final class ProcessSampler {
     }
 
     private static func readAll(timebase: mach_timebase_info_data_t) -> [pid_t: ProcessTimes] {
-        let capacity = proc_listallpids(nil, 0) + 64
-        guard capacity > 64 else { return [:] }
-        var pids = [pid_t](repeating: 0, count: Int(capacity))
-        let count = proc_listallpids(&pids, capacity * Int32(MemoryLayout<pid_t>.size))
         var result: [pid_t: ProcessTimes] = [:]
-        for pid in pids.prefix(Int(max(count, 0))) where pid > 0 {
+        for pid in allPids() {
             var info = proc_taskinfo()
             let size = Int32(MemoryLayout<proc_taskinfo>.size)
-            guard proc_pidinfo(pid, PROC_PIDTASKINFO, 0, &info, size) == size else { continue }
-            var name = [CChar](repeating: 0, count: 64)
-            guard proc_name(pid, &name, UInt32(name.count)) > 0 else { continue }
+            guard proc_pidinfo(pid, PROC_PIDTASKINFO, 0, &info, size) == size, let name = processName(pid: pid) else { continue }
             let ticks = info.pti_total_user + info.pti_total_system
             let nanoseconds = ticks * UInt64(timebase.numer) / UInt64(max(timebase.denom, 1))
-            let processName = string(name)
-            var path = [CChar](repeating: 0, count: 4 * Int(MAXPATHLEN))
-            let pathLength = proc_pidpath(pid, &path, UInt32(path.count))
-            let group = groupName(path: pathLength > 0 ? string(path) : nil, processName: processName)
-            result[pid] = ProcessTimes(name: processName, cpuNanoseconds: nanoseconds, group: group)
+            result[pid] = ProcessTimes(name: name, cpuNanoseconds: nanoseconds, group: groupName(pid: pid, processName: name))
         }
         return result
+    }
+
+    static func allPids() -> [pid_t] {
+        let capacity = proc_listallpids(nil, 0) + 64
+        guard capacity > 64 else { return [] }
+        var pids = [pid_t](repeating: 0, count: Int(capacity))
+        let count = proc_listallpids(&pids, capacity * Int32(MemoryLayout<pid_t>.size))
+        return pids.prefix(Int(max(count, 0))).filter { $0 > 0 }
+    }
+
+    /// The board name for a running pid: its outermost app, else its process name; nil once the process is gone.
+    static func groupName(pid: pid_t, processName: String? = nil) -> String? {
+        guard let name = processName ?? Self.processName(pid: pid) else { return nil }
+        var path = [CChar](repeating: 0, count: 4 * Int(MAXPATHLEN))
+        let pathLength = proc_pidpath(pid, &path, UInt32(path.count))
+        return groupName(path: pathLength > 0 ? string(path) : nil, processName: name)
+    }
+
+    private static func processName(pid: pid_t) -> String? {
+        var name = [CChar](repeating: 0, count: 64)
+        guard proc_name(pid, &name, UInt32(name.count)) > 0 else { return nil }
+        return string(name)
     }
 
     private static func string(_ buffer: [CChar]) -> String {

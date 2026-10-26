@@ -277,3 +277,73 @@ struct SensorBoardFillTests {
         #expect(SensorBoard.rowsThatFit(height: SensorBoard.height(rows: 8) - 1) == 7)
     }
 }
+
+struct MemoryStatsTests {
+    @Test func breakdownCountsPurgeableAsCache() {
+        let pages = VMPages(anonymous: 600, purgeable: 100, external: 200, wired: 150, compressed: 50, free: 20)
+        let reading = MemoryReading(pages: pages, pageSize: 16_384, total: 1_000 * 16_384, swapUsed: 0, pressure: .normal)
+        #expect(reading.app == 500 * 16_384)
+        #expect(reading.cached == 300 * 16_384)
+        #expect(reading.used == 700 * 16_384)
+        #expect(reading.free == 20 * 16_384)
+        #expect(reading.usedPercent == 70)
+    }
+
+    @Test func anonymousPagesBelowPurgeableCountNoAppMemory() {
+        let pages = VMPages(anonymous: 5, purgeable: 9, external: 0, wired: 0, compressed: 0, free: 0)
+        #expect(MemoryReading(pages: pages, pageSize: 1, total: 100, swapUsed: 0, pressure: nil).app == 0)
+    }
+
+    @Test(arguments: [(Int32(1), MemoryPressure.normal), (2, .warn), (4, .critical)])
+    func pressureFromKernelLevel(level: Int32, expected: MemoryPressure) {
+        #expect(MemoryPressure(kernelLevel: level) == expected)
+    }
+
+    @Test func unknownKernelLevelIsNil() {
+        #expect(MemoryPressure(kernelLevel: 0) == nil)
+    }
+
+    @Test func rankedLargestFirstThenByName() {
+        #expect(MemoryStats.ranked(["b": 10, "a": 10, "c": 30]).map(\.name) == ["c", "a", "b"])
+    }
+
+    @Test func gigabytesUseOneDecimalBelowAHundred() {
+        #expect(Format.gigabytes(1_073_741_824 * 9 + 858_993_459) == "9.8")
+        #expect(Format.gigabytes(0) == "0.0")
+        #expect(Format.gigabytes(1_073_741_824 * 128) == "128")
+    }
+}
+
+struct MemoryBandTests {
+    @Test(arguments: [(59.9, HeatBand.cool), (60, .warm), (79.9, .warm), (80, .hot), (89.9, .hot), (90, .burn)])
+    func usedBandBoundaries(percent: Double, expected: HeatBand) {
+        #expect(HeatBand(memoryPercent: percent) == expected)
+    }
+
+    @Test(arguments: [(9.9, HeatBand.cool), (10, .warm), (25, .hot), (40, .burn)])
+    func appBandBoundaries(percent: Double, expected: HeatBand) {
+        #expect(HeatBand(appMemoryPercent: percent) == expected)
+    }
+
+    @Test func pressureRaisesTheUsedLevel() {
+        #expect(HeatLevel.memory(usedPercent: 40, pressure: .normal).band == .cool)
+        #expect(HeatLevel.memory(usedPercent: 40, pressure: .warn).band == .hot)
+        #expect(HeatLevel.memory(usedPercent: 40, pressure: .critical).band == .burn)
+        #expect(HeatLevel.memory(usedPercent: 95, pressure: .warn).band == .burn)
+        #expect(HeatLevel.memory(usedPercent: 70, pressure: nil).band == .warm)
+    }
+}
+
+@MainActor
+struct BreakdownLensTests {
+    @Test func lensesNeverExceedTheWhole() {
+        let lit = BreakdownBoard.lenses(shares: [32.5, 11.25, 8.125, 33.75, 14.375])
+        #expect(lit.reduce(0, +) == 8)
+        #expect(lit == [2, 1, 1, 3, 1])
+    }
+
+    @Test func partsBelowTheWholeLightOnlyTheirShare() {
+        #expect(BreakdownBoard.lenses(shares: [25, 25, 0.5]) == [2, 2, 0])
+        #expect(BreakdownBoard.lenses(shares: []) == [])
+    }
+}

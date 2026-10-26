@@ -9,6 +9,12 @@ enum Format {
         "\(Int((fraction * 100).rounded()))%"
     }
 
+    /// Binary gigabytes, as Activity Monitor counts them: one decimal under 100.
+    static func gigabytes(_ bytes: UInt64) -> String {
+        let value = Double(bytes) / 1_073_741_824
+        return value < 99.95 ? String(format: "%.1f", value) : "\(Int(value.rounded()))"
+    }
+
     static func clock(_ date: Date) -> String {
         date.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute(.twoDigits))
     }
@@ -88,6 +94,24 @@ extension ProcessInfo.ThermalState {
     }
 }
 
+extension MemoryPressure {
+    var boardTitle: String {
+        switch self {
+        case .normal: "NORMAL"
+        case .warn: "WARN"
+        case .critical: "CRITICAL"
+        }
+    }
+
+    var ink: Color {
+        switch self {
+        case .normal: Board.steelLight
+        case .warn: Board.amber
+        case .critical: Board.burnRed
+        }
+    }
+}
+
 extension EnvironmentValues {
     /// Set by offscreen renders, where scroll views draw blank.
     @Entry var snapshotRendering = false
@@ -116,6 +140,7 @@ struct MeterScale {
 
     static let temperature = MeterScale(rows: 8, minimumSpan: 10, bounds: 20...110)
     static let load = MeterScale(rows: 8, minimumSpan: 20, bounds: 0...100)
+    static let memory = MeterScale(rows: 8, minimumSpan: 10, bounds: 0...100)
 
     /// Evenly spaced row floors, lowest first; the bottom row sits at the window's low and the top at its high.
     func floors(for values: [Double]) -> [Double] {
@@ -222,17 +247,48 @@ struct LampMeter: View {
     }
 }
 
+/// A short row of lenses at the lamp meter's load floors, the first `lit` of them lit; `tint` colors each lens from its floor.
+struct LensBar: View {
+    let lit: Int
+    let tint: (_ floor: Double, _ lit: Bool) -> Color
+
+    /// Lit up to `percent`: every floor at or below it.
+    init(percent: Double, tint: @escaping (_ floor: Double, _ lit: Bool) -> Color) {
+        self.init(lit: LampMeter.loadRows.filter { percent >= $0 }.count, tint: tint)
+    }
+
+    init(lit: Int, tint: @escaping (_ floor: Double, _ lit: Bool) -> Color) {
+        self.lit = lit
+        self.tint = tint
+    }
+
+    var body: some View {
+        Canvas { context, size in
+            let floors = LampMeter.loadRows
+            let gap: CGFloat = 1.5
+            let width = (size.width - gap * CGFloat(floors.count - 1)) / CGFloat(floors.count)
+            for (index, floor) in floors.enumerated() {
+                let rect = CGRect(x: CGFloat(index) * (width + gap), y: 0, width: width, height: size.height)
+                context.fill(Path(roundedRect: rect, cornerRadius: 1), with: .color(tint(floor, index < lit)))
+            }
+        }
+        .frame(height: 10)
+        .frame(maxWidth: .infinity)
+    }
+}
+
 protocol FlapTabOption: CaseIterable, Hashable where AllCases: RandomAccessCollection {
     var title: String { get }
 }
 
 enum BoardKind: String, FlapTabOption {
-    case heat, cpu
+    case heat, cpu, ram
 
     var title: String {
         switch self {
         case .heat: "HEAT"
         case .cpu: "CPU"
+        case .ram: "RAM"
         }
     }
 }

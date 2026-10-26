@@ -91,33 +91,14 @@ private struct CoreRow: View {
         HStack(spacing: 5) {
             Lamp(lit: band >= .hot, color: Board.heat(level))
             FlapText(text: core.name, cells: nameCells, ink: band == .burn ? Board.heat(level) : Board.steelLight)
-            LoadBar(percent: percent)
+            LensBar(percent: percent) { floor, lit in
+                let level = HeatLevel(loadPercent: floor)
+                return lit ? Board.heat(level) : (level.band >= .hot ? Board.heat(level).opacity(0.16) : Board.lens)
+            }
             FlapText(text: "\(Int(percent))", cells: 3, ink: Board.heat(level), alignment: .trailing)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Core \(core.name), \(Int(percent)) percent, \(band.title.lowercased())")
-    }
-}
-
-/// A short row of lamps lit up to the load, each lamp tinted by the band it stands for.
-private struct LoadBar: View {
-    let percent: Double
-
-    var body: some View {
-        Canvas { context, size in
-            let floors = LampMeter.loadRows
-            let gap: CGFloat = 1.5
-            let width = (size.width - gap * CGFloat(floors.count - 1)) / CGFloat(floors.count)
-            for (index, floor) in floors.enumerated() {
-                let level = HeatLevel(loadPercent: floor)
-                let lit = percent >= floor
-                let rect = CGRect(x: CGFloat(index) * (width + gap), y: 0, width: width, height: size.height)
-                let lens = lit ? Board.heat(level) : (level.band >= .hot ? Board.heat(level).opacity(0.16) : Board.lens)
-                context.fill(Path(roundedRect: rect, cornerRadius: 1), with: .color(lens))
-            }
-        }
-        .frame(height: 10)
-        .frame(maxWidth: .infinity)
     }
 }
 

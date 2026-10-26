@@ -24,6 +24,10 @@ final class Monitor {
     private(set) var processes: [ProcessLoad] = []
     /// Load the visible processes don't account for (system and other users), in percent of one core. Derived, not measured.
     private(set) var hiddenLoad: Double?
+    private(set) var memory: MemoryReading?
+    /// Memory in use in percent of physical memory, oldest first, covering `historyWindow`.
+    private(set) var memoryHistory: [TimedValue] = []
+    private(set) var appMemory: [AppMemory] = []
     private(set) var updatedAt = Date.now
 
     var rate = SampleRate.six {
@@ -46,6 +50,14 @@ final class Monitor {
         }
     }
 
+    /// Footprints cost a pass over every pid, so they are read only while a view asks for them.
+    var samplesAppMemory = false {
+        didSet {
+            guard samplesAppMemory != oldValue, timer != nil else { return }
+            appMemory = samplesAppMemory ? MemoryStats.ranked(MemoryStats.appFootprints()) : []
+        }
+    }
+
     @ObservationIgnored private let reader = HIDTemperatureReader()
     @ObservationIgnored private let coreNames = CoreLayout.names(for: CoreLayout.read())
     @ObservationIgnored private let processSampler = ProcessSampler()
@@ -63,7 +75,10 @@ final class Monitor {
         coreLoads: [CoreLoad] = [],
         loadHistory: [TimedValue] = [],
         processes: [ProcessLoad] = [],
-        hiddenLoad: Double? = nil
+        hiddenLoad: Double? = nil,
+        memory: MemoryReading? = nil,
+        memoryHistory: [TimedValue] = [],
+        appMemory: [AppMemory] = []
     ) {
         self.sensors = TemperatureSensors.byName(sensors)
         self.cpuTemperature = TemperatureSensors.cpuTemperature(from: self.sensors)
@@ -74,6 +89,9 @@ final class Monitor {
         self.loadHistory = loadHistory
         self.processes = processes
         self.hiddenLoad = hiddenLoad
+        self.memory = memory
+        self.memoryHistory = memoryHistory
+        self.appMemory = appMemory
     }
 
     init() {
@@ -99,6 +117,7 @@ final class Monitor {
         sensors = TemperatureSensors.byName(TemperatureSensors.usable(reader?.read() ?? []))
         cpuTemperature = TemperatureSensors.cpuTemperature(from: sensors)
         thermalState = ProcessInfo.processInfo.thermalState
+        memory = MemoryStats.read()
         updatedAt = .now
 
         if let ticks = CPULoad.sample() {
@@ -120,6 +139,8 @@ final class Monitor {
         let now = Date.now
         if let cpuTemperature { append(TimedValue(date: now, value: cpuTemperature), to: &history) }
         if let cpuLoad { append(TimedValue(date: now, value: cpuLoad * 100), to: &loadHistory) }
+        if let memory { append(TimedValue(date: now, value: memory.usedPercent), to: &memoryHistory) }
+        if samplesAppMemory { appMemory = MemoryStats.ranked(MemoryStats.appFootprints()) }
         if samplesProcesses {
             let sample = processSampler.sample()
             processes = sample.ranked

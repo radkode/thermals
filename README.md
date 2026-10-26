@@ -24,16 +24,17 @@ The Xcode project is generated and not committed; edit `project.yml`, then rerun
 
 - **Per-core load** comes from the same ticks per logical CPU. Performance and efficiency clusters come from the device tree (`IODeviceTree:/cpus`, `cluster-type` and `logical-cpu-id`) in `Thermals/Sensors/CoreLayout.swift`; without cluster data, cores show as CPU1, CPU2 and so on.
 - **Processes** come from `proc_pidinfo` CPU-time deltas in `Thermals/Sensors/ProcessSampler.swift`, summed by name, smoothed, and shown as percent of one core. Only processes the current user may inspect are visible; root and system processes such as `WindowServer` are not. Sampling runs only while the CPU board is open.
+- **Memory** comes from `host_statistics64` in `Thermals/Sensors/MemoryStats.swift`, split the way Activity Monitor splits it: APP (anonymous pages minus purgeable), WIRED, COMPRESSED (pages the compressor occupies) and CACHED (file-backed plus purgeable). USED is app + wired + compressed; FREE is free pages minus speculative, as `vm_stat` reports. Swap is `vm.swapusage`; pressure is `kern.memorystatus_vm_pressure_level` (NORMAL, WARN, CRITICAL). Per-app memory is each process's physical footprint (`proc_pid_rusage`, Activity Monitor's Memory column), grouped under its app like CPU and read only while the RAM board is open.
 
 Readings refresh every 3, 6 (default) or 10 seconds, set with the UPDATE EVERY tabs in the popover. The LAST 3 MIN meters bin readings into 30 six-second slices by time, so they cover three minutes at any rate. Each reading goes to its nearest slice, so timer jitter can't leave holes, and a slice with no reading (at 10 s, or after the Mac sleeps) holds the previous value.
 
 ## Boards
 
-The popover has two boards, switched with the HEAT / CPU tabs or ⌘1 / ⌘2: HEAT (sensors in fixed name order) and CPU (total load, cores by cluster, your top processes). Process rows are ranked by CPU and slide to their new rank. The HEAT board's sensor panel fills the popover's shared height, padding with blank flap rows. Both LAST 3 MIN meters fit their eight rows to the window's range (at least 10°C or 20% load), while each row keeps its absolute heat color.
+The popover has three boards, switched with the HEAT / CPU / RAM tabs or ⌘1 / ⌘2 / ⌘3: HEAT (sensors in fixed name order), CPU (total load, cores by cluster, your top processes) and RAM (memory used, the breakdown, your top apps by memory). Process and app rows are ranked and slide to their new rank. The HEAT sensor panel and the RAM app panel fill the popover's shared height, padding with blank flap rows. The LAST 3 MIN meters fit their eight rows to the window's range (at least 10°C, 20% load or 10% memory), while each row keeps its absolute heat color.
 
 ## Heat bands
 
-`Thermals/Sensors/HeatBand.swift` places every reading on one continuous heat scale (`HeatLevel`, 0 to 1). Band edges sit at fixed positions: 50°C, 75°C and 90°C for temperature, 25%, 60% and 85% for load, so the same color always means the same heat. Bands (COOL, WARM, HOT, BURN) drive the status words and row lamps; color comes from one gradient, `Board.heat`, steel blue through white and amber to red, used by the boards, meters and the menu bar alike. A deeper copy of the gradient keeps contrast on a light menu bar. The menu bar shows temperature, load or both (MENU BAR tabs in the popover); serious or critical thermal pressure raises the temperature to at least HOT.
+`Thermals/Sensors/HeatBand.swift` places every reading on one continuous heat scale (`HeatLevel`, 0 to 1). Band edges sit at fixed positions: 50°C, 75°C and 90°C for temperature, 25%, 60% and 85% for load, 60%, 80% and 90% for memory used, and 10%, 25% and 40% of physical memory for one app, so the same color always means the same heat. Memory used is raised to at least HOT under WARN and BURN under CRITICAL memory pressure. Bands (COOL, WARM, HOT, BURN) drive the status words and row lamps; color comes from one gradient, `Board.heat`, steel blue through white and amber to red, used by the boards, meters and the menu bar alike. A deeper copy of the gradient keeps contrast on a light menu bar. The menu bar shows temperature, load or both (MENU BAR tabs in the popover); serious or critical thermal pressure raises the temperature to at least HOT.
 
 ## Design snapshots
 
@@ -43,7 +44,7 @@ The popover can't be captured with scripted clicks, so an opt-in test renders it
 TEST_RUNNER_SNAPSHOT_DIR=$PWD/.impeccable/shots xcodebuild -project Thermals.xcodeproj -scheme Thermals -destination 'platform=macOS' -derivedDataPath build test
 ```
 
-This writes `popover-cool.png`, `popover-hot.png`, `popover-no-sensors.png`, `popover-cpu-cool.png` and `popover-cpu-hot.png`. Scroll views draw blank offscreen, so snapshots set `snapshotRendering` to lay the rows out unscrolled. Swift Charts doesn't draw in these offscreen renders, which is one reason the history strip is a `Canvas`.
+This writes `popover-cool.png`, `popover-hot.png`, `popover-no-sensors.png`, `popover-cpu-cool.png`, `popover-cpu-hot.png`, `popover-ram-cool.png`, `popover-ram-hot.png` and `popover-ram-unavailable.png`. Scroll views draw blank offscreen, so snapshots set `snapshotRendering` to lay the rows out unscrolled. Swift Charts doesn't draw in these offscreen renders, which is one reason the history strip is a `Canvas`.
 
 ## Releasing
 

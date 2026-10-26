@@ -17,6 +17,9 @@ struct PopoverSnapshotTests {
             ("no-sensors", PreviewMonitors.noSensors(), .heat),
             ("cpu-cool", PreviewMonitors.cool(), .cpu),
             ("cpu-hot", PreviewMonitors.hot(), .cpu),
+            ("ram-cool", PreviewMonitors.cool(), .ram),
+            ("ram-hot", PreviewMonitors.hot(), .ram),
+            ("ram-unavailable", PreviewMonitors.noSensors(), .ram),
         ]
         for (name, monitor, board) in states {
             let renderer = ImageRenderer(content: PopoverView(monitor: monitor, pinnedBoard: board).environment(\.snapshotRendering, true))

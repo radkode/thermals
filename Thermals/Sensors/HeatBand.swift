@@ -24,6 +24,26 @@ struct HeatLevel: Comparable {
         self.init(position: Self.interpolate(percent, anchors: [(0, 0), (25, Self.warmStart), (60, Self.hotStart), (85, Self.burnStart), (100, 1)]))
     }
 
+    /// Memory in use as a percent of physical memory. Macs run most of their RAM by design, so bands start high.
+    init(memoryPercent percent: Double) {
+        self.init(position: Self.interpolate(percent, anchors: [(0, 0), (60, Self.warmStart), (80, Self.hotStart), (90, Self.burnStart), (100, 1)]))
+    }
+
+    /// One app's footprint as a percent of physical memory.
+    init(appMemoryPercent percent: Double) {
+        self.init(position: Self.interpolate(percent, anchors: [(0, 0), (10, Self.warmStart), (25, Self.hotStart), (40, Self.burnStart), (60, 1)]))
+    }
+
+    /// Memory in use, raised to at least HOT under warn and BURN under critical memory pressure.
+    static func memory(usedPercent: Double, pressure: MemoryPressure?) -> HeatLevel {
+        let reading = HeatLevel(memoryPercent: usedPercent)
+        return switch pressure {
+        case .warn: max(reading, HeatLevel(position: hotStart))
+        case .critical: max(reading, HeatLevel(position: burnStart))
+        case .normal, nil: reading
+        }
+    }
+
     /// Menu bar temperature: the reading's level, raised to at least HOT under serious and BURN under critical thermal pressure.
     static func menuBar(celsius: Double?, thermalState: ProcessInfo.ThermalState) -> HeatLevel? {
         let reading = celsius.map(HeatLevel.init(celsius:))
@@ -62,6 +82,8 @@ enum HeatBand: Int, Comparable, CaseIterable {
 
     init(celsius: Double) { self = HeatLevel(celsius: celsius).band }
     init(loadPercent percent: Double) { self = HeatLevel(loadPercent: percent).band }
+    init(memoryPercent percent: Double) { self = HeatLevel(memoryPercent: percent).band }
+    init(appMemoryPercent percent: Double) { self = HeatLevel(appMemoryPercent: percent).band }
 
     var title: String {
         switch self {
