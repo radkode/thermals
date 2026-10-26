@@ -16,6 +16,15 @@ enum TemperatureSensors {
         }
     }
 
+    /// One reading per sensor name (the hottest), sorted hottest first. Clusters repeat names like `PMU tdie2`.
+    static func hottestByName(_ readings: [SensorReading]) -> [SensorReading] {
+        var byName: [String: SensorReading] = [:]
+        for reading in readings where reading.celsius > (byName[reading.name]?.celsius ?? -.infinity) {
+            byName[reading.name] = reading
+        }
+        return byName.values.sorted { ($0.celsius, $1.name) > ($1.celsius, $0.name) }
+    }
+
     /// Hottest CPU die reading. Prefers `tdie` sensors, falls back to other PMU sensors, never guesses from battery or storage.
     static func cpuTemperature(from readings: [SensorReading]) -> Double? {
         let usable = usable(readings)

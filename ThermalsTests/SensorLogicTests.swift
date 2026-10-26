@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import Thermals
 
@@ -42,5 +43,68 @@ struct CPUTemperatureTests {
     @Test func ignoresImplausibleReadings() {
         let input = readings([("PMU tdie1", 0), ("PMU tdie2", 200), ("PMU tdie3", 48)])
         #expect(TemperatureSensors.cpuTemperature(from: input) == 48)
+    }
+}
+
+struct HeatBandTests {
+    @Test(arguments: [(49.9, HeatBand.cool), (50, .warm), (74.9, .warm), (75, .hot), (89.9, .hot), (90, .burn)])
+    func bandBoundaries(celsius: Double, expected: HeatBand) {
+        #expect(HeatBand(celsius: celsius) == expected)
+    }
+
+    @Test func menuBarStaysCalmWhenCoolAndNominal() {
+        #expect(HeatBand.menuBar(celsius: 45, thermalState: .nominal) == .cool)
+    }
+
+    @Test func menuBarRisesWithThermalPressure() {
+        #expect(HeatBand.menuBar(celsius: 45, thermalState: .serious) == .hot)
+        #expect(HeatBand.menuBar(celsius: 80, thermalState: .critical) == .burn)
+        #expect(HeatBand.menuBar(celsius: 95, thermalState: .serious) == .burn)
+    }
+
+    @Test func menuBarHasNoBandWithoutReadingOrPressure() {
+        #expect(HeatBand.menuBar(celsius: nil, thermalState: .nominal) == nil)
+    }
+}
+
+struct HottestByNameTests {
+    @Test func keepsHottestPerNameSortedHottestFirst() {
+        let input = [
+            SensorReading(id: 0, name: "PMU tdie2", celsius: 46.1),
+            SensorReading(id: 1, name: "PMU tdie2", celsius: 46.3),
+            SensorReading(id: 2, name: "PMU tdie6", celsius: 46.5),
+            SensorReading(id: 3, name: "NAND CH0 temp", celsius: 40),
+        ]
+        let result = TemperatureSensors.hottestByName(input)
+        #expect(result.map(\.id) == [2, 1, 3])
+    }
+
+    @Test func breaksTiesByName() {
+        let input = [
+            SensorReading(id: 0, name: "PMU tdie9", celsius: 45),
+            SensorReading(id: 1, name: "PMU tdie1", celsius: 45),
+        ]
+        #expect(TemperatureSensors.hottestByName(input).map(\.name) == ["PMU tdie1", "PMU tdie9"])
+    }
+}
+
+@MainActor
+struct LampMeterTests {
+    private func samples(_ values: [Double]) -> [TemperatureSample] {
+        values.enumerated().map { TemperatureSample(date: Date(timeIntervalSince1970: Double($0.offset)), celsius: $0.element) }
+    }
+
+    @Test func newestReadingsFillRightmostColumns() {
+        let peaks = LampMeter.columnPeaks(samples([40, 55, 50, 61]))
+        #expect(peaks.count == LampMeter.columns)
+        #expect(peaks.suffix(2) == [40, 61])
+        #expect(peaks.dropLast(2).allSatisfy { $0 == nil })
+    }
+
+    @Test func fullHistoryUsesPeakPerColumn() {
+        let values = (0..<Monitor.historyLength).map { Double($0) }
+        let peaks = LampMeter.columnPeaks(samples(values))
+        #expect(peaks.first == 2)
+        #expect(peaks.last == Double(Monitor.historyLength - 1))
     }
 }

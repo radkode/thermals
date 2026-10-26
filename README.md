@@ -23,3 +23,17 @@ The Xcode project is generated and not committed; edit `project.yml`, then rerun
 - **Thermal pressure** is `ProcessInfo.thermalState`.
 
 Readings refresh every 2 seconds.
+
+## Heat bands
+
+`Thermals/Sensors/HeatBand.swift` maps a reading to COOL (under 50°C), WARM (under 75°C), HOT (under 90°C) or BURN. Bands drive board colors and row lamps. The menu bar reading stays monochrome until the band is HOT or macOS reports serious or critical thermal pressure.
+
+## Design snapshots
+
+The popover can't be captured with scripted clicks, so an opt-in test renders it with synthetic readings (`Thermals/Views/PreviewMonitors.swift`):
+
+```bash
+TEST_RUNNER_SNAPSHOT_DIR=$PWD/.impeccable/shots xcodebuild -project Thermals.xcodeproj -scheme Thermals -destination 'platform=macOS' -derivedDataPath build test
+```
+
+This writes `popover-cool.png`, `popover-hot.png` and `popover-no-sensors.png`. Swift Charts doesn't draw in these offscreen renders, which is one reason the history strip is a `Canvas`.

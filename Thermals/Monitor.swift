@@ -23,7 +23,17 @@ final class Monitor {
     @ObservationIgnored private var previousTicks: CPUTicks?
     @ObservationIgnored private var timer: Timer?
 
-    var sensorsAvailable: Bool { reader != nil && !sensors.isEmpty }
+    var menuBarBand: HeatBand? { HeatBand.menuBar(celsius: cpuTemperature, thermalState: thermalState) }
+    private(set) var updatedAt = Date.now
+
+    /// Fixed readings with no sampling, for previews and snapshots.
+    init(sensors: [SensorReading], cpuLoad: Double?, thermalState: ProcessInfo.ThermalState, history: [TemperatureSample]) {
+        self.sensors = sensors
+        self.cpuTemperature = TemperatureSensors.cpuTemperature(from: sensors)
+        self.cpuLoad = cpuLoad
+        self.thermalState = thermalState
+        self.history = history
+    }
 
     init() {
         refresh()
@@ -35,10 +45,10 @@ final class Monitor {
     }
 
     private func refresh() {
-        sensors = TemperatureSensors.usable(reader?.read() ?? [])
-            .sorted { $0.celsius > $1.celsius }
+        sensors = TemperatureSensors.hottestByName(TemperatureSensors.usable(reader?.read() ?? []))
         cpuTemperature = TemperatureSensors.cpuTemperature(from: sensors)
         thermalState = ProcessInfo.processInfo.thermalState
+        updatedAt = .now
 
         if let ticks = CPULoad.sample() {
             if let previousTicks { cpuLoad = CPULoad.usage(from: previousTicks, to: ticks) }
