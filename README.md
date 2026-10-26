@@ -47,6 +47,8 @@ This writes `popover-cool.png`, `popover-hot.png`, `popover-no-sensors.png`, `po
 
 ## Releasing
 
-Thermals ships as a Homebrew cask from the public tap `radkode/homebrew-thermals`, which hosts the signed release zips so this repo can stay private. `scripts/release.sh` takes the version from `MARKETING_VERSION` in `project.yml`, builds Release, signs with a Developer ID and hardened runtime, notarizes and staples, uploads `Thermals-<version>.zip` as a release in the tap, writes `Casks/thermals.rb`, and tags `v<version>` here.
+Thermals ships as a Homebrew cask from the public tap `radkode/homebrew-thermals`, which hosts the signed release zips so this repo can stay private. `scripts/release.sh` takes the version from `MARKETING_VERSION` in `project.yml`, builds Release, signs with the Developer ID and hardened runtime, notarizes and staples, uploads `Thermals-<version>.zip` as a release in the tap, and writes `Casks/thermals.rb` there.
 
-One-time setup on the release Mac: a "Developer ID Application" certificate in the keychain and a notary profile (`xcrun notarytool store-credentials thermals-notary`). Then bump `MARKETING_VERSION`, commit, and run `scripts/release.sh` from a clean `main`. `scripts/release.sh --dry-run` builds, ad-hoc signs and writes the cask to `build/release/<version>/` without notarizing or publishing.
+Releases run in GitHub Actions (`.github/workflows/release.yml`), signed with the same Developer ID certificate and App Store Connect notary key as the DailyDeck macOS app; the secrets it needs are listed at the top of the workflow. To release: bump `MARKETING_VERSION`, commit to `main`, then push a matching tag (`git tag v0.2.0 && git push origin v0.2.0`). The workflow refuses a tag that doesn't match `project.yml`.
+
+`scripts/release.sh --dry-run` builds, ad-hoc signs and writes the cask to `build/release/<version>/` without notarizing or publishing. Running the script without flags on a Mac whose keychain has the Developer ID identity and a `thermals-notary` notarytool profile releases locally and tags the version itself.
