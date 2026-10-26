@@ -27,7 +27,7 @@ enum PreviewMonitors {
         let loadHistory = steps.map { step in max(0, min(100, load * 100 - 60 * load * curve[step] + 6 * sin(Double(step) / 2))) }
         let coreLoads = (1...6).map { CoreLoad(name: "P\($0)", cluster: .performance, usage: min(1, load * (1.1 - Double($0) * 0.08))) }
             + (1...6).map { CoreLoad(name: "E\($0)", cluster: .efficiency, usage: min(1, load * (0.5 - Double($0) * 0.05))) }
-        let processes = [("Xcode", 3.1), ("swift-frontend", 2.4), ("Google Chrome Helper", 0.9), ("Music", 0.45), ("Slack", 0.2), ("Finder", 0.04)]
+        let processes = [("Xcode", 3.1), ("swift-frontend", 2.4), ("Google Chrome", 0.9), ("Music", 0.45), ("Slack", 0.2), ("Finder", 0.04)]
             .map { ProcessLoad(name: $0.0, percent: $0.1 * load * 100) }
         return Monitor(
             sensors: sensors,
@@ -36,7 +36,8 @@ enum PreviewMonitors {
             history: history,
             coreLoads: coreLoads,
             loadHistory: loadHistory,
-            processes: processes
+            processes: processes,
+            hiddenLoad: load * 12 * 100 * 0.35
         )
     }
 }

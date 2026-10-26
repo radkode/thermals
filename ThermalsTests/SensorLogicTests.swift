@@ -163,3 +163,37 @@ struct ProcessSamplerTests {
         #expect(ranked.map(\.name) == ["c", "a", "b"])
     }
 }
+
+struct ProcessGroupingTests {
+    @Test func helpersGroupUnderOutermostApp() {
+        let path = "/Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/131/Helpers/Google Chrome Helper (Renderer).app/Contents/MacOS/Google Chrome Helper (Renderer)"
+        #expect(ProcessSampler.groupName(path: path, processName: "Google Chrome Helper (Renderer)") == "Google Chrome")
+    }
+
+    @Test func processesOutsideAppsKeepTheirName() {
+        #expect(ProcessSampler.groupName(path: "/usr/local/bin/node", processName: "node") == "node")
+        #expect(ProcessSampler.groupName(path: nil, processName: "launchd") == "launchd")
+    }
+
+    @Test func percentsSumHelpersIntoTheirGroup() {
+        let previous: [pid_t: ProcessTimes] = [
+            1: ProcessTimes(name: "Chrome Helper", cpuNanoseconds: 0, group: "Google Chrome"),
+            2: ProcessTimes(name: "Google Chrome", cpuNanoseconds: 0, group: "Google Chrome"),
+        ]
+        let current: [pid_t: ProcessTimes] = [
+            1: ProcessTimes(name: "Chrome Helper", cpuNanoseconds: 500_000_000, group: "Google Chrome"),
+            2: ProcessTimes(name: "Google Chrome", cpuNanoseconds: 250_000_000, group: "Google Chrome"),
+        ]
+        #expect(ProcessSampler.percents(previous: previous, current: current, elapsedNanoseconds: 1_000_000_000) == ["Google Chrome": 75])
+    }
+}
+
+struct HiddenLoadTests {
+    @Test func hiddenLoadIsTotalInCorePercentMinusVisible() {
+        #expect(Monitor.hiddenLoad(totalFraction: 0.5, cores: 4, visibleTotal: 120) == 80)
+    }
+
+    @Test func hiddenLoadNeverNegative() {
+        #expect(Monitor.hiddenLoad(totalFraction: 0.1, cores: 4, visibleTotal: 120) == 0)
+    }
+}

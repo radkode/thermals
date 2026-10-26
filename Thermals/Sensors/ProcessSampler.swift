@@ -11,9 +11,18 @@ struct ProcessLoad: Identifiable, Equatable {
 struct ProcessTimes: Equatable {
     let name: String
     let cpuNanoseconds: UInt64
+    /// What the board groups by: the outermost app bundle for helpers, else the process name.
+    var group: String? = nil
 }
 
-/// CPU use per process name from `proc_pidinfo` deltas. Only processes this user may inspect are visible; root and system processes are not.
+struct ProcessSample: Equatable {
+    /// Smoothed, ranked by CPU.
+    let ranked: [ProcessLoad]
+    /// Unsmoothed total of every visible process this interval, in percent of one core.
+    let visibleTotal: Double
+}
+
+/// CPU use per app from `proc_pidinfo` deltas. Only processes this user may inspect are visible; root and system processes are not.
 final class ProcessSampler {
     private var previous: [pid_t: ProcessTimes] = [:]
     private var previousTime: UInt64 = 0
@@ -24,17 +33,23 @@ final class ProcessSampler {
         return info
     }()
 
-    func sample() -> [ProcessLoad] {
+    func sample() -> ProcessSample {
         let now = DispatchTime.now().uptimeNanoseconds
         let current = Self.readAll(timebase: timebase)
         defer {
             previous = current
             previousTime = now
         }
-        guard previousTime > 0 else { return [] }
+        guard previousTime > 0 else { return ProcessSample(ranked: [], visibleTotal: 0) }
         let percents = Self.percents(previous: previous, current: current, elapsedNanoseconds: now - previousTime)
         smoothed = Self.smooth(previous: smoothed, current: percents)
-        return Self.ranked(smoothed)
+        return ProcessSample(ranked: Self.ranked(smoothed), visibleTotal: percents.values.reduce(0, +))
+    }
+
+    /// Helpers group under the outermost `.app` in their path, so Chrome's renderers count as Google Chrome.
+    static func groupName(path: String?, processName: String) -> String {
+        guard let path, let app = path.split(separator: "/").first(where: { $0.hasSuffix(".app") }) else { return processName }
+        return String(app.dropLast(4))
     }
 
     func reset() {
@@ -49,7 +64,7 @@ final class ProcessSampler {
         var byName: [String: Double] = [:]
         for (pid, times) in current {
             guard let before = previous[pid], before.name == times.name, times.cpuNanoseconds >= before.cpuNanoseconds else { continue }
-            byName[times.name, default: 0] += Double(times.cpuNanoseconds - before.cpuNanoseconds) / Double(elapsedNanoseconds) * 100
+            byName[times.group ?? times.name, default: 0] += Double(times.cpuNanoseconds - before.cpuNanoseconds) / Double(elapsedNanoseconds) * 100
         }
         return byName
     }
@@ -83,8 +98,16 @@ final class ProcessSampler {
             guard proc_name(pid, &name, UInt32(name.count)) > 0 else { continue }
             let ticks = info.pti_total_user + info.pti_total_system
             let nanoseconds = ticks * UInt64(timebase.numer) / UInt64(max(timebase.denom, 1))
-            result[pid] = ProcessTimes(name: String(decoding: name.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }, as: UTF8.self), cpuNanoseconds: nanoseconds)
+            let processName = string(name)
+            var path = [CChar](repeating: 0, count: 4 * Int(MAXPATHLEN))
+            let pathLength = proc_pidpath(pid, &path, UInt32(path.count))
+            let group = groupName(path: pathLength > 0 ? string(path) : nil, processName: processName)
+            result[pid] = ProcessTimes(name: processName, cpuNanoseconds: nanoseconds, group: group)
         }
         return result
+    }
+
+    private static func string(_ buffer: [CChar]) -> String {
+        String(decoding: buffer.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }, as: UTF8.self)
     }
 }

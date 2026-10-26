@@ -15,19 +15,35 @@ struct PopoverView: View {
 
     @AppStorage("board") private var storedBoard = BoardKind.heat
 
+    private var board: BoardKind { pinnedBoard ?? storedBoard }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            BoardSwitcher(selection: Binding(get: { pinnedBoard ?? storedBoard }, set: { storedBoard = $0 }))
-            switch pinnedBoard ?? storedBoard {
-            case .heat: HeatBoard(monitor: monitor)
-            case .cpu: CPUBoard(monitor: monitor)
+            BoardSwitcher(selection: Binding(get: { board }, set: { storedBoard = $0 }))
+            // Both boards stay laid out so the popover keeps the taller one's height and Quit never moves on switch.
+            ZStack(alignment: .topLeading) {
+                ForEach(BoardKind.allCases, id: \.self) { kind in
+                    let shown = kind == board
+                    Group {
+                        switch kind {
+                        case .heat: HeatBoard(monitor: monitor)
+                        case .cpu: CPUBoard(monitor: monitor)
+                        }
+                    }
+                    .opacity(shown ? 1 : 0)
+                    .allowsHitTesting(shown)
+                    .accessibilityHidden(!shown)
+                }
             }
             footer
         }
         .padding(14)
-        .frame(width: 324)
+        .frame(width: Board.popoverWidth)
         .background(Board.steelFrame)
         .environment(\.colorScheme, .dark)
+        .onAppear { monitor.samplesProcesses = board == .cpu }
+        .onChange(of: board) { _, new in monitor.samplesProcesses = new == .cpu }
+        .onDisappear { monitor.samplesProcesses = false }
     }
 
     private var footer: some View {

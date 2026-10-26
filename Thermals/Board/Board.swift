@@ -1,6 +1,7 @@
 import SwiftUI
 
 enum Board {
+    static let popoverWidth: CGFloat = 400
     static let flapBlack = Color(red: 0x0B / 255, green: 0x0B / 255, blue: 0x0D / 255)
     static let flapTop = Color(red: 0x24 / 255, green: 0x25 / 255, blue: 0x29 / 255)
     static let flapBottom = Color(red: 0x1B / 255, green: 0x1C / 255, blue: 0x1F / 255)
@@ -16,6 +17,9 @@ enum Board {
 
     static func flapFont(_ size: CGFloat) -> Font { .custom("BarlowCondensed-SemiBold", size: size) }
     static func labelFont(_ size: CGFloat) -> Font { .custom("BarlowCondensed-Medium", size: size) }
+
+    /// Settle for rows moving to a new rank: fast start, long exponential tail.
+    static let settle = Animation.timingCurve(0.16, 1, 0.3, 1, duration: 0.5)
 
     static func ink(for band: HeatBand) -> Color {
         switch band {

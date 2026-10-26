@@ -15,10 +15,8 @@ struct CPUBoard: View {
                 accessibilityName: "CPU load"
             )
             CoreBoard(cores: monitor.coreLoads)
-            ProcessBoard(processes: monitor.processes)
+            ProcessBoard(processes: monitor.processes, hiddenLoad: monitor.hiddenLoad)
         }
-        .onAppear { monitor.samplesProcesses = true }
-        .onDisappear { monitor.samplesProcesses = false }
     }
 
     private var header: some View {
@@ -29,7 +27,7 @@ struct CPUBoard: View {
                     text: monitor.cpuLoad.map(Format.percent) ?? "--%",
                     cells: 4,
                     size: .hero,
-                    ink: monitor.cpuLoad.map { Board.heroInk(for: HeatBand(loadPercent: $0 * 100)) } ?? Board.steelLight,
+                    ink: monitor.cpuLoad.map { Board.heroInk(for: HeatBand(loadPercent: ($0 * 100).rounded())) } ?? Board.steelLight,
                     alignment: .trailing
                 )
             }
@@ -39,7 +37,7 @@ struct CPUBoard: View {
                     label: "CPU DIE",
                     value: monitor.cpuTemperature.map(Format.degrees) ?? "--",
                     cells: 4,
-                    ink: monitor.cpuTemperature.map { Board.ink(for: HeatBand(celsius: $0)) } ?? Board.steelLight
+                    ink: monitor.cpuTemperature.map { Board.ink(for: HeatBand(celsius: $0.rounded())) } ?? Board.steelLight
                 )
                 BoardStat(label: "PRESSURE", value: monitor.thermalState.boardTitle, cells: 8, ink: monitor.thermalState.ink)
             }
@@ -47,7 +45,7 @@ struct CPUBoard: View {
     }
 }
 
-/// Cores as two platforms side by side: performance and efficiency, each core a row in fixed order.
+/// Cores as two platforms side by side: performance and efficiency, each core a departure row in fixed order.
 private struct CoreBoard: View {
     let cores: [CoreLoad]
 
@@ -57,11 +55,12 @@ private struct CoreBoard: View {
                 ColumnLabel("COLLECTING READINGS")
                     .frame(maxWidth: .infinity, minHeight: 40)
             } else {
+                let nameCells = max(2, cores.map(\.name.count).max() ?? 2)
                 HStack(alignment: .top, spacing: 12) {
                     ForEach(platforms, id: \.title) { platform in
                         VStack(alignment: .leading, spacing: 3) {
                             ColumnLabel(platform.title)
-                            ForEach(platform.cores) { CoreRow(core: $0) }
+                            ForEach(platform.cores) { CoreRow(core: $0, nameCells: nameCells) }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -83,17 +82,19 @@ private struct CoreBoard: View {
 
 private struct CoreRow: View {
     let core: CoreLoad
+    let nameCells: Int
 
     var body: some View {
-        let percent = core.usage * 100
+        let percent = (core.usage * 100).rounded()
         let band = HeatBand(loadPercent: percent)
         HStack(spacing: 5) {
-            FlapText(text: core.name, cells: 3, ink: Board.steelLight)
+            Lamp(lit: band >= .hot, color: Board.ink(for: band))
+            FlapText(text: core.name, cells: nameCells, ink: band == .burn ? Board.burnRed : Board.steelLight)
             LoadBar(percent: percent)
-            FlapText(text: "\(Int(percent.rounded()))", cells: 3, ink: Board.ink(for: band), alignment: .trailing)
+            FlapText(text: "\(Int(percent))", cells: 3, ink: Board.ink(for: band), alignment: .trailing)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Core \(core.name), \(Int(percent.rounded())) percent")
+        .accessibilityLabel("Core \(core.name), \(Int(percent)) percent, \(band.title.lowercased())")
     }
 }
 
@@ -119,22 +120,23 @@ private struct LoadBar: View {
     }
 }
 
-/// The user's processes ranked by CPU; rows slide to their new rank instead of jumping.
+/// The user's apps ranked by CPU, sliding to their new rank, with the load they can't account for pinned last.
 private struct ProcessBoard: View {
     let processes: [ProcessLoad]
+    let hiddenLoad: Double?
 
-    static let visibleRows = 6
-    static let nameCells = 11
+    static let rankedRows = 5
+    static let nameCells = 17
     static let percentCells = 4
     static let statusCells = 4
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        let shown = Array(processes.prefix(Self.visibleRows))
+        let shown = Array(processes.prefix(Self.rankedRows))
         BoardPanel {
             VStack(alignment: .leading, spacing: 3) {
-                columns(Color.clear, ColumnLabel("YOUR PROCESSES"), ColumnLabel("%CPU"), ColumnLabel("STATUS"))
+                columns(Color.clear.frame(height: 1), ColumnLabel("YOUR APPS"), ColumnLabel("%CPU"), ColumnLabel("STATUS"))
                 if shown.isEmpty {
                     columns(
                         Lamp(lit: false, color: Board.steelLight),
@@ -143,23 +145,29 @@ private struct ProcessBoard: View {
                         FlapText(text: "", cells: Self.statusCells)
                     )
                 } else {
-                    ForEach(shown) { process in row(process) }
+                    ForEach(shown) { process in
+                        row(name: process.name, percent: process.percent, label: "\(process.name), \(Int(process.percent.rounded())) percent CPU")
+                    }
+                }
+                if let hiddenLoad {
+                    row(name: "SYSTEM + OTHERS", percent: hiddenLoad, label: "System and other users' processes, derived from total load, \(Int(hiddenLoad.rounded())) percent CPU")
                 }
             }
-            .animation(reduceMotion ? nil : .easeInOut(duration: 0.35), value: shown.map(\.name))
+            .animation(reduceMotion ? nil : Board.settle, value: shown.map(\.name))
         }
     }
 
-    private func row(_ process: ProcessLoad) -> some View {
-        let band = HeatBand(loadPercent: process.percent)
+    private func row(name: String, percent: Double, label: String) -> some View {
+        let shown = percent.rounded()
+        let band = HeatBand(loadPercent: shown)
         return columns(
             Lamp(lit: band >= .hot, color: Board.ink(for: band)),
-            FlapText(text: process.name, cells: Self.nameCells, ink: band == .burn ? Board.burnRed : Board.steelLight),
-            FlapText(text: "\(Int(process.percent.rounded()))", cells: Self.percentCells, ink: Board.ink(for: band), alignment: .trailing),
+            FlapText(text: name, cells: Self.nameCells, ink: band == .burn ? Board.burnRed : Board.steelLight),
+            FlapText(text: "\(Int(shown))", cells: Self.percentCells, ink: Board.ink(for: band), alignment: .trailing),
             FlapText(text: band.title, cells: Self.statusCells, ink: Board.ink(for: band))
         )
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(process.name), \(Int(process.percent.rounded())) percent CPU")
+        .accessibilityLabel(label)
     }
 
     private func columns(_ lamp: some View, _ name: some View, _ percent: some View, _ status: some View) -> some View {

@@ -25,7 +25,7 @@ struct HeatBoard: View {
                     text: monitor.cpuTemperature.map(Format.degrees) ?? "--°",
                     cells: 3,
                     size: .hero,
-                    ink: monitor.cpuTemperature.map { Board.heroInk(for: HeatBand(celsius: $0)) } ?? Board.steelLight,
+                    ink: monitor.cpuTemperature.map { Board.heroInk(for: HeatBand(celsius: $0.rounded())) } ?? Board.steelLight,
                     alignment: .trailing
                 )
             }
@@ -41,12 +41,12 @@ struct HeatBoard: View {
 private struct SensorBoard: View {
     let sensors: [SensorReading]
 
-    static let nameCells = 12
+    static let nameCells = 18
     static let tempCells = 3
     static let statusCells = 4
     static let columnSpacing: CGFloat = 6
     static let rowSpacing: CGFloat = 3
-    static let visibleRows = 8
+    static let visibleRows = 12
 
     @Environment(\.snapshotRendering) private var snapshotRendering
 
@@ -54,7 +54,7 @@ private struct SensorBoard: View {
         BoardPanel {
             VStack(alignment: .leading, spacing: Self.rowSpacing) {
                 columns(
-                    Color.clear,
+                    Color.clear.frame(height: 1),
                     ColumnLabel("SENSOR"),
                     ColumnLabel("°C"),
                     ColumnLabel("STATUS")
@@ -88,7 +88,7 @@ private struct SensorBoard: View {
     }
 
     private func row(_ sensor: SensorReading) -> some View {
-        let band = HeatBand(celsius: sensor.celsius)
+        let band = HeatBand(celsius: sensor.celsius.rounded())
         return columns(
             Lamp(lit: band >= .hot, color: Board.ink(for: band)),
             FlapText(text: sensor.name, cells: Self.nameCells, ink: band == .burn ? Board.burnRed : Board.steelLight),

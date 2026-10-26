@@ -22,6 +22,8 @@ final class Monitor {
     /// Total CPU load in percent, oldest first.
     private(set) var loadHistory: [Double] = []
     private(set) var processes: [ProcessLoad] = []
+    /// Load the visible processes don't account for (system and other users), in percent of one core. Derived, not measured.
+    private(set) var hiddenLoad: Double?
     private(set) var updatedAt = Date.now
 
     /// Process sampling costs a pass over every pid, so it runs only while a view asks for it.
@@ -30,6 +32,7 @@ final class Monitor {
             guard samplesProcesses != oldValue, timer != nil else { return }
             processSampler.reset()
             processes = []
+            hiddenLoad = nil
             if samplesProcesses { _ = processSampler.sample() }
         }
     }
@@ -50,7 +53,8 @@ final class Monitor {
         history: [TemperatureSample],
         coreLoads: [CoreLoad] = [],
         loadHistory: [Double] = [],
-        processes: [ProcessLoad] = []
+        processes: [ProcessLoad] = [],
+        hiddenLoad: Double? = nil
     ) {
         self.sensors = TemperatureSensors.byName(sensors)
         self.cpuTemperature = TemperatureSensors.cpuTemperature(from: self.sensors)
@@ -60,6 +64,7 @@ final class Monitor {
         self.coreLoads = coreLoads
         self.loadHistory = loadHistory
         self.processes = processes
+        self.hiddenLoad = hiddenLoad
     }
 
     init() {
@@ -95,7 +100,16 @@ final class Monitor {
 
         if let cpuTemperature { append(TemperatureSample(date: .now, celsius: cpuTemperature), to: &history) }
         if let cpuLoad { append(cpuLoad * 100, to: &loadHistory) }
-        if samplesProcesses { processes = processSampler.sample() }
+        if samplesProcesses {
+            let sample = processSampler.sample()
+            processes = sample.ranked
+            hiddenLoad = cpuLoad.map { Self.hiddenLoad(totalFraction: $0, cores: coreLoads.count, visibleTotal: sample.visibleTotal) }
+        }
+    }
+
+    /// Whole-CPU load expressed in one-core percent, minus what visible processes used; never negative.
+    nonisolated static func hiddenLoad(totalFraction: Double, cores: Int, visibleTotal: Double) -> Double {
+        max(0, totalFraction * Double(cores) * 100 - visibleTotal)
     }
 
     private func append<T>(_ value: T, to series: inout [T]) {
