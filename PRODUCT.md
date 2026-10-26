@@ -35,7 +35,7 @@ Glanced at during ordinary work: builds, video calls, gaming, heavy browser sess
 
 ## Brand Commitments
 
-Name: Thermals.
+Name: Thermals. Domain: `thermals.dev` (Vercel, team `jacekradkos-projects`, auto-renews).
 
 ## Evidence on Hand
 
