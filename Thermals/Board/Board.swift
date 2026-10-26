@@ -10,8 +10,10 @@ enum Board {
     static let steelMid = Color(red: 0x5B / 255, green: 0x5E / 255, blue: 0x63 / 255)
     static let steelLight = Color(red: 0xA7 / 255, green: 0xAA / 255, blue: 0xAF / 255)
     static let letterWhite = Color(red: 0xF2 / 255, green: 0xF2 / 255, blue: 0xF2 / 255)
-    static let amber = Color(red: 0xFF / 255, green: 0xB0 / 255, blue: 0x00 / 255)
-    static let burnRed = Color(red: 0xE5 / 255, green: 0x38 / 255, blue: 0x3B / 255)
+    static let amber = color(amberRGB)
+    static let burnRed = color(burnRedRGB)
+    private static let amberRGB: (Double, Double, Double) = (0xFF, 0xB0, 0x00)
+    private static let burnRedRGB: (Double, Double, Double) = (0xE5, 0x38, 0x3B)
 
     static func flapFont(_ size: CGFloat) -> Font { .custom("BarlowCondensed-SemiBold", size: size) }
     static func labelFont(_ size: CGFloat) -> Font { .custom("BarlowCondensed-Medium", size: size) }
@@ -41,9 +43,9 @@ enum Board {
         (0, (0x6F, 0x9C, 0xC8)),
         (HeatLevel.warmStart, (0xDC, 0xE6, 0xEE)),
         (0.55, (0xFF, 0xE3, 0xA3)),
-        (HeatLevel.hotStart, (0xFF, 0xB0, 0x00)),
+        (HeatLevel.hotStart, amberRGB),
         (HeatLevel.burnStart, (0xF2, 0x5A, 0x2D)),
-        (1, (0xE5, 0x38, 0x3B)),
+        (1, burnRedRGB),
     ]
 
     static let lightHeatStops: [HeatStop] = [

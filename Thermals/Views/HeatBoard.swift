@@ -31,7 +31,12 @@ struct HeatBoard: View {
             }
             Spacer(minLength: 12)
             VStack(alignment: .trailing, spacing: 9) {
-                BoardStat(label: "LOAD", value: monitor.cpuLoad.map(Format.percent) ?? "--", cells: 4, ink: Board.letterWhite)
+                BoardStat(
+                    label: "LOAD",
+                    value: monitor.cpuLoad.map(Format.percent) ?? "--",
+                    cells: 4,
+                    ink: monitor.cpuLoad.map { Board.heat(HeatLevel(loadPercent: ($0 * 100).rounded())) } ?? Board.steelLight
+                )
                 BoardStat(label: "PRESSURE", value: monitor.thermalState.boardTitle, cells: 8, ink: monitor.thermalState.ink)
             }
         }

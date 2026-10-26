@@ -1,0 +1,568 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-26T18:34:54.624569+00:00",
+  "title": "Design System: Thermals",
+  "extensions": {
+    "colorMeta": {
+      "steel-frame": {
+        "role": "neutral",
+        "displayName": "Steel Frame",
+        "canonical": "#2A2D31",
+        "tonalRamp": [
+          "#090B0F",
+          "#212428",
+          "#3D4044",
+          "#5A5E62",
+          "#7D8085",
+          "#A1A5AA",
+          "#C7CBD0",
+          "#EBEFF4"
+        ]
+      },
+      "flap-black": {
+        "role": "neutral",
+        "displayName": "Flap Black",
+        "canonical": "#0B0B0D",
+        "tonalRamp": [
+          "#0B0B0D",
+          "#242426",
+          "#3F3F42",
+          "#5D5D60",
+          "#808083",
+          "#A4A4A7",
+          "#CACACD",
+          "#EEEEF1"
+        ]
+      },
+      "flap-top": {
+        "role": "neutral",
+        "displayName": "Flap Top",
+        "canonical": "#242529",
+        "tonalRamp": [
+          "#0A0B0E",
+          "#232428",
+          "#3E3F44",
+          "#5C5D62",
+          "#7F8085",
+          "#A3A4A9",
+          "#C9CAD0",
+          "#EDEEF4"
+        ]
+      },
+      "flap-bottom": {
+        "role": "neutral",
+        "displayName": "Flap Bottom",
+        "canonical": "#1B1C1F",
+        "tonalRamp": [
+          "#0A0B0E",
+          "#232427",
+          "#3E4043",
+          "#5C5D61",
+          "#7F8084",
+          "#A3A4A8",
+          "#C9CACE",
+          "#EDEEF3"
+        ]
+      },
+      "lens": {
+        "role": "neutral",
+        "displayName": "Lens",
+        "canonical": "#1E1F23",
+        "tonalRamp": [
+          "#0A0B0E",
+          "#232428",
+          "#3E3F44",
+          "#5C5D62",
+          "#7F8085",
+          "#A3A4AA",
+          "#C9CAD0",
+          "#EDEEF4"
+        ]
+      },
+      "steel-mid": {
+        "role": "neutral",
+        "displayName": "Steel Mid",
+        "canonical": "#5B5E63",
+        "tonalRamp": [
+          "#090B0F",
+          "#222428",
+          "#3D4045",
+          "#5B5E63",
+          "#7D8086",
+          "#A1A5AA",
+          "#C7CBD0",
+          "#EBEFF5"
+        ]
+      },
+      "steel-light": {
+        "role": "neutral",
+        "displayName": "Steel Light",
+        "canonical": "#A7AAAF",
+        "tonalRamp": [
+          "#090B0F",
+          "#222428",
+          "#3D4044",
+          "#5B5E62",
+          "#7D8085",
+          "#A2A5AA",
+          "#C8CBD0",
+          "#EBEFF4"
+        ]
+      },
+      "letter-white": {
+        "role": "neutral",
+        "displayName": "Letter White",
+        "canonical": "#F2F2F2",
+        "tonalRamp": [
+          "#0B0B0B",
+          "#242424",
+          "#404040",
+          "#5D5D5D",
+          "#808080",
+          "#A4A4A4",
+          "#CACACA",
+          "#EEEEEE"
+        ]
+      },
+      "amber": {
+        "role": "secondary",
+        "displayName": "Departure Amber (heat HOT stop)",
+        "canonical": "#FFB000",
+        "tonalRamp": [
+          "#2C0000",
+          "#4D0000",
+          "#6F2700",
+          "#914900",
+          "#B86D00",
+          "#E09200",
+          "#FFB91F",
+          "#FFE48F"
+        ]
+      },
+      "burn-red": {
+        "role": "secondary",
+        "displayName": "Burn Red (heat max stop)",
+        "canonical": "#E5383B",
+        "tonalRamp": [
+          "#410000",
+          "#680000",
+          "#8F0000",
+          "#B70010",
+          "#E23539",
+          "#FF615D",
+          "#FF8A82",
+          "#FFCFC5"
+        ]
+      },
+      "heat-cool": {
+        "role": "primary",
+        "displayName": "Cool Steel Blue (heat stop 0)",
+        "canonical": "#6F9CC8",
+        "tonalRamp": [
+          "#00092B",
+          "#002549",
+          "#164269",
+          "#36618A",
+          "#5884AF",
+          "#7CA9D6",
+          "#A1D0FE",
+          "#C4F4FF"
+        ]
+      },
+      "heat-warm": {
+        "role": "primary",
+        "displayName": "Warm Letter Frost (heat stop 1/3)",
+        "canonical": "#DCE6EE",
+        "tonalRamp": [
+          "#060C11",
+          "#1E252B",
+          "#394147",
+          "#565F66",
+          "#798289",
+          "#9DA6AE",
+          "#C2CCD4",
+          "#E6F0F8"
+        ]
+      },
+      "heat-warm-high": {
+        "role": "primary",
+        "displayName": "Pale Sodium (heat stop 0.55)",
+        "canonical": "#FFE3A3",
+        "tonalRamp": [
+          "#1A0500",
+          "#361F00",
+          "#533C00",
+          "#735A19",
+          "#977D3F",
+          "#BCA163",
+          "#E3C788",
+          "#FFECAB"
+        ]
+      },
+      "heat-burn-edge": {
+        "role": "primary",
+        "displayName": "Ember Orange (heat stop 0.85)",
+        "canonical": "#F25A2D",
+        "tonalRamp": [
+          "#3E0000",
+          "#640000",
+          "#8A0000",
+          "#B10F00",
+          "#DB4410",
+          "#FF6D41",
+          "#FF9569",
+          "#FFD2B6"
+        ]
+      },
+      "menubar-light-cool": {
+        "role": "primary",
+        "displayName": "Menu Bar Light Cool",
+        "canonical": "#2E6299",
+        "tonalRamp": [
+          "#000435",
+          "#002254",
+          "#074075",
+          "#2C6097",
+          "#4F83BD",
+          "#73A9E5",
+          "#98CFFF",
+          "#BBF4FF"
+        ]
+      },
+      "menubar-light-warm": {
+        "role": "primary",
+        "displayName": "Menu Bar Light Warm",
+        "canonical": "#4A5560",
+        "tonalRamp": [
+          "#040C14",
+          "#1B252F",
+          "#36414C",
+          "#545F6A",
+          "#76828E",
+          "#9AA6B3",
+          "#BFCCD9",
+          "#E3F0FE"
+        ]
+      },
+      "menubar-light-warm-high": {
+        "role": "primary",
+        "displayName": "Menu Bar Light Warm High",
+        "canonical": "#8A6400",
+        "tonalRamp": [
+          "#1F0000",
+          "#3D1A00",
+          "#5B3700",
+          "#7B5600",
+          "#A07925",
+          "#C69E4E",
+          "#EEC475",
+          "#FFE898"
+        ]
+      },
+      "menubar-light-hot": {
+        "role": "primary",
+        "displayName": "Menu Bar Light Hot",
+        "canonical": "#A04A00",
+        "tonalRamp": [
+          "#2E0000",
+          "#500000",
+          "#731F00",
+          "#964100",
+          "#BE652A",
+          "#E68A52",
+          "#FFB077",
+          "#FFD7A4"
+        ]
+      },
+      "menubar-light-burn-edge": {
+        "role": "primary",
+        "displayName": "Menu Bar Light Burn Edge",
+        "canonical": "#B8360F",
+        "tonalRamp": [
+          "#390000",
+          "#5E0000",
+          "#830000",
+          "#A92600",
+          "#D24F2D",
+          "#FD7653",
+          "#FF9D79",
+          "#FFD2B7"
+        ]
+      },
+      "menubar-light-max": {
+        "role": "primary",
+        "displayName": "Menu Bar Light Max",
+        "canonical": "#B3141A",
+        "tonalRamp": [
+          "#3D0000",
+          "#630000",
+          "#890000",
+          "#B00D17",
+          "#DA433D",
+          "#FF6B61",
+          "#FF9385",
+          "#FFCFC3"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Hero Flap",
+        "purpose": "Hero reading per board, 38x58pt cells."
+      },
+      "title": {
+        "displayName": "Row Flap",
+        "purpose": "All row values, names, stats, tabs, clock; 11.5x19pt cells."
+      },
+      "label": {
+        "displayName": "Column Label",
+        "purpose": "Column and stat labels, uppercase steel light."
+      },
+      "readout": {
+        "displayName": "Range Readout",
+        "purpose": "Lamp meter low to high range."
+      },
+      "menubar": {
+        "displayName": "Menu Bar",
+        "purpose": "Menu bar reading only, board face at 15pt to match system cap height."
+      }
+    },
+    "heatGradient": {
+      "positions": [
+        0,
+        0.3333,
+        0.55,
+        0.6667,
+        0.85,
+        1
+      ],
+      "dark": [
+        "#6F9CC8",
+        "#DCE6EE",
+        "#FFE3A3",
+        "#FFB000",
+        "#F25A2D",
+        "#E5383B"
+      ],
+      "light": [
+        "#2E6299",
+        "#4A5560",
+        "#8A6400",
+        "#A04A00",
+        "#B8360F",
+        "#B3141A"
+      ],
+      "interpolation": "linear RGB between stops",
+      "bands": {
+        "COOL": [
+          0,
+          0.3333
+        ],
+        "WARM": [
+          0.3333,
+          0.6667
+        ],
+        "HOT": [
+          0.6667,
+          0.85
+        ],
+        "BURN": [
+          0.85,
+          1
+        ]
+      },
+      "temperatureAnchorsC": {
+        "0": 30,
+        "warm": 50,
+        "hot": 75,
+        "burn": 90,
+        "1": 105
+      },
+      "loadAnchorsPercent": {
+        "0": 0,
+        "warm": 25,
+        "hot": 60,
+        "burn": 85,
+        "1": 100
+      }
+    },
+    "shadows": [
+      {
+        "name": "lamp-glow",
+        "value": "0 0.5pt 3pt <lamp color at 70%>",
+        "purpose": "Lit lamps only."
+      }
+    ],
+    "motion": [
+      {
+        "name": "flap-fall",
+        "value": "ease-in 0.08s",
+        "purpose": "Upper leaf falls."
+      },
+      {
+        "name": "flap-rise",
+        "value": "ease-out 0.1s",
+        "purpose": "Lower leaf rises."
+      },
+      {
+        "name": "flap-cascade",
+        "value": "28ms per cell",
+        "purpose": "Left-to-right stagger across a strip."
+      },
+      {
+        "name": "settle",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1) 0.5s",
+        "purpose": "Processes sliding to a new rank."
+      },
+      {
+        "name": "hover",
+        "value": "ease-out 0.12s",
+        "purpose": "Quit hover to amber."
+      },
+      {
+        "name": "reduce-motion",
+        "value": "none",
+        "purpose": "Flips swap instantly; rank changes do not animate."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "popover",
+        "value": "400pt fixed"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Flap Strip (row)",
+      "kind": "custom",
+      "refersTo": "flap-strip-row",
+      "description": "Housed split-flap cells; every board value is set in one.",
+      "html": "<span class=\"ds-strip\"><span class=\"ds-cell\" style=\"color:#E5383B\">P</span><span class=\"ds-cell\" style=\"color:#E5383B\">M</span><span class=\"ds-cell\" style=\"color:#E5383B\">U</span><span class=\"ds-cell\" style=\"color:#E5383B\">&nbsp;</span><span class=\"ds-cell\" style=\"color:#E5383B\">T</span><span class=\"ds-cell\" style=\"color:#E5383B\">D</span><span class=\"ds-cell\" style=\"color:#E5383B\">I</span><span class=\"ds-cell\" style=\"color:#E5383B\">E</span><span class=\"ds-cell\" style=\"color:#E5383B\">6</span><span class=\"ds-cell\" style=\"color:#E5383B\">&nbsp;</span></span>",
+      "css": ".ds-strip{display:inline-flex;gap:1.5px;padding:1.5px;background:#0B0B0D;border-radius:2.5px;} .ds-cell{position:relative;display:inline-flex;align-items:center;justify-content:center;width:11.5px;height:19px;border-radius:1.5px;background:linear-gradient(#242529 0 50%,#1B1C1F 50% 100%);font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-weight:600;font-size:15px;line-height:1;} .ds-cell::after{content:'';position:absolute;left:0;right:0;top:50%;height:0.5px;background:rgba(11,11,13,.55);}"
+    },
+    {
+      "name": "Flap Strip (hero)",
+      "kind": "custom",
+      "refersTo": "flap-strip-hero",
+      "description": "The hero reading at the top of each board, with hinge and axle pins.",
+      "html": "<span class=\"ds-hero\"><span class=\"ds-hcell\" style=\"color:#F25A2D\">9</span><span class=\"ds-hcell\" style=\"color:#F25A2D\">3</span><span class=\"ds-hcell\" style=\"color:#F25A2D\">°</span></span>",
+      "css": ".ds-hero{display:inline-flex;gap:3px;padding:3px;background:#0B0B0D;border-radius:5px;} .ds-hcell{position:relative;display:inline-flex;align-items:center;justify-content:center;width:38px;height:58px;border-radius:3px;background:linear-gradient(#242529 0 50%,#1B1C1F 50% 100%);font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-weight:600;font-size:50px;line-height:1;} .ds-hcell::after{content:'';position:absolute;left:0;right:0;top:calc(50% - 1px);height:2px;background:#0B0B0D;} .ds-hcell::before{content:'';position:absolute;left:-2px;right:-2px;top:calc(50% - 3px);height:6px;background:linear-gradient(90deg,#5B5E63 2.5px,transparent 2.5px calc(100% - 2.5px),#5B5E63 calc(100% - 2.5px));}"
+    },
+    {
+      "name": "Flap Tabs",
+      "kind": "nav",
+      "refersTo": "flap-tab",
+      "description": "Lamp plus 4-cell strip per option; the selected option's lamp lights amber.",
+      "html": "<div class=\"ds-tabs\"><button class=\"ds-tab ds-on\"><i class=\"ds-lamp\"></i><span class=\"ds-strip\"><span class=\"ds-cell\" style=\"color:#F2F2F2\">H</span><span class=\"ds-cell\" style=\"color:#F2F2F2\">E</span><span class=\"ds-cell\" style=\"color:#F2F2F2\">A</span><span class=\"ds-cell\" style=\"color:#F2F2F2\">T</span></span></button><button class=\"ds-tab\"><i class=\"ds-lamp\"></i><span class=\"ds-strip\"><span class=\"ds-cell\" style=\"color:#A7AAAF\">C</span><span class=\"ds-cell\" style=\"color:#A7AAAF\">P</span><span class=\"ds-cell\" style=\"color:#A7AAAF\">U</span><span class=\"ds-cell\" style=\"color:#A7AAAF\">&nbsp;</span></span></button></div>",
+      "css": ".ds-strip{display:inline-flex;gap:1.5px;padding:1.5px;background:#0B0B0D;border-radius:2.5px;} .ds-cell{position:relative;display:inline-flex;align-items:center;justify-content:center;width:11.5px;height:19px;border-radius:1.5px;background:linear-gradient(#242529 0 50%,#1B1C1F 50% 100%);font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-weight:600;font-size:15px;line-height:1;} .ds-cell::after{content:'';position:absolute;left:0;right:0;top:50%;height:0.5px;background:rgba(11,11,13,.55);} .ds-tabs{display:flex;gap:10px;background:#2A2D31;padding:14px;} .ds-tab{display:inline-flex;align-items:center;gap:5px;background:none;border:0;padding:0;cursor:pointer;} .ds-lamp{width:6px;height:6px;border-radius:50%;background:#1E1F23;} .ds-on .ds-lamp{background:#FFB000;box-shadow:0 .5px 3px rgba(255,176,0,.7);} .ds-tab:focus-visible{outline:1px solid #FFB000;outline-offset:2px;}"
+    },
+    {
+      "name": "Quit Button",
+      "kind": "button",
+      "refersTo": "quit-button",
+      "description": "QUIT strip with a key segment; amber on hover.",
+      "html": "<button class=\"ds-quit\"><span class=\"ds-strip\"><span class=\"ds-cell\" style=\"color:currentColor\">Q</span><span class=\"ds-cell\" style=\"color:currentColor\">U</span><span class=\"ds-cell\" style=\"color:currentColor\">I</span><span class=\"ds-cell\" style=\"color:currentColor\">T</span></span><span class=\"ds-key\">⌘Q</span></button>",
+      "css": ".ds-strip{display:inline-flex;gap:1.5px;padding:1.5px;background:#0B0B0D;border-radius:2.5px;} .ds-cell{position:relative;display:inline-flex;align-items:center;justify-content:center;width:11.5px;height:19px;border-radius:1.5px;background:linear-gradient(#242529 0 50%,#1B1C1F 50% 100%);font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-weight:600;font-size:15px;line-height:1;} .ds-cell::after{content:'';position:absolute;left:0;right:0;top:50%;height:0.5px;background:rgba(11,11,13,.55);} .ds-quit{display:inline-flex;gap:3px;align-items:center;background:none;border:0;padding:0;color:#F2F2F2;cursor:pointer;transition:color .12s ease-out;} .ds-key{display:inline-flex;align-items:center;justify-content:center;width:26px;height:19px;border:1.5px solid #0B0B0D;border-radius:2.5px;background:#242529;color:#A7AAAF;font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-weight:600;font-size:13px;transition:color .12s ease-out;} .ds-quit:hover,.ds-quit:hover .ds-key,.ds-quit:focus-visible,.ds-quit:focus-visible .ds-key{color:#FFB000;}"
+    },
+    {
+      "name": "Board Panel with Departure Rows",
+      "kind": "card",
+      "refersTo": "board-panel",
+      "description": "Black panel with steel hairline holding fixed-order departure rows.",
+      "html": "<div class=\"ds-panel\"><div class=\"ds-lbl\">SENSOR</div><div class=\"ds-row\"><i class=\"ds-lamp ds-lit\" style=\"background:#F25A2D\"></i><span class=\"ds-strip\"><span class=\"ds-cell\" style=\"color:#E5383B\">P</span><span class=\"ds-cell\" style=\"color:#E5383B\">M</span><span class=\"ds-cell\" style=\"color:#E5383B\">U</span><span class=\"ds-cell\" style=\"color:#E5383B\">&nbsp;</span><span class=\"ds-cell\" style=\"color:#E5383B\">T</span><span class=\"ds-cell\" style=\"color:#E5383B\">D</span><span class=\"ds-cell\" style=\"color:#E5383B\">I</span><span class=\"ds-cell\" style=\"color:#E5383B\">E</span><span class=\"ds-cell\" style=\"color:#E5383B\">6</span><span class=\"ds-cell\" style=\"color:#E5383B\">&nbsp;</span></span><span class=\"ds-strip\"><span class=\"ds-cell\" style=\"color:#E5383B\">&nbsp;</span><span class=\"ds-cell\" style=\"color:#E5383B\">9</span><span class=\"ds-cell\" style=\"color:#E5383B\">3</span></span><span class=\"ds-strip\"><span class=\"ds-cell\" style=\"color:#E5383B\">B</span><span class=\"ds-cell\" style=\"color:#E5383B\">U</span><span class=\"ds-cell\" style=\"color:#E5383B\">R</span><span class=\"ds-cell\" style=\"color:#E5383B\">N</span></span></div><div class=\"ds-row\"><i class=\"ds-lamp\"></i><span class=\"ds-strip\"><span class=\"ds-cell\" style=\"color:#A7AAAF\">P</span><span class=\"ds-cell\" style=\"color:#A7AAAF\">M</span><span class=\"ds-cell\" style=\"color:#A7AAAF\">U</span><span class=\"ds-cell\" style=\"color:#A7AAAF\">&nbsp;</span><span class=\"ds-cell\" style=\"color:#A7AAAF\">T</span><span class=\"ds-cell\" style=\"color:#A7AAAF\">D</span><span class=\"ds-cell\" style=\"color:#A7AAAF\">E</span><span class=\"ds-cell\" style=\"color:#A7AAAF\">V</span><span class=\"ds-cell\" style=\"color:#A7AAAF\">1</span><span class=\"ds-cell\" style=\"color:#A7AAAF\">&nbsp;</span></span><span class=\"ds-strip\"><span class=\"ds-cell\" style=\"color:#FFE3A3\">&nbsp;</span><span class=\"ds-cell\" style=\"color:#FFE3A3\">7</span><span class=\"ds-cell\" style=\"color:#FFE3A3\">1</span></span><span class=\"ds-strip\"><span class=\"ds-cell\" style=\"color:#FFE3A3\">W</span><span class=\"ds-cell\" style=\"color:#FFE3A3\">A</span><span class=\"ds-cell\" style=\"color:#FFE3A3\">R</span><span class=\"ds-cell\" style=\"color:#FFE3A3\">M</span></span></div><div class=\"ds-row\"><i class=\"ds-lamp\"></i><span class=\"ds-strip\"><span class=\"ds-cell\" style=\"color:#A7AAAF\">S</span><span class=\"ds-cell\" style=\"color:#A7AAAF\">Y</span><span class=\"ds-cell\" style=\"color:#A7AAAF\">S</span><span class=\"ds-cell\" style=\"color:#A7AAAF\">T</span><span class=\"ds-cell\" style=\"color:#A7AAAF\">E</span><span class=\"ds-cell\" style=\"color:#A7AAAF\">M</span><span class=\"ds-cell\" style=\"color:#A7AAAF\">&nbsp;</span><span class=\"ds-cell\" style=\"color:#A7AAAF\">&nbsp;</span><span class=\"ds-cell\" style=\"color:#A7AAAF\">&nbsp;</span><span class=\"ds-cell\" style=\"color:#A7AAAF\">&nbsp;</span></span><span class=\"ds-strip\"><span class=\"ds-cell\" style=\"color:#A7AAAF\">4</span><span class=\"ds-cell\" style=\"color:#A7AAAF\">0</span><span class=\"ds-cell\" style=\"color:#A7AAAF\">3</span></span><span class=\"ds-strip\"><span class=\"ds-cell\" style=\"color:#F2F2F2\">&nbsp;</span><span class=\"ds-cell\" style=\"color:#F2F2F2\">&nbsp;</span><span class=\"ds-cell\" style=\"color:#F2F2F2\">&nbsp;</span><span class=\"ds-cell\" style=\"color:#F2F2F2\">&nbsp;</span></span></div></div>",
+      "css": ".ds-strip{display:inline-flex;gap:1.5px;padding:1.5px;background:#0B0B0D;border-radius:2.5px;} .ds-cell{position:relative;display:inline-flex;align-items:center;justify-content:center;width:11.5px;height:19px;border-radius:1.5px;background:linear-gradient(#242529 0 50%,#1B1C1F 50% 100%);font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-weight:600;font-size:15px;line-height:1;} .ds-cell::after{content:'';position:absolute;left:0;right:0;top:50%;height:0.5px;background:rgba(11,11,13,.55);} .ds-panel{background:#0B0B0D;border:1px solid rgba(91,94,99,.45);border-radius:5px;padding:8px;display:flex;flex-direction:column;gap:3px;} .ds-row{display:flex;align-items:center;gap:6px;} .ds-lamp{width:6px;height:6px;border-radius:50%;background:#1E1F23;flex:none;} .ds-lit{box-shadow:0 .5px 3px rgba(242,90,45,.7);} .ds-lbl{font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-weight:500;font-size:11px;letter-spacing:1.6px;color:#A7AAAF;padding-left:12px;}"
+    },
+    {
+      "name": "Column Label",
+      "kind": "custom",
+      "refersTo": "column-label",
+      "description": "Steel tracked caps naming a column or stat.",
+      "html": "<span class=\"ds-col\">PRESSURE</span>",
+      "css": ".ds-col{font-family:'Barlow Condensed','Arial Narrow',sans-serif;font-weight:500;font-size:11px;letter-spacing:1.6px;color:#A7AAAF;}"
+    },
+    {
+      "name": "Lamp Meter",
+      "kind": "custom",
+      "refersTo": "board-panel",
+      "description": "30 time columns by 8 rows of lenses tinted from the heat gradient; danger rows show dim when unlit.",
+      "html": "<div class=\"ds-meter\"><i style=\"background:#E5383B33\"></i><i style=\"background:#F25A2D29\"></i><i style=\"background:#FFB000\"></i><i style=\"background:#FFE3A3\"></i><i style=\"background:#DCE6EE\"></i><i style=\"background:#A5C1DB\"></i><i style=\"background:#E5383B33\"></i><i style=\"background:#F25A2D29\"></i><i style=\"background:#FFB000\"></i><i style=\"background:#FFE3A3\"></i><i style=\"background:#DCE6EE\"></i><i style=\"background:#A5C1DB\"></i><i style=\"background:#E5383B33\"></i><i style=\"background:#F25A2D29\"></i><i style=\"background:#FFB000\"></i><i style=\"background:#FFE3A3\"></i><i style=\"background:#DCE6EE\"></i><i style=\"background:#A5C1DB\"></i><i style=\"background:#E5383B33\"></i><i style=\"background:#F25A2D29\"></i><i style=\"background:#FFB000\"></i><i style=\"background:#FFE3A3\"></i><i style=\"background:#DCE6EE\"></i><i style=\"background:#A5C1DB\"></i><i style=\"background:#E5383B33\"></i><i style=\"background:#F25A2D29\"></i><i style=\"background:#FFB000\"></i><i style=\"background:#FFE3A3\"></i><i style=\"background:#DCE6EE\"></i><i style=\"background:#A5C1DB\"></i></div>",
+      "css": ".ds-meter{display:grid;grid-template-columns:repeat(10,10px);grid-auto-flow:column;grid-template-rows:repeat(6,5px);gap:1.5px;background:#0B0B0D;padding:8px;border-radius:5px;border:1px solid rgba(91,94,99,.45);width:max-content;} .ds-meter i{border-radius:1px;}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Concourse Departure Board",
+    "overview": "Thermals is a rail concourse departure board where sensors, cores and processes are departures and heat is what lights them. Every reading is set in matte split-flap cells (two leaves with a hinge gap, axle pins on the large cells) inside black housings, mounted on a steel frame. Type is Barlow Condensed in capitals throughout the board. Color is not decoration: a cell's ink and a lamp's glow come from one continuous heat gradient, so the board reads hot or cool before a single number is parsed.\n\nThe board is dense and ordered the way a real departures board is. Rows hold their position (sensors by natural name, cores P1.. then E1..) so the eye can return to the same slot; only the user's processes are ranked, and they slide to their new rank rather than jumping. The popover is a fixed 400pt wide, and both boards (HEAT and CPU) share one height so the footer and Quit never move when switching. The board is always rendered dark, regardless of system appearance; only the menu bar reading adapts to a light scheme.\n\nThis world was chosen by the owner over a liquid-crystal strip. It refuses the stock stats popover (gauges, rings, system-gray list rows) and refuses gamer RGB: no rainbow cycling, no neon, no glow beyond a lit lamp.",
+    "keyCharacteristics": [
+      "Split-flap cells for every value; steel column labels name the data.",
+      "One heat gradient, continuous within bands, shared by the popover and the menu bar.",
+      "Fixed row order; only processes rank, and they animate to their new place.",
+      "Four named heat bands (COOL, WARM, HOT, BURN) spelled out on the board as STATUS.",
+      "Steel frame, black housings, matte flaps; no cards, no translucency, no system materials inside the board."
+    ],
+    "rules": [
+      {
+        "name": "The One Gradient Rule",
+        "body": "Every heat-colored element, in the popover and the menu bar, takes its color from `Board.heat(level)`. No element picks a band color by hand, and color is continuous within a band, never stepped.",
+        "section": "colors"
+      },
+      {
+        "name": "The Derived Is Neutral Rule",
+        "body": "An aggregate the app derives rather than measures (SYSTEM + OTHERS) is shown in steel light with an unlit lamp and an empty STATUS. It is never banded with per-process thresholds.",
+        "section": "colors"
+      },
+      {
+        "name": "The Always Colored Rule",
+        "body": "The menu bar reading is always heat-colored (rendered as a non-template image), in both appearances, and its level is raised to at least HOT under serious and BURN under critical thermal pressure.",
+        "section": "colors"
+      },
+      {
+        "name": "The Pressure Is A State Rule",
+        "body": "Thermal pressure is a discrete OS state, not a reading, so it uses four fixed inks (NOMINAL steel light, FAIR letter white, SERIOUS amber, CRITICAL burn red), not the gradient.",
+        "section": "colors"
+      },
+      {
+        "name": "The Cell Is The Unit Rule",
+        "body": "Board text is set character by character into a fixed count of flap cells, uppercased, padded with blank cells or truncated to fit. Numbers are right-aligned in their strip; names are left-aligned.",
+        "section": "typography"
+      },
+      {
+        "name": "The Two Sizes Rule",
+        "body": "Flap text comes in exactly two sizes, hero and row. Hierarchy beyond that comes from position and heat color, not new sizes.",
+        "section": "typography"
+      },
+      {
+        "name": "The Fixed Platform Rule",
+        "body": "Measured rows keep a fixed order: sensors by natural name, cores P1.. then E1... Rows never re-sort by value; ranked rows that jump were rejected.",
+        "section": "layout"
+      },
+      {
+        "name": "The Still Footer Rule",
+        "body": "Both boards are laid out at all times and the popover takes the taller height, so switching boards never moves the footer. The HEAT board fills spare height with blank flap rows (unlit lamp, empty strips), never with empty space; past the space available, sensors scroll.",
+        "section": "layout"
+      },
+      {
+        "name": "The Housing Not Shadow Rule",
+        "body": "Separation is a black housing or a panel with a 1pt steel-mid hairline at 45%; never a drop shadow, blur or vibrancy material inside the board.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do take every reading's color from `Board.heat(level)`, dark stops in the popover and light stops on a light menu bar.",
+      "Do set board values in flap strips at hero (38 x 58pt) or row (11.5 x 19pt) size, uppercase, numbers right-aligned.",
+      "Do keep measured rows in fixed order and pad short boards with blank flap rows so the footer stays put.",
+      "Do spell the band out as COOL, WARM, HOT or BURN in a STATUS column wherever a row is banded.",
+      "Do honor Reduce Motion: flips swap instantly and ranked rows stop animating.",
+      "Do show placeholders (--, UNAVAILABLE, SAMPLING, COLLECTING READINGS) in steel light rather than a guessed value."
+    ],
+    "donts": [
+      "Don't use gauges, rings or system-gray list rows; the board is flaps, lamps and lenses.",
+      "Don't use gamer RGB: no rainbow cycling, neon, or glow beyond a lit lamp.",
+      "Don't step colors per band or hand-pick a band color; the gradient is continuous within bands.",
+      "Don't sort measured rows by value or let rows jump; only processes rank, and they slide.",
+      "Don't band a derived aggregate; SYSTEM + OTHERS stays neutral steel.",
+      "Don't let the menu bar reading fall back to a monochrome template.",
+      "Don't add drop shadows, blur or vibrancy inside the board."
+    ]
+  }
+}
