@@ -29,7 +29,7 @@ Readings refresh every 2 seconds.
 
 ## Boards
 
-The popover has two boards, switched with the HEAT / CPU tabs or ⌘1 / ⌘2: HEAT (sensors in fixed name order) and CPU (total load, cores by cluster, your top processes). Process rows are ranked by CPU and slide to their new rank.
+The popover has two boards, switched with the HEAT / CPU tabs or ⌘1 / ⌘2: HEAT (sensors in fixed name order) and CPU (total load, cores by cluster, your top processes). Process rows are ranked by CPU and slide to their new rank. The HEAT board's sensor panel fills the popover's shared height, padding with blank flap rows. Both LAST 3 MIN meters fit their eight rows to the window's range (at least 10°C or 20% load), while each row keeps its absolute heat color.
 
 ## Heat bands
 

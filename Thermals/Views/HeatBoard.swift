@@ -8,7 +8,7 @@ struct HeatBoard: View {
             header
             LampMeter(
                 values: monitor.history.map(\.celsius),
-                rowFloors: LampMeter.temperatureRows,
+                scale: .temperature,
                 level: HeatLevel.init(celsius:),
                 unit: "°",
                 accessibilityName: "CPU temperature"
@@ -38,7 +38,7 @@ struct HeatBoard: View {
     }
 }
 
-private struct SensorBoard: View {
+struct SensorBoard: View {
     let sensors: [SensorReading]
 
     static let nameCells = 18
@@ -46,7 +46,7 @@ private struct SensorBoard: View {
     static let statusCells = 4
     static let columnSpacing: CGFloat = 6
     static let rowSpacing: CGFloat = 3
-    static let visibleRows = 12
+    static let minimumRows = 8
 
     @Environment(\.snapshotRendering) private var snapshotRendering
 
@@ -59,6 +59,29 @@ private struct SensorBoard: View {
                     ColumnLabel("°C"),
                     ColumnLabel("STATUS")
                 )
+                // Takes whatever height the popover gives it; blank flap rows fill what the sensors don't.
+                Color.clear
+                    .frame(height: Self.height(rows: Self.minimumRows))
+                    .frame(maxHeight: .infinity)
+                    .overlay(alignment: .top) {
+                        GeometryReader { geometry in
+                            list(fitting: Self.rowsThatFit(height: geometry.size.height))
+                        }
+                    }
+            }
+        }
+    }
+
+    @ViewBuilder private func list(fitting fit: Int) -> some View {
+        if sensors.count > fit {
+            if snapshotRendering {
+                rows.frame(height: Self.height(rows: fit), alignment: .top).clipped()
+            } else {
+                ScrollView(.vertical) { rows }
+                    .frame(height: Self.height(rows: fit))
+            }
+        } else {
+            VStack(alignment: .leading, spacing: Self.rowSpacing) {
                 if sensors.isEmpty {
                     columns(
                         Lamp(lit: false, color: Board.steelLight),
@@ -66,12 +89,9 @@ private struct SensorBoard: View {
                         FlapText(text: "--", cells: Self.tempCells, ink: Board.steelLight, alignment: .trailing),
                         FlapText(text: "", cells: Self.statusCells)
                     )
-                } else if snapshotRendering {
-                    rows.frame(height: listHeight, alignment: .top).clipped()
-                } else {
-                    ScrollView(.vertical) { rows }
-                        .frame(height: listHeight)
                 }
+                ForEach(sensors, id: \.name, content: row)
+                ForEach(0..<max(0, fit - max(sensors.count, 1)), id: \.self) { _ in blankRow }
             }
         }
     }
@@ -82,9 +102,22 @@ private struct SensorBoard: View {
         }
     }
 
-    private var listHeight: CGFloat {
-        let rows = CGFloat(min(sensors.count, Self.visibleRows))
-        return rows * FlapSize.row.stripHeight + max(0, rows - 1) * Self.rowSpacing
+    private var blankRow: some View {
+        columns(
+            Lamp(lit: false, color: Board.steelLight),
+            FlapText(text: "", cells: Self.nameCells),
+            FlapText(text: "", cells: Self.tempCells),
+            FlapText(text: "", cells: Self.statusCells)
+        )
+        .accessibilityHidden(true)
+    }
+
+    static func height(rows: Int) -> CGFloat {
+        CGFloat(rows) * FlapSize.row.stripHeight + CGFloat(max(0, rows - 1)) * rowSpacing
+    }
+
+    static func rowsThatFit(height: CGFloat) -> Int {
+        max(1, Int((height + rowSpacing) / (FlapSize.row.stripHeight + rowSpacing)))
     }
 
     private func row(_ sensor: SensorReading) -> some View {

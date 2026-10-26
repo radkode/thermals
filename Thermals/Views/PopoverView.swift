@@ -31,6 +31,7 @@ struct PopoverView: View {
                         case .cpu: CPUBoard(monitor: monitor)
                         }
                     }
+                    .frame(maxHeight: .infinity, alignment: .top)
                     .opacity(shown ? 1 : 0)
                     .allowsHitTesting(shown)
                     .accessibilityHidden(!shown)

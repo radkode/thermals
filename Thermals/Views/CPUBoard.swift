@@ -9,7 +9,7 @@ struct CPUBoard: View {
             header
             LampMeter(
                 values: monitor.loadHistory,
-                rowFloors: LampMeter.loadRows,
+                scale: .load,
                 level: HeatLevel.init(loadPercent:),
                 unit: "%",
                 accessibilityName: "CPU load"

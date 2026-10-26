@@ -108,16 +108,35 @@ struct BoardStat: View {
     }
 }
 
-/// Three minutes of readings as a bank of lamps: columns are time, rows a fixed scale, each row's lens tinted by its band.
+/// Row scale for a lamp meter: fitted to the window's readings, never narrower than `minimumSpan`, kept inside `bounds`.
+struct MeterScale {
+    let rows: Int
+    let minimumSpan: Double
+    let bounds: ClosedRange<Double>
+
+    static let temperature = MeterScale(rows: 8, minimumSpan: 10, bounds: 20...110)
+    static let load = MeterScale(rows: 8, minimumSpan: 20, bounds: 0...100)
+
+    /// Evenly spaced row floors, lowest first; the bottom row sits at the window's low and the top at its high.
+    func floors(for values: [Double]) -> [Double] {
+        let low = values.min() ?? bounds.lowerBound
+        let high = values.max() ?? bounds.upperBound
+        let span = min(max(high - low, minimumSpan), bounds.upperBound - bounds.lowerBound)
+        let start = min(max((low + high) / 2 - span / 2, bounds.lowerBound), bounds.upperBound - span)
+        let fitted = high - low >= minimumSpan ? low : start
+        return (0..<rows).map { fitted + span * Double($0) / Double(max(rows - 1, 1)) }
+    }
+}
+
+/// Three minutes of readings as a bank of lamps: columns are time, rows a scale fitted to the window, each lens tinted from the heat gradient at its row's value.
 struct LampMeter: View {
     let values: [Double]
-    let rowFloors: [Double]
+    let scale: MeterScale
     let level: (Double) -> HeatLevel
     let unit: String
     let accessibilityName: String
 
     static let columns = 30
-    static let temperatureRows: [Double] = [30, 40, 50, 60, 70, 80, 90, 100]
     static let loadRows: [Double] = [1, 12.5, 25, 37.5, 50, 62.5, 75, 87.5]
 
     var body: some View {
@@ -154,7 +173,7 @@ struct LampMeter: View {
 
     private var lamps: some View {
         let columns = Self.columnPeaks(values)
-        let rows = rowFloors.map { (floor: $0, level: level($0)) }
+        let rows = scale.floors(for: values).map { (floor: $0, level: level($0)) }
         return Canvas { context, size in
             let gap: CGFloat = 1.5
             let cellWidth = (size.width - gap * CGFloat(Self.columns - 1)) / CGFloat(Self.columns)
@@ -162,7 +181,7 @@ struct LampMeter: View {
             for column in 0..<Self.columns {
                 let peak = columns[column]
                 for (index, row) in rows.enumerated() {
-                    let lit = peak.map { $0 >= row.floor } ?? false
+                    let lit = peak.map { $0 >= row.floor - 1e-9 } ?? false
                     let rect = CGRect(
                         x: CGFloat(column) * (cellWidth + gap),
                         y: size.height - CGFloat(index + 1) * cellHeight - CGFloat(index) * gap,

@@ -230,3 +230,32 @@ struct HeatLevelTests {
         }
     }
 }
+
+struct MeterScaleTests {
+    @Test func fitsRowsToTheWindowRange() {
+        let floors = MeterScale.temperature.floors(for: [40, 52, 60])
+        #expect(floors.count == 8)
+        #expect(floors.first == 40)
+        #expect(abs(floors.last! - 60) < 1e-9)
+    }
+
+    @Test func narrowRangeWidensToMinimumSpanAroundTheMiddle() {
+        let floors = MeterScale.temperature.floors(for: [45, 47])
+        #expect(floors.first == 41)
+        #expect(abs(floors.last! - 51) < 1e-9)
+    }
+
+    @Test func staysInsideBounds() {
+        let floors = MeterScale.load.floors(for: [0, 5])
+        #expect(floors.first == 0)
+        #expect(abs(floors.last! - 20) < 1e-9)
+    }
+}
+
+@MainActor
+struct SensorBoardFillTests {
+    @Test func rowsThatFitMatchesRowHeight() {
+        #expect(SensorBoard.rowsThatFit(height: SensorBoard.height(rows: 8)) == 8)
+        #expect(SensorBoard.rowsThatFit(height: SensorBoard.height(rows: 8) - 1) == 7)
+    }
+}
