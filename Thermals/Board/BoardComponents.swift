@@ -130,7 +130,7 @@ struct MeterScale {
 
 /// Three minutes of readings as a bank of lamps: columns are time, rows a scale fitted to the window, each lens tinted from the heat gradient at its row's value.
 struct LampMeter: View {
-    let values: [Double]
+    let readings: [TimedValue]
     let scale: MeterScale
     let level: (Double) -> HeatLevel
     let unit: String
@@ -138,6 +138,8 @@ struct LampMeter: View {
 
     static let columns = 30
     static let loadRows: [Double] = [1, 12.5, 25, 37.5, 50, 62.5, 75, 87.5]
+
+    private var values: [Double] { readings.map(\.value) }
 
     var body: some View {
         BoardPanel {
@@ -172,7 +174,7 @@ struct LampMeter: View {
     }
 
     private var lamps: some View {
-        let columns = Self.columnPeaks(values)
+        let columns = Self.columnPeaks(readings)
         let rows = scale.floors(for: values).map { (floor: $0, level: level($0)) }
         return Canvas { context, size in
             let gap: CGFloat = 1.5
@@ -195,15 +197,16 @@ struct LampMeter: View {
         }
     }
 
-    /// Peak reading per column, newest column last; empty columns are nil.
-    static func columnPeaks(_ values: [Double]) -> [Double?] {
-        let perColumn = max(1, Monitor.historyLength / columns)
+    /// Peak reading per equal slice of the window, newest slice last and ending at the newest reading; empty slices are nil.
+    static func columnPeaks(_ readings: [TimedValue], window: TimeInterval = Monitor.historyWindow) -> [Double?] {
         var peaks = [Double?](repeating: nil, count: columns)
-        let recent = values.suffix(perColumn * columns)
-        let offset = perColumn * columns - recent.count
-        for (index, value) in recent.enumerated() {
-            let column = (offset + index) / perColumn
-            peaks[column] = max(peaks[column] ?? -.infinity, value)
+        guard let newest = readings.last?.date else { return peaks }
+        let slice = window / Double(columns)
+        for reading in readings {
+            let age = newest.timeIntervalSince(reading.date)
+            guard age >= 0, age < window else { continue }
+            let column = columns - 1 - Int(age / slice)
+            peaks[column] = max(peaks[column] ?? -.infinity, reading.value)
         }
         return peaks
     }
@@ -240,6 +243,21 @@ enum MenuBarItem: String, FlapTabOption {
         case .both: "BOTH"
         }
     }
+}
+
+/// How often readings refresh.
+enum SampleRate: String, FlapTabOption {
+    case three, six, ten
+
+    var seconds: TimeInterval {
+        switch self {
+        case .three: 3
+        case .six: 6
+        case .ten: 10
+        }
+    }
+
+    var title: String { "\(Int(seconds)) S" }
 }
 
 /// Flap-strip tabs; the selected option's lamp is lit. With `shortcuts`, ⌘1, ⌘2… select in order.

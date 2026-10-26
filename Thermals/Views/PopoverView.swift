@@ -42,6 +42,11 @@ struct PopoverView: View {
                 Spacer()
                 FlapTabs(selection: $menuBarItem, noun: "in menu bar")
             }
+            HStack {
+                ColumnLabel("UPDATE EVERY")
+                Spacer()
+                FlapTabs(selection: Binding(get: { monitor.rate }, set: { monitor.rate = $0 }), noun: "update interval")
+            }
             footer
         }
         .padding(14)

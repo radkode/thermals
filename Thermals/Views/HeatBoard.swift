@@ -7,7 +7,7 @@ struct HeatBoard: View {
         VStack(alignment: .leading, spacing: 14) {
             header
             LampMeter(
-                values: monitor.history.map(\.celsius),
+                readings: monitor.history,
                 scale: .temperature,
                 level: HeatLevel.init(celsius:),
                 unit: "°",

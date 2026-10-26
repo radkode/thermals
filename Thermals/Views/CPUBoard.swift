@@ -8,7 +8,7 @@ struct CPUBoard: View {
         VStack(alignment: .leading, spacing: 14) {
             header
             LampMeter(
-                values: monitor.loadHistory,
+                readings: monitor.loadHistory,
                 scale: .load,
                 level: HeatLevel.init(loadPercent:),
                 unit: "%",

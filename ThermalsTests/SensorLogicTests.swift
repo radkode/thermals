@@ -89,18 +89,23 @@ struct ByNameTests {
 
 @MainActor
 struct LampMeterTests {
-    @Test func newestReadingsFillRightmostColumns() {
-        let peaks = LampMeter.columnPeaks([40, 55, 50, 61])
+    private let newest = Date(timeIntervalSince1970: 1_000)
+
+    private func reading(_ secondsAgo: Double, _ value: Double) -> TimedValue {
+        TimedValue(date: newest.addingTimeInterval(-secondsAgo), value: value)
+    }
+
+    @Test func columnsAreTimeSlicesEndingAtTheNewestReading() {
+        let peaks = LampMeter.columnPeaks([reading(7, 50), reading(3, 61), reading(0, 55)])
         #expect(peaks.count == LampMeter.columns)
-        #expect(peaks.suffix(2) == [40, 61])
+        #expect(peaks.last == 61)
+        #expect(peaks[LampMeter.columns - 2] == 50)
         #expect(peaks.dropLast(2).allSatisfy { $0 == nil })
     }
 
-    @Test func fullHistoryUsesPeakPerColumn() {
-        let values = (0..<Monitor.historyLength).map { Double($0) }
-        let peaks = LampMeter.columnPeaks(values)
-        #expect(peaks.first == 2)
-        #expect(peaks.last == Double(Monitor.historyLength - 1))
+    @Test func readingsOlderThanTheWindowAreDropped() {
+        let peaks = LampMeter.columnPeaks([reading(Monitor.historyWindow + 1, 99), reading(0, 40)])
+        #expect(peaks.compactMap { $0 } == [40])
     }
 }
 

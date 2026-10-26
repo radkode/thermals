@@ -13,18 +13,19 @@ enum PreviewMonitors {
             SensorReading(id: index, name: name, celsius: peak - Double(index) * (peak > 80 ? 4.5 : 1.4))
         }
         let now = Date.now
-        let steps = 0..<Monitor.historyLength
-        let curve = steps.map { step -> Double in
-            let t = Double(step) / Double(Monitor.historyLength)
+        let count = 30
+        let step = Monitor.historyWindow / Double(count)
+        let curve = (0..<count).map { index -> Double in
+            let t = Double(index) / Double(count)
             return (1 - t) * (1 - t)
         }
-        let history = steps.map { step in
-            TemperatureSample(
-                date: now.addingTimeInterval(Double(step - Monitor.historyLength) * Monitor.interval),
-                celsius: peak - 28 * curve[step] + 1.5 * sin(Double(step) / 3)
-            )
+        let dates = (0..<count).map { now.addingTimeInterval(Double($0 - count + 1) * step) }
+        let history = (0..<count).map { index in
+            TimedValue(date: dates[index], value: peak - 28 * curve[index] + 1.5 * sin(Double(index)))
         }
-        let loadHistory = steps.map { step in max(0, min(100, load * 100 - 60 * load * curve[step] + 6 * sin(Double(step) / 2))) }
+        let loadHistory = (0..<count).map { index in
+            TimedValue(date: dates[index], value: max(0, min(100, load * 100 - 60 * load * curve[index] + 6 * sin(Double(index) * 1.7))))
+        }
         let coreLoads = (1...6).map { CoreLoad(name: "P\($0)", cluster: .performance, usage: min(1, load * (1.1 - Double($0) * 0.08))) }
             + (1...6).map { CoreLoad(name: "E\($0)", cluster: .efficiency, usage: min(1, load * (0.5 - Double($0) * 0.05))) }
         let processes = [("Xcode", 3.1), ("swift-frontend", 2.4), ("Google Chrome", 0.9), ("Music", 0.45), ("Slack", 0.2), ("Finder", 0.04)]
