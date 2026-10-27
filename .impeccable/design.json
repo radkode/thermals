@@ -508,7 +508,7 @@
       },
       {
         "name": "The Derived Is Neutral Rule",
-        "body": "An aggregate the app derives rather than measures (SYSTEM + OTHERS) is shown in steel light with an unlit lamp and an empty STATUS. It is never banded with per-process thresholds.",
+        "body": "An aggregate the app derives rather than measures (KERNEL + OTHERS) is shown in steel light with an unlit lamp and an empty STATUS. It is never banded with per-process thresholds.",
         "section": "colors"
       },
       {
@@ -560,7 +560,7 @@
       "Don't use gamer RGB: no rainbow cycling, neon, or glow beyond a lit lamp.",
       "Don't step colors per band or hand-pick a band color; the gradient is continuous within bands.",
       "Don't sort measured rows by value or let rows jump; only processes rank, and they slide.",
-      "Don't band a derived aggregate; SYSTEM + OTHERS stays neutral steel.",
+      "Don't band a derived aggregate; KERNEL + OTHERS stays neutral steel.",
       "Don't let the menu bar reading fall back to a monochrome template.",
       "Don't add drop shadows, blur or vibrancy inside the board."
     ]

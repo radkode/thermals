@@ -392,3 +392,38 @@ struct BreakdownLensTests {
         #expect(BreakdownBoard.lenses(shares: []) == [])
     }
 }
+
+struct PSParsingTests {
+    @Test(arguments: [("0:01.50", 1.5), ("745:38.02", 44_738.02), ("1:02:03.00", 3_723.0), ("2-01:00:00.00", 176_400.0)])
+    func cpuTimeFormats(time: String, seconds: Double) {
+        #expect(abs(ProcessSampler.cpuSeconds(time)! - seconds) < 1e-6)
+    }
+
+    @Test(arguments: ["", "abc", "1:2:3:4", "x-1:00.00", "0:nan", "0:inf", "01::02", "-01:02"])
+    func malformedCPUTimeIsNil(time: String) {
+        #expect(ProcessSampler.cpuSeconds(time) == nil)
+    }
+
+    @Test func linesKeepPathsWithSpacesAndGroupByApp() {
+        let output = """
+              1   196:13.72 /sbin/launchd
+            404   745:38.02 /System/Library/PrivateFrameworks/SkyLight.framework/Resources/WindowServer
+            812     0:02.50 /Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Helpers/Google Chrome Helper (Renderer).app/Contents/MacOS/Google Chrome Helper (Renderer)
+            900     garbage /usr/bin/true
+            """
+        let times = ProcessSampler.parse(output)
+        #expect(times.keys.sorted() == [1, 404, 812])
+        #expect(times[404]?.group == "WindowServer")
+        #expect(times[812]?.group == "Google Chrome")
+        #expect(times[812]?.name == "Google Chrome Helper (Renderer)")
+        #expect(times[812]?.cpuNanoseconds == 2_500_000_000)
+    }
+
+    @Test func samplerReportsNothingUntilItHasABaseline() {
+        let sampler = ProcessSampler()
+        let first = ProcessSnapshot(times: [7: ProcessTimes(name: "a", cpuNanoseconds: 0, group: "A")], uptimeNanoseconds: 1_000_000_000)
+        let second = ProcessSnapshot(times: [7: ProcessTimes(name: "a", cpuNanoseconds: 500_000_000, group: "A")], uptimeNanoseconds: 2_000_000_000)
+        #expect(sampler.sample(first) == nil)
+        #expect(sampler.sample(second)?.ranked == [ProcessLoad(name: "A", percent: 50)])
+    }
+}

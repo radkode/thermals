@@ -102,7 +102,7 @@ private struct CoreRow: View {
     }
 }
 
-/// The user's apps ranked by CPU, sliding to their new rank, with the load they can't account for pinned last.
+/// Processes ranked by CPU, sliding to their new rank, with the load they can't account for pinned last.
 private struct ProcessBoard: View {
     let processes: [ProcessLoad]
     let hiddenLoad: Double?
@@ -118,7 +118,7 @@ private struct ProcessBoard: View {
         let shown = Array(processes.prefix(Self.rankedRows))
         BoardPanel {
             VStack(alignment: .leading, spacing: 3) {
-                columns(Color.clear.frame(height: 1), ColumnLabel("YOUR APPS"), ColumnLabel("%CPU"), ColumnLabel("STATUS"))
+                columns(Color.clear.frame(height: 1), ColumnLabel("PROCESSES"), ColumnLabel("%CPU"), ColumnLabel("STATUS"))
                 if shown.isEmpty {
                     columns(
                         Lamp(lit: false, color: Board.steelLight),
@@ -135,13 +135,13 @@ private struct ProcessBoard: View {
                     // An aggregate of many processes, so it is never banded with the per-process thresholds.
                     columns(
                         Lamp(lit: false, color: Board.steelLight),
-                        FlapText(text: "SYSTEM + OTHERS", cells: Self.nameCells, ink: Board.steelLight),
+                        FlapText(text: "KERNEL + OTHERS", cells: Self.nameCells, ink: Board.steelLight),
                         FlapText(text: "\(Int(hiddenLoad.rounded()))", cells: Self.percentCells, ink: Board.steelLight, alignment: .trailing),
                         FlapText(text: "", cells: Self.statusCells)
                     )
                     .padding(.top, 6)
                     .accessibilityElement(children: .ignore)
-                    .accessibilityLabel("System and other users' processes, derived from total load, \(Int(hiddenLoad.rounded())) percent CPU")
+                    .accessibilityLabel("Kernel and short-lived processes, derived from total load, \(Int(hiddenLoad.rounded())) percent CPU")
                 }
             }
             .animation(reduceMotion ? nil : Board.settle, value: shown.map(\.name))

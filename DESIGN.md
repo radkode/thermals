@@ -159,13 +159,13 @@ A near-black and steel board where all chroma belongs to heat: steel blue for co
 - **Flap Top / Flap Bottom** (`flap-top`, `flap-bottom`): the two leaves of every cell, each a soft vertical gradient so the lower leaf reads slightly recessed.
 - **Lens** (`lens`): an unlit lamp and an unlit meter lens.
 - **Steel Mid** (`steel-mid`): panel hairline border (at 45% opacity) and the axle pins on hero cells.
-- **Steel Light** (`steel-light`): column labels, unselected tab text, sensor and process names below BURN, placeholder values, NOMINAL pressure, and the neutral SYSTEM + OTHERS row.
+- **Steel Light** (`steel-light`): column labels, unselected tab text, sensor and process names below BURN, placeholder values, NOMINAL pressure, and the neutral KERNEL + OTHERS row.
 - **Letter White** (`letter-white`): selected tab text, FAIR pressure, the default flap ink, the lamp-meter range readout.
 
 ### Named Rules
 **The One Gradient Rule.** Every heat-colored element, in the popover and the menu bar, takes its color from `Board.heat(level)`. No element picks a band color by hand, and color is continuous within a band, never stepped.
 
-**The Derived Is Neutral Rule.** An aggregate the app derives rather than measures (SYSTEM + OTHERS) is shown in steel light with an unlit lamp and an empty STATUS. It is never banded with per-process thresholds.
+**The Derived Is Neutral Rule.** An aggregate the app derives rather than measures (KERNEL + OTHERS) is shown in steel light with an unlit lamp and an empty STATUS. It is never banded with per-process thresholds.
 
 **The Always Colored Rule.** The menu bar reading is always heat-colored (rendered as a non-template image), in both appearances, and its level is raised to at least HOT under serious and BURN under critical thermal pressure.
 
@@ -233,7 +233,7 @@ The lamp meter's row vocabulary turned sideways: 8 lenses, 10pt tall. On a core 
 Flap-black, 5pt radius, 1pt steel-mid hairline at 45%, 8pt padding. Holds the lamp meter, the sensor board, the core platforms, the process boards and the memory breakdown.
 
 ### Departure Row
-Lamp, name strip, value strip, STATUS strip. The name is steel light until BURN, when it takes the heat color too. Process rows animate to a new rank with the settle curve (cubic-bezier 0.16, 1, 0.3, 1 over 0.5s), disabled under Reduce Motion; on CPU the top 5 processes show, then SYSTEM + OTHERS pinned last, 6pt apart, in neutral steel. On RAM, app rows show GB and band by share of physical memory (WARM 10%, HOT 25%, BURN 40%); there is no derived remainder row, since footprints don't add up to memory used.
+Lamp, name strip, value strip, STATUS strip. The name is steel light until BURN, when it takes the heat color too. Process rows animate to a new rank with the settle curve (cubic-bezier 0.16, 1, 0.3, 1 over 0.5s), disabled under Reduce Motion; on CPU the top 5 processes show, then KERNEL + OTHERS pinned last, 6pt apart, in neutral steel. On RAM, app rows show GB and band by share of physical memory (WARM 10%, HOT 25%, BURN 40%); there is no derived remainder row, since footprints don't add up to memory used.
 
 ### Flap Tabs
 Lamp plus 4-cell flap strip per option, 10pt apart. Selected: amber lamp lit, letter-white text. Unselected: unlit lamp, steel-light text. The board tabs carry Cmd-1 to Cmd-3.
@@ -259,6 +259,6 @@ The CPU die temperature, load, or both, in the system face, each part colored fr
 - **Don't** use gamer RGB: no rainbow cycling, neon, or glow beyond a lit lamp.
 - **Don't** step colors per band or hand-pick a band color; the gradient is continuous within bands.
 - **Don't** sort measured rows by value or let rows jump; only processes rank, and they slide.
-- **Don't** band a derived aggregate; SYSTEM + OTHERS stays neutral steel.
+- **Don't** band a derived aggregate; KERNEL + OTHERS stays neutral steel.
 - **Don't** let the menu bar reading fall back to a monochrome template.
 - **Don't** add drop shadows, blur or vibrancy inside the board.

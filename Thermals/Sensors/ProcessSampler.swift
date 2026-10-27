@@ -22,28 +22,73 @@ struct ProcessSample: Equatable {
     let visibleTotal: Double
 }
 
-/// CPU use per app from `proc_pidinfo` deltas. Only processes this user may inspect are visible; root and system processes are not.
-final class ProcessSampler {
-    private var previous: [pid_t: ProcessTimes] = [:]
-    private var previousTime: UInt64 = 0
-    private var smoothed: [String: Double] = [:]
-    private let timebase: mach_timebase_info_data_t = {
-        var info = mach_timebase_info_data_t()
-        mach_timebase_info(&info)
-        return info
-    }()
+/// Every process's cumulative CPU time at one moment.
+struct ProcessSnapshot {
+    let times: [pid_t: ProcessTimes]
+    let uptimeNanoseconds: UInt64
+}
 
-    func sample() -> ProcessSample {
-        let now = DispatchTime.now().uptimeNanoseconds
-        let current = Self.readAll(timebase: timebase)
-        defer {
-            previous = current
-            previousTime = now
-        }
-        guard previousTime > 0 else { return ProcessSample(ranked: [], visibleTotal: 0) }
-        let percents = Self.percents(previous: previous, current: current, elapsedNanoseconds: now - previousTime)
+/// CPU use per app from deltas of cumulative CPU time. The times come from the setuid `/bin/ps`, so root and system
+/// processes such as `WindowServer` count too; `kernel_task` (pid 0) is the one process `ps` can't report.
+final class ProcessSampler {
+    private var previous: ProcessSnapshot?
+    private var smoothed: [String: Double] = [:]
+
+    /// Nil until there is a baseline to measure against.
+    func sample(_ current: ProcessSnapshot) -> ProcessSample? {
+        defer { previous = current }
+        guard let previous, current.uptimeNanoseconds > previous.uptimeNanoseconds else { return nil }
+        let percents = Self.percents(previous: previous.times, current: current.times, elapsedNanoseconds: current.uptimeNanoseconds - previous.uptimeNanoseconds)
         smoothed = Self.smooth(previous: smoothed, current: percents)
         return ProcessSample(ranked: Self.ranked(smoothed), visibleTotal: percents.values.reduce(0, +))
+    }
+
+    func reset() {
+        previous = nil
+        smoothed = [:]
+    }
+
+    /// Runs `ps`, which takes around a tenth of a second, so call it off the main actor.
+    nonisolated static func snapshot() -> ProcessSnapshot? {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/ps")
+        process.arguments = ["-axo", "pid=,time=,comm="]
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = FileHandle.nullDevice
+        do { try process.run() } catch { return nil }
+        let output = pipe.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
+        guard process.terminationStatus == 0 else { return nil }
+        return ProcessSnapshot(times: parse(String(decoding: output, as: UTF8.self)), uptimeNanoseconds: DispatchTime.now().uptimeNanoseconds)
+    }
+
+    /// `ps -axo pid=,time=,comm=` lines: pid, cumulative CPU time, then the executable path, which may contain spaces.
+    static func parse(_ output: String) -> [pid_t: ProcessTimes] {
+        var result: [pid_t: ProcessTimes] = [:]
+        for line in output.split(separator: "\n") {
+            let fields = line.split(separator: " ", maxSplits: 2, omittingEmptySubsequences: true)
+            guard fields.count == 3, let pid = pid_t(fields[0]), let seconds = cpuSeconds(String(fields[1])), seconds < 1e9 else { continue }
+            let command = String(fields[2])
+            let name = command.split(separator: "/").last.map(String.init) ?? command
+            result[pid] = ProcessTimes(
+                name: name,
+                cpuNanoseconds: UInt64(seconds * 1_000_000_000),
+                group: groupName(path: command.hasPrefix("/") ? command : nil, processName: name)
+            )
+        }
+        return result
+    }
+
+    /// `ps` TIME: `[days-][hours:]minutes:seconds.centiseconds`.
+    static func cpuSeconds(_ time: String) -> Double? {
+        let dayParts = time.split(separator: "-", omittingEmptySubsequences: false)
+        guard (1...2).contains(dayParts.count), let clock = dayParts.last else { return nil }
+        let days = dayParts.count == 2 ? Double(dayParts[0]) : 0
+        let parts = clock.split(separator: ":", omittingEmptySubsequences: false).map { Double($0) }
+        guard let days, (2...3).contains(parts.count), !parts.contains(nil) else { return nil }
+        let seconds = parts.compactMap { $0 }.reduce(0) { $0 * 60 + $1 } + days * 86_400
+        return seconds.isFinite && seconds >= 0 ? seconds : nil
     }
 
     /// Helpers group under the outermost `.app` in their path, so Chrome's renderers count as Google Chrome. Other processes are
@@ -67,12 +112,6 @@ final class ProcessSampler {
         let parts = name.split(separator: ".")
         guard parts.count >= 3, ["com", "org", "io", "net"].contains(parts[0].lowercased()) else { return name }
         return String(parts[parts.count - 1])
-    }
-
-    func reset() {
-        previous = [:]
-        previousTime = 0
-        smoothed = [:]
     }
 
     /// Percent of one core per process name between two readings; processes absent from `previous` have no baseline and are skipped.
@@ -99,19 +138,6 @@ final class ProcessSampler {
     static func ranked(_ percents: [String: Double]) -> [ProcessLoad] {
         percents.map { ProcessLoad(name: $0.key, percent: $0.value) }
             .sorted { ($0.percent, $1.name) > ($1.percent, $0.name) }
-    }
-
-    private static func readAll(timebase: mach_timebase_info_data_t) -> [pid_t: ProcessTimes] {
-        var result: [pid_t: ProcessTimes] = [:]
-        for pid in allPids() {
-            var info = proc_taskinfo()
-            let size = Int32(MemoryLayout<proc_taskinfo>.size)
-            guard proc_pidinfo(pid, PROC_PIDTASKINFO, 0, &info, size) == size, let name = processName(pid: pid) else { continue }
-            let ticks = info.pti_total_user + info.pti_total_system
-            let nanoseconds = ticks * UInt64(timebase.numer) / UInt64(max(timebase.denom, 1))
-            result[pid] = ProcessTimes(name: name, cpuNanoseconds: nanoseconds, group: groupName(pid: pid, processName: name))
-        }
-        return result
     }
 
     static func allPids() -> [pid_t] {

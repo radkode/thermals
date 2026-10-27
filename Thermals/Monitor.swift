@@ -22,7 +22,7 @@ final class Monitor {
     /// Total CPU load in percent, oldest first, covering `historyWindow`.
     private(set) var loadHistory: [TimedValue] = []
     private(set) var processes: [ProcessLoad] = []
-    /// Load the visible processes don't account for (system and other users), in percent of one core. Derived, not measured.
+    /// Load the sampled processes don't account for (`kernel_task` and processes that came and went), in percent of one core. Derived, not measured.
     private(set) var hiddenLoad: Double?
     private(set) var memory: MemoryReading?
     /// Memory in use in percent of physical memory, oldest first, covering `historyWindow`.
@@ -43,10 +43,12 @@ final class Monitor {
     var samplesProcesses = false {
         didSet {
             guard samplesProcesses != oldValue, timer != nil else { return }
+            processEpoch += 1
+            processTask = nil
             processSampler.reset()
             processes = []
             hiddenLoad = nil
-            if samplesProcesses { _ = processSampler.sample() }
+            if samplesProcesses { sampleProcesses() }
         }
     }
 
@@ -63,6 +65,9 @@ final class Monitor {
     @ObservationIgnored private let processSampler = ProcessSampler()
     @ObservationIgnored private var previousTicks: [CPUTicks]?
     @ObservationIgnored private var timer: Timer?
+    @ObservationIgnored private var processTask: Task<Void, Never>?
+    /// Bumped whenever sampling starts or stops, so a snapshot from before the change is dropped.
+    @ObservationIgnored private var processEpoch = 0
 
     var menuBarLevel: HeatLevel? { HeatLevel.menuBar(celsius: cpuTemperature?.rounded(), thermalState: thermalState) }
 
@@ -141,8 +146,25 @@ final class Monitor {
         if let cpuLoad { append(TimedValue(date: now, value: cpuLoad * 100), to: &loadHistory) }
         if let memory { append(TimedValue(date: now, value: memory.usedPercent), to: &memoryHistory) }
         if samplesAppMemory { appMemory = MemoryStats.ranked(MemoryStats.appFootprints()) }
-        if samplesProcesses {
-            let sample = processSampler.sample()
+        if samplesProcesses { sampleProcesses() }
+    }
+
+    /// Reads process times off the main actor; a sample still running when the next tick fires is not doubled up.
+    private func sampleProcesses() {
+        guard processTask == nil else { return }
+        let epoch = processEpoch
+        processTask = Task { [weak self] in
+            let snapshot = await Task.detached(priority: .utility) { ProcessSampler.snapshot() }.value
+            guard let self, epoch == processEpoch else { return }
+            processTask = nil
+            guard samplesProcesses else { return }
+            guard let snapshot else {
+                processSampler.reset()
+                processes = []
+                hiddenLoad = nil
+                return
+            }
+            guard let sample = processSampler.sample(snapshot) else { return }
             processes = sample.ranked
             hiddenLoad = cpuLoad.map { Self.hiddenLoad(totalFraction: $0, cores: coreLoads.count, visibleTotal: sample.visibleTotal) }
         }
