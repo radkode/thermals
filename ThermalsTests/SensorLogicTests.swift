@@ -458,3 +458,50 @@ struct TemperatureUnitTests {
         }
     }
 }
+
+struct SMCTests {
+    @Test func parameterBlockMatchesTheCStruct() {
+        #expect(MemoryLayout<SMCParams>.size == 80)
+        #expect(MemoryLayout<SMCParams>.offset(of: \.keyInfo) == 28)
+        #expect(MemoryLayout<SMCParams>.offset(of: \.result) == 40)
+        #expect(MemoryLayout<SMCParams>.offset(of: \.data32) == 44)
+        #expect(MemoryLayout<SMCParams>.offset(of: \.bytes) == 48)
+    }
+
+    @Test func fourCharCodesAreBigEndianASCII() {
+        #expect(SMC.fourCharCode("FNum") == 0x464E_756D)
+        #expect(SMC.fourCharCode("FNu") == nil)
+    }
+
+    @Test func decodesFanValueTypes() {
+        #expect(SMC.decode([0x00, 0x70, 0xA9, 0x44], type: SMC.float) == 1355.5)
+        #expect(SMC.decode([0x15, 0x18], type: SMC.fixedPoint) == 1350)
+        #expect(SMC.decode([2], type: SMC.uint8) == 2)
+        #expect(SMC.decode([0x05, 0x46], type: SMC.uint16) == 1350)
+    }
+
+    @Test func malformedOrUnknownValuesAreNil() {
+        #expect(SMC.decode([0x00, 0x70], type: SMC.float) == nil)
+        #expect(SMC.decode([0x00, 0x00, 0xC0, 0x7F], type: SMC.float) == nil)
+        #expect(SMC.decode([1, 2], type: SMC.fourCharCode("si16")!) == nil)
+    }
+
+    @Test func implausibleCountsAndSpeedsAreUnavailable() {
+        #expect(SMC.fanCount(2) == 2)
+        #expect(SMC.fanCount(0) == 0)
+        #expect(SMC.fanCount(9) == nil)
+        #expect(SMC.fanCount(1.5) == nil)
+        #expect(SMC.fanCount(1e30) == nil)
+        #expect(SMC.plausibleRPM(1355.5) == 1355.5)
+        #expect(SMC.plausibleRPM(-1) == nil)
+        #expect(SMC.plausibleRPM(3e38) == nil)
+    }
+
+    @Test func fanFractionIsShareOfItsRange() {
+        #expect(FanReading(id: 1, rpm: 3350, minimum: 1350, maximum: 5350).fraction == 0.5)
+        #expect(FanReading(id: 1, rpm: 0, minimum: 1350, maximum: 5350).fraction == 0)
+        #expect(FanReading(id: 1, rpm: 6000, minimum: 1350, maximum: 5350).fraction == 1)
+        #expect(FanReading(id: 1, rpm: nil, minimum: 1350, maximum: 5350).fraction == nil)
+        #expect(FanReading(id: 1, rpm: 1000, minimum: 0, maximum: 0).fraction == nil)
+    }
+}

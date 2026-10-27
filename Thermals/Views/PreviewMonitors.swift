@@ -59,7 +59,10 @@ enum PreviewMonitors {
             hiddenLoad: load * 12 * 100 * 0.35,
             memory: memory,
             memoryHistory: memoryHistory,
-            appMemory: appMemory
+            appMemory: appMemory,
+            fans: [(1, 1350.0, 5349.0), (2, 1458.0, 5777.0)].map { id, low, high in
+                FanReading(id: id, rpm: low + (high - low) * (load > 0.5 ? 0.9 - Double(id) * 0.05 : 0.02), minimum: low, maximum: high)
+            }
         )
     }
 }

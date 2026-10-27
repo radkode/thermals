@@ -20,6 +20,7 @@ The Xcode project is generated and not committed; edit `project.yml`, then rerun
 - **Temperatures** come from the IOKit HID event system (`Thermals/Sensors/TemperatureSensors.swift`), the same source Stats and iStat Menus use on Apple Silicon. It is a private interface, resolved at runtime with `dlsym`, so the app is distributed outside the Mac App Store and is not sandboxed. If the symbols or sensors are missing, the app shows "unavailable" instead of a number.
 - **CPU temperature** is the hottest `PMU tdie*` sensor, falling back to other `PMU` sensors. `tcal` sensors are calibration constants, not temperatures, and are dropped everywhere.
 - **Sensor labels** on the HEAT board come from a table of known raw names in `Thermals/Sensors/SensorLabels.swift` (`PMU tdie6` is CPU DIE 6, `gas gauge battery` is BATTERY); a name the table doesn't know shows raw. Sensors sort by label.
+- **Fans** come from the SMC (`Thermals/Sensors/SMC.swift`): `FNum` fans, each with `F<n>Ac` current, `F<n>Mn` minimum and `F<n>Mx` maximum RPM. A fan is colored by how far it is through its min to max range. A fan count outside 0 to 8 or a speed outside 0 to 20,000 RPM is treated as unreadable. Fanless Macs report no fans and the HEAT board shows no fan panel; a fan whose speed can't be read shows `--`.
 - **CPU load** is the busy share of `host_processor_info` ticks between two samples, summed across cores.
 - **Thermal pressure** is `ProcessInfo.thermalState`.
 

@@ -16,6 +16,7 @@ struct HeatBoard: View {
                 accessibilityName: "CPU temperature",
                 display: unit.value
             )
+            if !monitor.fans.isEmpty { FanBoard(fans: monitor.fans) }
             SensorBoard(sensors: monitor.sensors)
         }
     }
@@ -43,6 +44,46 @@ struct HeatBoard: View {
                 BoardStat(label: "PRESSURE", value: monitor.thermalState.boardTitle, cells: 8, ink: monitor.thermalState.ink)
             }
         }
+    }
+}
+
+/// Fans in fixed order, each lit on the heat gradient by how far it is through its speed range.
+private struct FanBoard: View {
+    let fans: [FanReading]
+
+    static let nameCells = 5
+    static let rpmCells = 4
+
+    var body: some View {
+        BoardPanel {
+            VStack(alignment: .leading, spacing: SensorBoard.rowSpacing) {
+                HStack {
+                    ColumnLabel("FANS").padding(.leading, 11)
+                    Spacer()
+                    ColumnLabel("RPM")
+                }
+                ForEach(fans, content: row)
+            }
+        }
+    }
+
+    private func row(_ fan: FanReading) -> some View {
+        // A fan's share of its range reads on the load scale, the same floors its lens bar lights at.
+        let percent = (fan.fraction ?? 0) * 100
+        let level = fan.fraction.map { _ in HeatLevel(loadPercent: percent.rounded()) }
+        let ink = level.map { Board.heat($0) } ?? Board.steelLight
+        let rpm = fan.rpm.map { "\(Int($0.rounded()))" } ?? "--"
+        return HStack(spacing: 5) {
+            Lamp(lit: (level?.band ?? .cool) >= .hot, color: ink)
+            FlapText(text: "FAN \(fan.id)", cells: Self.nameCells, ink: level?.band == .burn ? ink : Board.steelLight)
+            LensBar(percent: fan.fraction == nil ? 0 : percent) { floor, lit in
+                let level = HeatLevel(loadPercent: floor)
+                return lit ? Board.heat(level) : (level.band >= .hot ? Board.heat(level).opacity(0.16) : Board.lens)
+            }
+            FlapText(text: rpm, cells: Self.rpmCells, ink: ink, alignment: .trailing)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Fan \(fan.id), \(fan.rpm.map { "\(Int($0.rounded())) RPM" } ?? "unavailable")\(level.map { ", \($0.band.title.lowercased())" } ?? "")")
     }
 }
 

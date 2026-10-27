@@ -229,6 +229,9 @@ Three minutes of history as a bank of 30 time columns (peak per 6s slice by near
 ### Lens Bar
 The lamp meter's row vocabulary turned sideways: 8 lenses, 10pt tall. On a core it lights up to the core's load at fixed floors (1 to 87.5%), with the lit and dim-danger heat treatment. On the memory breakdown each lens is an eighth of physical memory, apportioned across the five parts by largest remainder so the bars never light more than the whole; it is a share, not a reading, so it is unbanded: steel light for the used parts (APP, WIRED, COMPRESSED), steel mid for the reclaimable ones (CACHED, FREE). Breakdown rows carry an unlit lamp and no STATUS.
 
+### Fan Panel
+On the HEAT board between the lamp meter and the sensors, only on Macs with fans: FANS and RPM labels, then one row per fan in SMC order (lamp, FAN n, lens bar, 4-cell RPM). The lens bar and RPM ink take the heat color of how far the fan is through its min to max range, on the load scale, with the core rows' lit and dim-danger treatment. An unreadable fan shows -- in steel light.
+
 ### Board Panel
 Flap-black, 5pt radius, 1pt steel-mid hairline at 45%, 8pt padding. Holds the lamp meter, the sensor board, the core platforms, the process boards and the memory breakdown.
 
