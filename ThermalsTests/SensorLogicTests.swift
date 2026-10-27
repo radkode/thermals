@@ -193,6 +193,26 @@ struct ProcessGroupingTests {
         #expect(ProcessSampler.groupName(path: nil, processName: "launchd") == "launchd")
     }
 
+    @Test func pathNamesBeatTruncatedProcessNames() {
+        let path = "/System/Library/Frameworks/Virtualization.framework/Versions/A/XPCServices/com.apple.Virtualization.VirtualMachine.xpc/Contents/MacOS/com.apple.Virtualization.VirtualMachine"
+        #expect(ProcessSampler.groupName(path: path, processName: "com.apple.Virtualization.Virtua") == "VirtualMachine")
+    }
+
+    @Test func versionNamedBinariesTakeTheirToolFolder() {
+        #expect(ProcessSampler.groupName(path: "/Users/me/.local/share/claude/versions/2.1.310", processName: "2.1.310") == "claude")
+        #expect(ProcessSampler.groupName(path: "/opt/tool/v20.11.1/bin/node", processName: "node") == "node")
+        #expect(ProcessSampler.groupName(path: "/opt/zed/V1.2/1.2.3-beta.1", processName: "1.2.3-beta.1") == "zed")
+    }
+
+    @Test func folderSearchStopsTwoFoldersUp() {
+        #expect(ProcessSampler.groupName(path: "/opt/tool/versions/current/1.2", processName: "1.2") == "1.2")
+    }
+
+    @Test func plainDottedNamesStayWhole() {
+        #expect(ProcessSampler.groupName(path: "/usr/local/bin/swift-frontend", processName: "swift-frontend") == "swift-frontend")
+        #expect(ProcessSampler.groupName(path: "/usr/bin/python3.12", processName: "python3.12") == "python3.12")
+    }
+
     @Test func percentsSumHelpersIntoTheirGroup() {
         let previous: [pid_t: ProcessTimes] = [
             1: ProcessTimes(name: "Chrome Helper", cpuNanoseconds: 0, group: "Google Chrome"),

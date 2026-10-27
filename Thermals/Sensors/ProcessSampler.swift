@@ -46,10 +46,27 @@ final class ProcessSampler {
         return ProcessSample(ranked: Self.ranked(smoothed), visibleTotal: percents.values.reduce(0, +))
     }
 
-    /// Helpers group under the outermost `.app` in their path, so Chrome's renderers count as Google Chrome.
+    /// Helpers group under the outermost `.app` in their path, so Chrome's renderers count as Google Chrome. Other processes are
+    /// named from their path, since `proc_name` truncates at 32 characters: version-named binaries take the tool's folder name
+    /// (`claude/versions/2.1.310` is claude) and reverse-DNS names keep their last part.
     static func groupName(path: String?, processName: String) -> String {
-        guard let path, let app = path.split(separator: "/").first(where: { $0.hasSuffix(".app") }) else { return processName }
-        return String(app.dropLast(4))
+        guard let path else { return processName }
+        let components = path.split(separator: "/").map(String.init)
+        if let app = components.first(where: { $0.hasSuffix(".app") }) { return String(app.dropLast(4)) }
+        let name = components.suffix(3).reversed().first { !isVersion($0) && !genericFolders.contains($0.lowercased()) } ?? processName
+        return shortened(name)
+    }
+
+    private static let genericFolders: Set<String> = ["bin", "sbin", "libexec", "versions", "current", "macos", "contents"]
+
+    private static func isVersion(_ name: String) -> Bool {
+        name.wholeMatch(of: /[vV]?\d+(\.\d+)+([-+][0-9A-Za-z.-]+)?/) != nil
+    }
+
+    private static func shortened(_ name: String) -> String {
+        let parts = name.split(separator: ".")
+        guard parts.count >= 3, ["com", "org", "io", "net"].contains(parts[0].lowercased()) else { return name }
+        return String(parts[parts.count - 1])
     }
 
     func reset() {
