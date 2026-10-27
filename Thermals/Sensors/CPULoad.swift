@@ -17,6 +17,9 @@ struct CPUTicks: Equatable {
 }
 
 enum CPULoad {
+    /// Each `mach_host_self()` call adds a send-right reference, so it is taken once.
+    private static let host = mach_host_self()
+
     /// Fraction of time (0...1) spent busy between two samples, or nil when no ticks elapsed.
     static func usage(from previous: CPUTicks, to current: CPUTicks) -> Double? {
         guard current.total > previous.total, current.busy >= previous.busy else { return nil }
@@ -28,7 +31,7 @@ enum CPULoad {
         var cpuCount: natural_t = 0
         var info: processor_info_array_t?
         var infoCount: mach_msg_type_number_t = 0
-        let result = host_processor_info(mach_host_self(), PROCESSOR_CPU_LOAD_INFO, &cpuCount, &info, &infoCount)
+        let result = host_processor_info(host, PROCESSOR_CPU_LOAD_INFO, &cpuCount, &info, &infoCount)
         guard result == KERN_SUCCESS, let info else { return nil }
         defer {
             vm_deallocate(mach_task_self_, vm_address_t(bitPattern: info), vm_size_t(Int(infoCount) * MemoryLayout<integer_t>.stride))
