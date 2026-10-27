@@ -244,6 +244,9 @@ Lamp plus 4-cell flap strip per option, 10pt apart. Selected: amber lamp lit, le
 ### Quit Button
 A QUIT flap strip with a separate key segment (command symbol and Q on a flap-top face). Hover turns both amber over 0.12s ease-out. Bound to Cmd-Q.
 
+### App Icon
+The LAST 3 MIN lamp bank as the mark: 7 columns by 8 rows of lenses in a flap-black housing, columns climbing left to right from cool to burn, each lens tinted by its row's heat and unlit HOT and BURN lenses at 16%, on an 824pt continuous squircle (185.4pt radius) in a steel gradient on the 1024pt macOS grid. Chosen by the owner over a single flap cell with a degree sign (read as an O and blurred to a ring at 16px). Source: `AppIcon` in `ThermalsTests/AppIconTests.swift`.
+
 ### Menu Bar Reading
 The CPU die temperature, load, or both, in the system face, each part colored from the heat gradient for the current appearance, rendered as a non-template image so macOS does not strip the color. With no reading, a thermometer SF Symbol.
 

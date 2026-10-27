@@ -46,7 +46,7 @@ The popover can't be captured with scripted clicks, so an opt-in test renders it
 TEST_RUNNER_SNAPSHOT_DIR=$PWD/.impeccable/shots xcodebuild -project Thermals.xcodeproj -scheme Thermals -destination 'platform=macOS' -derivedDataPath build test
 ```
 
-This writes `popover-cool.png`, `popover-hot.png`, `popover-no-sensors.png`, `popover-cpu-cool.png`, `popover-cpu-hot.png`, `popover-ram-cool.png`, `popover-ram-hot.png`, `popover-ram-unavailable.png` and `popover-hot-fahrenheit.png`. Scroll views draw blank offscreen, so snapshots set `snapshotRendering` to lay the rows out unscrolled. Swift Charts doesn't draw in these offscreen renders, which is one reason the history strip is a `Canvas`.
+This writes `popover-cool.png`, `popover-hot.png`, `popover-no-sensors.png`, `popover-cpu-cool.png`, `popover-cpu-hot.png`, `popover-ram-cool.png`, `popover-ram-hot.png`, `popover-ram-unavailable.png` and `popover-hot-fahrenheit.png`. The app icon is drawn the same way, from `AppIcon` in `ThermalsTests/AppIconTests.swift`; `TEST_RUNNER_ICON_DIR=$PWD/Thermals/Assets.xcassets/AppIcon.appiconset` rewrites every size in the asset catalog (build again afterwards to compile them in). Scroll views draw blank offscreen, so snapshots set `snapshotRendering` to lay the rows out unscrolled. Swift Charts doesn't draw in these offscreen renders, which is one reason the history strip is a `Canvas`.
 
 ## Releasing
 
