@@ -15,6 +15,7 @@ struct PopoverView: View {
 
     @AppStorage("board") private var storedBoard = BoardKind.heat
     @AppStorage("menuBarItem") private var menuBarItem = MenuBarItem.temperature
+    @State private var launchAtLogin = LaunchAtLogin.off
 
     private var board: BoardKind { pinnedBoard ?? storedBoard }
 
@@ -48,13 +49,21 @@ struct PopoverView: View {
                 Spacer()
                 FlapTabs(selection: Binding(get: { monitor.rate }, set: { monitor.rate = $0 }), noun: "update interval")
             }
+            HStack {
+                ColumnLabel("LAUNCH AT LOGIN")
+                Spacer()
+                FlapTabs(selection: Binding(get: { launchAtLogin }, set: { launchAtLogin = LaunchAtLogin.set($0) }), noun: "launch at login")
+            }
             footer
         }
         .padding(14)
         .frame(width: Board.popoverWidth)
         .background(Board.steelFrame)
         .environment(\.colorScheme, .dark)
-        .onAppear { sample(board) }
+        .onAppear {
+            sample(board)
+            if pinnedBoard == nil { launchAtLogin = .current }
+        }
         .onChange(of: board) { _, new in sample(new) }
         .onDisappear { sample(nil) }
     }

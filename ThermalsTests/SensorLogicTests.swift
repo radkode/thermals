@@ -1,4 +1,5 @@
 import Foundation
+import ServiceManagement
 import Testing
 @testable import Thermals
 
@@ -425,5 +426,14 @@ struct PSParsingTests {
         let second = ProcessSnapshot(times: [7: ProcessTimes(name: "a", cpuNanoseconds: 500_000_000, group: "A")], uptimeNanoseconds: 2_000_000_000)
         #expect(sampler.sample(first) == nil)
         #expect(sampler.sample(second)?.ranked == [ProcessLoad(name: "A", percent: 50)])
+    }
+}
+
+struct LaunchAtLoginTests {
+    @Test func onlyAnApprovedItemReadsAsOn() {
+        #expect(LaunchAtLogin(status: .enabled) == .on)
+        #expect(LaunchAtLogin(status: .requiresApproval) == .off)
+        #expect(LaunchAtLogin(status: .notRegistered) == .off)
+        #expect(LaunchAtLogin(status: .notFound) == .off)
     }
 }
