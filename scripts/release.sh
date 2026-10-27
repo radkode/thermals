@@ -40,6 +40,8 @@ else
   [[ -z "$(git status --porcelain)" ]] || { echo "Working tree is not clean" >&2; exit 1; }
   $CI_MODE || [[ "$(git rev-parse --abbrev-ref HEAD)" == "main" ]] || { echo "Release from main" >&2; exit 1; }
   if git rev-parse "$TAG" >/dev/null 2>&1; then echo "$TAG already exists; bump MARKETING_VERSION" >&2; exit 1; fi
+  [[ "$(gh api "repos/$TAP_REPO" --jq .permissions.push 2>/dev/null)" == "true" ]] \
+    || { echo "gh can't write to $TAP_REPO; check the token (TAP_TOKEN in CI)" >&2; exit 1; }
   if gh release view "$TAG" -R "$TAP_REPO" >/dev/null 2>&1; then echo "$TAP_REPO already has a $TAG release" >&2; exit 1; fi
   IDENTITY="${DEVELOPER_ID:-$(security find-identity -v -p codesigning | sed -n 's/.*"\(Developer ID Application: .*\)"/\1/p' | head -1)}"
   [[ -n "$IDENTITY" ]] || { echo "No Developer ID Application identity in the keychain" >&2; exit 1; }
