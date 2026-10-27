@@ -20,6 +20,8 @@ KEY_ID="$(basename "$P8" .p8)"; KEY_ID="${KEY_ID#AuthKey_}"
 read -r -p "App Store Connect Key ID [$KEY_ID]: " INPUT; KEY_ID="${INPUT:-$KEY_ID}"
 read -r -p "App Store Connect Issuer ID: " ISSUER_ID
 [[ -n "$ISSUER_ID" ]] || { echo "Issuer ID is required" >&2; exit 1; }
+xcrun notarytool history --key "$P8" --key-id "$KEY_ID" --issuer "$ISSUER_ID" >/dev/null \
+  || { echo "Apple rejected that notary key, Key ID or Issuer ID" >&2; exit 1; }
 read -r -s -p "Token with Contents read/write on radkode/homebrew-thermals: " TAP_TOKEN; echo
 [[ -n "$TAP_TOKEN" ]] || { echo "Token is required" >&2; exit 1; }
 
