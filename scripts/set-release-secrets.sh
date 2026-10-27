@@ -11,10 +11,12 @@ P8="${2:?usage: $0 <DeveloperID.p12> <AuthKey_KEYID.p8>}"
 [[ -f "$P8" ]] || { echo "Not found: $P8" >&2; exit 1; }
 
 read -r -s -p "Password for $(basename "$P12"): " P12_PASSWORD; echo
+# openssl reads it from the environment (env:), so it must be exported first.
+export P12_PASSWORD
+# Keychain Access exports with legacy RC2-40, which OpenSSL 3+ only reads with -legacy.
 openssl pkcs12 -in "$P12" -noout -passin env:P12_PASSWORD 2>/dev/null \
   || openssl pkcs12 -legacy -in "$P12" -noout -passin env:P12_PASSWORD 2>/dev/null \
   || { echo "That password doesn't open $(basename "$P12")" >&2; exit 1; }
-export P12_PASSWORD
 
 KEY_ID="$(basename "$P8" .p8)"; KEY_ID="${KEY_ID#AuthKey_}"
 read -r -p "App Store Connect Key ID [$KEY_ID]: " INPUT; KEY_ID="${INPUT:-$KEY_ID}"
