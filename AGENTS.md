@@ -7,4 +7,4 @@ Thermals is a SwiftUI macOS menu bar app. Product truth lives in [PRODUCT.md](./
 - Sensor access uses private IOKit symbols. Keep that code inside `Thermals/Sensors/` and keep reading-selection logic as pure functions with tests in `ThermalsTests/`.
 - The visual world is a split-flap departure board. Colors and fonts live only in `Board` (`Thermals/Board/Board.swift`), shared board pieces in `Thermals/Board/BoardComponents.swift`, and each board in its own view (`HeatBoard`, `CPUBoard`, `RAMBoard`); the direction contract heads `Thermals/Views/PopoverView.swift`. Check UI changes with the snapshot renders described in README.
 - Releases go through `scripts/release.sh` (see README, Releasing); never hand-edit the tap cask.
-- File findings about this repo to DailyDeck with `repo: "radkode/thermals"`.
+- Track work and file findings as GitHub issues on `radkode/thermals` (`gh issue create`), not DailyDeck. Work lands straight on `main`; there are no PRs.
