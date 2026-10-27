@@ -48,6 +48,13 @@ enum PreviewMonitors {
         }
         let appMemory = [("Xcode", 0.21), ("Google Chrome", 0.16), ("Simulator", 0.09), ("Slack", 0.05), ("Music", 0.02), ("Finder", 0.01)]
             .map { AppMemory(name: $0.0, bytes: UInt64($0.1 * memoryUsed * 1.6 * 16 * gigabyte)) }
+        // Typed steps: older Swift compilers time out type-checking this inline in the Monitor call.
+        let fanSpecs: [(id: Int, low: Double, high: Double)] = [(1, 1350, 5349), (2, 1458, 5777)]
+        let fans: [FanReading] = fanSpecs.map { spec in
+            let fraction: Double = load > 0.5 ? 0.9 - Double(spec.id) * 0.05 : 0.02
+            return FanReading(id: spec.id, rpm: spec.low + (spec.high - spec.low) * fraction, minimum: spec.low, maximum: spec.high)
+        }
+        let hiddenLoad: Double = load * 12 * 100 * 0.35
         return Monitor(
             sensors: sensors,
             cpuLoad: load,
@@ -56,13 +63,11 @@ enum PreviewMonitors {
             coreLoads: coreLoads,
             loadHistory: loadHistory,
             processes: processes,
-            hiddenLoad: load * 12 * 100 * 0.35,
+            hiddenLoad: hiddenLoad,
             memory: memory,
             memoryHistory: memoryHistory,
             appMemory: appMemory,
-            fans: [(1, 1350.0, 5349.0), (2, 1458.0, 5777.0)].map { id, low, high in
-                FanReading(id: id, rpm: low + (high - low) * (load > 0.5 ? 0.9 - Double(id) * 0.05 : 0.02), minimum: low, maximum: high)
-            }
+            fans: fans
         )
     }
 }
