@@ -1,10 +1,9 @@
-# Release from CI (manual): tag the commit v<MARKETING_VERSION>, then run this workflow on that tag
-# (gh workflow run release.yml --ref v<version>). Releases are normally cut locally with scripts/release.sh,
-# which pushes the tag itself, so tag pushes do not trigger this. It builds, signs with the
-# Developer ID, notarizes, staples, uploads Thermals-<version>.zip as a release in the public tap
-# radkode/homebrew-thermals and updates Casks/thermals.rb there (scripts/release.sh --ci).
+# Release: bump MARKETING_VERSION in project.yml and push to main. When that version has no v<version>
+# tag yet, this builds, signs with the Developer ID, notarizes, staples, uploads Thermals-<version>.zip
+# as a release in the public tap radkode/homebrew-thermals, updates Casks/thermals.rb there, and tags
+# v<version> here (scripts/release.sh --ci). Pushes that don't change the version are a no-op.
 #
-# Secrets (the same Developer ID and notary key that sign DailyDeck; see dailydeck-macos release.yml):
+# Secrets (set once with scripts/set-release-secrets.sh):
 #   DEVELOPER_ID_CERT_P12_BASE64   base64 of the exported "Developer ID Application" .p12
 #   DEVELOPER_ID_CERT_PASSWORD     password for that .p12
 #   KEYCHAIN_PASSWORD              any throwaway password for the temporary CI keychain
@@ -16,21 +15,50 @@
 name: Release
 
 on:
+  push:
+    branches: [main]
+    paths: [project.yml]
   workflow_dispatch: {}
 
 permissions:
   contents: read
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release
   cancel-in-progress: false
 
 jobs:
-  release:
-    runs-on: macos-15
-    timeout-minutes: 45
+  check:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      release: ${{ steps.version.outputs.release }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - id: version
+        run: |
+          VERSION="$(sed -n 's/^ *MARKETING_VERSION: *"\(.*\)"$/\1/p' project.yml)"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if git rev-parse "v$VERSION" >/dev/null 2>&1; then
+            echo "v$VERSION is already tagged; nothing to release."
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  release:
+    needs: check
+    if: needs.check.outputs.release == 'true'
+    runs-on: macos-15
+    timeout-minutes: 45
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -59,12 +87,15 @@ jobs:
           echo "$NOTARY_KEY_P8_BASE64" | base64 --decode > "$RUNNER_TEMP/notary.p8"
           echo "NOTARY_KEY_PATH=$RUNNER_TEMP/notary.p8" >> "$GITHUB_ENV"
 
-      - name: Build, sign, notarize and publish to the tap
+      - name: Build, sign, notarize, publish to the tap and tag
         env:
           NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
           NOTARY_KEY_ISSUER: ${{ secrets.NOTARY_KEY_ISSUER }}
           GH_TOKEN: ${{ secrets.TAP_TOKEN }}
-        run: ./scripts/release.sh --ci
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          ./scripts/release.sh --ci
 
       - name: Clean up signing material
         if: always()

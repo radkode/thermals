@@ -50,8 +50,10 @@ This writes `popover-cool.png`, `popover-hot.png`, `popover-no-sensors.png`, `po
 
 ## Releasing
 
-Thermals ships as a Homebrew cask from the public tap `radkode/homebrew-thermals`, which hosts the signed release zips so this repo can stay private. `scripts/release.sh` takes the version from `MARKETING_VERSION` in `project.yml`, builds Release, signs with the Developer ID and hardened runtime, notarizes and staples, uploads `Thermals-<version>.zip` as a release in the tap, and writes `Casks/thermals.rb` there.
+Thermals ships as a Homebrew cask from the public tap `radkode/homebrew-thermals`, which hosts the signed release zips so this repo can stay private.
 
-Releases are cut locally: on a Mac whose keychain has a "Developer ID Application" identity and a `thermals-notary` notarytool profile, bump `MARKETING_VERSION`, commit to `main`, and run `scripts/release.sh`; it publishes to the tap and pushes the `v<version>` tag. A manual CI path exists too (`.github/workflows/release.yml`, run with `gh workflow run release.yml --ref v<version>` after tagging); it needs the secrets listed at the top of the workflow, which `scripts/set-release-secrets.sh` sets.
+**To release:** bump `MARKETING_VERSION` in `project.yml` and push to `main`. The Release workflow (`.github/workflows/release.yml`) notices a version with no `v<version>` tag, then on a macOS runner builds Release, signs with the Developer ID and hardened runtime, notarizes and staples, uploads `Thermals-<version>.zip` as a release in the tap, writes `Casks/thermals.rb` there, and tags `v<version>` here. Pushes that don't change the version do nothing. It can also be started by hand from the Actions tab.
 
-`scripts/release.sh --dry-run` builds, ad-hoc signs and writes the cask to `build/release/<version>/` without notarizing or publishing.
+**One-time setup:** the workflow needs the secrets listed at its top. `scripts/set-release-secrets.sh <DeveloperID.p12> <AuthKey_KEYID.p8>` sets all of them, prompting for the `.p12` password, the App Store Connect Issuer ID and a fine-grained token with Contents read and write on the tap.
+
+`scripts/release.sh --dry-run` builds, ad-hoc signs and writes the cask to `build/release/<version>/` without notarizing or publishing. Without flags, on a Mac with a Developer ID identity and a `thermals-notary` notarytool profile, the script releases locally the same way.

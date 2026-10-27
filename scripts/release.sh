@@ -2,7 +2,7 @@
 # Builds, signs, notarizes and publishes Thermals to the Homebrew tap. Version comes from project.yml.
 # Usage: scripts/release.sh [--dry-run | --ci]
 #   --dry-run  ad-hoc sign, skip notarization, tagging and publishing; still builds the zip and the cask.
-#   --ci       run from the tag-triggered workflow: the v<version> tag already exists and must match project.yml.
+#   --ci       run from the release workflow on a main commit: publishes, then tags v<version> on HEAD.
 # Env: DEVELOPER_ID (signing identity, default: first "Developer ID Application" in the keychain),
 #      NOTARY_KEY_PATH + NOTARY_KEY_ID + NOTARY_KEY_ISSUER (App Store Connect API key), else
 #      NOTARY_PROFILE (notarytool keychain profile, default: thermals-notary),
@@ -38,12 +38,9 @@ if $DRY_RUN; then
   IDENTITY="-"
 else
   [[ -z "$(git status --porcelain)" ]] || { echo "Working tree is not clean" >&2; exit 1; }
-  if $CI_MODE; then
-    [[ "$(git rev-parse "$TAG^{commit}" 2>/dev/null)" == "$(git rev-parse HEAD)" ]] || { echo "HEAD is not tagged $TAG; MARKETING_VERSION and the tag disagree" >&2; exit 1; }
-  else
-    [[ "$(git rev-parse --abbrev-ref HEAD)" == "main" ]] || { echo "Release from main" >&2; exit 1; }
-    if git rev-parse "$TAG" >/dev/null 2>&1; then echo "$TAG already exists; bump MARKETING_VERSION" >&2; exit 1; fi
-  fi
+  $CI_MODE || [[ "$(git rev-parse --abbrev-ref HEAD)" == "main" ]] || { echo "Release from main" >&2; exit 1; }
+  if git rev-parse "$TAG" >/dev/null 2>&1; then echo "$TAG already exists; bump MARKETING_VERSION" >&2; exit 1; fi
+  if gh release view "$TAG" -R "$TAP_REPO" >/dev/null 2>&1; then echo "$TAP_REPO already has a $TAG release" >&2; exit 1; fi
   IDENTITY="${DEVELOPER_ID:-$(security find-identity -v -p codesigning | sed -n 's/.*"\(Developer ID Application: .*\)"/\1/p' | head -1)}"
   [[ -n "$IDENTITY" ]] || { echo "No Developer ID Application identity in the keychain" >&2; exit 1; }
   xcrun notarytool history "${NOTARY_AUTH[@]}" >/dev/null || { echo "notarytool credentials not usable" >&2; exit 1; }
@@ -83,7 +80,7 @@ cask "thermals" do
 
   url "https://github.com/$TAP_REPO/releases/download/v#{version}/Thermals-#{version}.zip"
   name "Thermals"
-  desc "Menu bar temperature and CPU load monitor"
+  desc "Menu bar temperature, CPU and memory monitor"
   homepage "https://github.com/$TAP_REPO"
 
   depends_on arch: :arm64
@@ -107,5 +104,5 @@ gh release create "$TAG" "$ZIP" -R "$TAP_REPO" --title "Thermals $VERSION" --not
 EXISTING_SHA="$(gh api "repos/$TAP_REPO/contents/Casks/thermals.rb" --jq .sha 2>/dev/null || true)"
 gh api --method PUT "repos/$TAP_REPO/contents/Casks/thermals.rb" \
   -f message="thermals $VERSION" -f content="$(base64 <"$CASK")" ${EXISTING_SHA:+-f sha="$EXISTING_SHA"} >/dev/null
-$CI_MODE || { git tag "$TAG" && git push origin "$TAG"; }
+git tag "$TAG" && git push origin "$TAG"
 echo "==> Released. Install: brew install --cask ${TAP_REPO%%/*}/${TAP_REPO#*/homebrew-}/thermals"
