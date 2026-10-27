@@ -48,6 +48,10 @@ TEST_RUNNER_SNAPSHOT_DIR=$PWD/.impeccable/shots xcodebuild -project Thermals.xco
 
 This writes `popover-cool.png`, `popover-hot.png`, `popover-no-sensors.png`, `popover-cpu-cool.png`, `popover-cpu-hot.png`, `popover-ram-cool.png`, `popover-ram-hot.png`, `popover-ram-unavailable.png` and `popover-hot-fahrenheit.png`. The app icon is drawn the same way, from `AppIcon` in `ThermalsTests/AppIconTests.swift`; `TEST_RUNNER_ICON_DIR=$PWD/Thermals/Assets.xcassets/AppIcon.appiconset` rewrites every size in the asset catalog (build again afterwards to compile them in). Scroll views draw blank offscreen, so snapshots set `snapshotRendering` to lay the rows out unscrolled. Swift Charts doesn't draw in these offscreen renders, which is one reason the history strip is a `Canvas`.
 
+## Website
+
+`thermals.dev` is a single static page in `site/` (`site/index.html`, the app's fonts in `site/fonts/`, the icon), deployed to the Vercel project `thermals` in `jacekradkos-projects`. It ports the app's boards to HTML and runs them on sample readings, labelled as samples and played at four times speed so LAST 3 MIN holds three sample minutes; its colors and band edges mirror `Board.heat` and `HeatLevel`, so change them together. Deploy from `site/`: `vercel link --yes --project thermals --scope jacekradkos-projects` once per checkout (the `.vercel/` link is gitignored), then `vercel deploy --prod --scope jacekradkos-projects`. DOWNLOAD points at the tap's latest release, so a new release needs no site change.
+
 ## Releasing
 
 Thermals ships as a Homebrew cask from the public tap `radkode/homebrew-thermals`, which hosts the signed release zips so this repo can stay private.

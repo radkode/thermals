@@ -5,3 +5,4 @@ DerivedData/
 .worktrees/
 .impeccable/*
 !.impeccable/design.json
+.vercel/
