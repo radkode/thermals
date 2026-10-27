@@ -1,4 +1,6 @@
-# Release: push a v* tag matching MARKETING_VERSION in project.yml. This builds, signs with the
+# Release from CI (manual): tag the commit v<MARKETING_VERSION>, then run this workflow on that tag
+# (gh workflow run release.yml --ref v<version>). Releases are normally cut locally with scripts/release.sh,
+# which pushes the tag itself, so tag pushes do not trigger this. It builds, signs with the
 # Developer ID, notarizes, staples, uploads Thermals-<version>.zip as a release in the public tap
 # radkode/homebrew-thermals and updates Casks/thermals.rb there (scripts/release.sh --ci).
 #
@@ -14,8 +16,7 @@
 name: Release
 
 on:
-  push:
-    tags: ['v*']
+  workflow_dispatch: {}
 
 permissions:
   contents: read
