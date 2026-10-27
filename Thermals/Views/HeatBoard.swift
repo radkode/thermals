@@ -3,6 +3,8 @@ import SwiftUI
 struct HeatBoard: View {
     let monitor: Monitor
 
+    @Environment(\.temperatureUnit) private var unit
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             header
@@ -11,7 +13,8 @@ struct HeatBoard: View {
                 scale: .temperature,
                 level: HeatLevel.init(celsius:),
                 unit: "°",
-                accessibilityName: "CPU temperature"
+                accessibilityName: "CPU temperature",
+                display: unit.value
             )
             SensorBoard(sensors: monitor.sensors)
         }
@@ -22,8 +25,8 @@ struct HeatBoard: View {
             VStack(alignment: .leading, spacing: 5) {
                 ColumnLabel("CPU DIE")
                 FlapText(
-                    text: monitor.cpuTemperature.map(Format.degrees) ?? "--°",
-                    cells: 3,
+                    text: monitor.cpuTemperature.map { Format.degrees($0, unit: unit) } ?? "--°",
+                    cells: 4,
                     size: .hero,
                     ink: monitor.cpuTemperature.map { Board.heat(HeatLevel(celsius: $0.rounded())) } ?? Board.steelLight,
                     alignment: .trailing
@@ -54,6 +57,7 @@ struct SensorBoard: View {
     static let minimumRows = 8
 
     @Environment(\.snapshotRendering) private var snapshotRendering
+    @Environment(\.temperatureUnit) private var unit
 
     var body: some View {
         BoardPanel {
@@ -61,7 +65,7 @@ struct SensorBoard: View {
                 columns(
                     Color.clear.frame(height: 1),
                     ColumnLabel("SENSOR"),
-                    ColumnLabel("°C"),
+                    ColumnLabel(unit.title),
                     ColumnLabel("STATUS")
                 )
                 // Takes whatever height the popover gives it; blank flap rows fill what the sensors don't.
@@ -131,11 +135,11 @@ struct SensorBoard: View {
         return columns(
             Lamp(lit: band >= .hot, color: Board.heat(level)),
             FlapText(text: sensor.label, cells: Self.nameCells, ink: band == .burn ? Board.heat(level) : Board.steelLight),
-            FlapText(text: "\(Int(sensor.celsius.rounded()))", cells: Self.tempCells, ink: Board.heat(level), alignment: .trailing),
+            FlapText(text: "\(Int(unit.value(sensor.celsius).rounded()))", cells: Self.tempCells, ink: Board.heat(level), alignment: .trailing),
             FlapText(text: band.title, cells: Self.statusCells, ink: Board.heat(level))
         )
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(sensor.label), \(Format.degrees(sensor.celsius)), \(band.title.lowercased())")
+        .accessibilityLabel("\(sensor.label), \(Format.degrees(sensor.celsius, unit: unit)), \(band.title.lowercased())")
     }
 
     /// Lamp, name, temperature and status columns at fixed widths, so the header lines up with the scrolling rows.

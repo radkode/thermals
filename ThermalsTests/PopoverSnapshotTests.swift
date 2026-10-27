@@ -20,9 +20,11 @@ struct PopoverSnapshotTests {
             ("ram-cool", PreviewMonitors.cool(), .ram),
             ("ram-hot", PreviewMonitors.hot(), .ram),
             ("ram-unavailable", PreviewMonitors.noSensors(), .ram),
+            ("hot-fahrenheit", PreviewMonitors.hot(), .heat),
         ]
         for (name, monitor, board) in states {
-            let renderer = ImageRenderer(content: PopoverView(monitor: monitor, pinnedBoard: board).environment(\.snapshotRendering, true))
+            let unit: TemperatureUnit = name.hasSuffix("fahrenheit") ? .fahrenheit : .celsius
+            let renderer = ImageRenderer(content: PopoverView(monitor: monitor, pinnedBoard: board, pinnedUnit: unit).environment(\.snapshotRendering, true))
             renderer.scale = 2
             let image = try #require(renderer.cgImage)
             let png = try #require(NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]))

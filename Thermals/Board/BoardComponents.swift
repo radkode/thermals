@@ -1,8 +1,8 @@
 import SwiftUI
 
 enum Format {
-    static func degrees(_ celsius: Double) -> String {
-        "\(Int(celsius.rounded()))°"
+    static func degrees(_ celsius: Double, unit: TemperatureUnit = .celsius) -> String {
+        "\(Int(unit.value(celsius).rounded()))°"
     }
 
     static func percent(_ fraction: Double) -> String {
@@ -115,6 +115,7 @@ extension MemoryPressure {
 extension EnvironmentValues {
     /// Set by offscreen renders, where scroll views draw blank.
     @Entry var snapshotRendering = false
+    @Entry var temperatureUnit = TemperatureUnit.celsius
 }
 
 /// A labelled flap strip, right-aligned, for header stats.
@@ -160,6 +161,8 @@ struct LampMeter: View {
     let level: (Double) -> HeatLevel
     let unit: String
     let accessibilityName: String
+    /// Converts a reading for the range readout only; rows and colors use the reading as measured.
+    var display: (Double) -> Double = { $0 }
 
     static let columns = 30
     static let loadRows: [Double] = [1, 12.5, 25, 37.5, 50, 62.5, 75, 87.5]
@@ -243,7 +246,7 @@ struct LampMeter: View {
 
     private var range: String? {
         guard let low = values.min(), let high = values.max() else { return nil }
-        return "\(Int(low.rounded()))–\(Int(high.rounded()))\(unit)"
+        return "\(Int(display(low).rounded()))–\(Int(display(high).rounded()))\(unit)"
     }
 }
 
@@ -319,6 +322,27 @@ enum SampleRate: String, FlapTabOption {
     }
 
     var title: String { "\(Int(seconds)) S" }
+}
+
+/// How temperatures are shown. Readings, bands and colors stay in Celsius; only the displayed number converts.
+enum TemperatureUnit: String, FlapTabOption {
+    case celsius, fahrenheit
+
+    static var system: TemperatureUnit { Locale.current.measurementSystem == .us ? .fahrenheit : .celsius }
+
+    var title: String {
+        switch self {
+        case .celsius: "°C"
+        case .fahrenheit: "°F"
+        }
+    }
+
+    func value(_ celsius: Double) -> Double {
+        switch self {
+        case .celsius: celsius
+        case .fahrenheit: celsius * 9 / 5 + 32
+        }
+    }
 }
 
 /// Flap-strip tabs; the selected option's lamp is lit. With `shortcuts`, ⌘1, ⌘2… select in order.

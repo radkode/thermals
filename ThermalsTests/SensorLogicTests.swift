@@ -437,3 +437,24 @@ struct LaunchAtLoginTests {
         #expect(LaunchAtLogin(status: .notFound) == .off)
     }
 }
+
+struct TemperatureUnitTests {
+    @Test(arguments: [(0.0, 32.0), (100, 212), (37, 98.6), (-40, -40)])
+    func fahrenheitConversion(celsius: Double, fahrenheit: Double) {
+        #expect(abs(TemperatureUnit.fahrenheit.value(celsius) - fahrenheit) < 1e-9)
+        #expect(TemperatureUnit.celsius.value(celsius) == celsius)
+    }
+
+    @Test func degreesFormatInTheChosenUnit() {
+        #expect(Format.degrees(93.4) == "93°")
+        #expect(Format.degrees(93.4, unit: .fahrenheit) == "200°")
+    }
+
+    @MainActor @Test(arguments: TemperatureUnit.allCases)
+    func plausibleReadingsFitTheirCells(unit: TemperatureUnit) {
+        for celsius in [TemperatureSensors.plausibleRange.lowerBound, 99.5, TemperatureSensors.plausibleRange.upperBound] {
+            #expect("\(Int(unit.value(celsius).rounded()))".count <= SensorBoard.tempCells)
+            #expect(Format.degrees(celsius, unit: unit).count <= 4)
+        }
+    }
+}

@@ -4,6 +4,8 @@ import SwiftUI
 struct CPUBoard: View {
     let monitor: Monitor
 
+    @Environment(\.temperatureUnit) private var unit
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             header
@@ -35,7 +37,7 @@ struct CPUBoard: View {
             VStack(alignment: .trailing, spacing: 9) {
                 BoardStat(
                     label: "CPU DIE",
-                    value: monitor.cpuTemperature.map(Format.degrees) ?? "--",
+                    value: monitor.cpuTemperature.map { Format.degrees($0, unit: unit) } ?? "--",
                     cells: 4,
                     ink: monitor.cpuTemperature.map { Board.heat(HeatLevel(celsius: $0.rounded())) } ?? Board.steelLight
                 )

@@ -4,6 +4,7 @@ import SwiftUI
 struct ThermalsApp: App {
     @State private var monitor = Monitor()
     @AppStorage("menuBarItem") private var menuBarItem = MenuBarItem.temperature
+    @AppStorage("temperatureUnit") private var temperatureUnit = TemperatureUnit.system
 
     var body: some Scene {
         MenuBarExtra {
@@ -11,6 +12,7 @@ struct ThermalsApp: App {
         } label: {
             MenuBarReading(
                 item: menuBarItem,
+                unit: temperatureUnit,
                 temperature: monitor.cpuTemperature.map { ($0, monitor.menuBarLevel ?? HeatLevel(celsius: $0.rounded())) },
                 load: monitor.cpuLoad.map { ($0, HeatLevel(loadPercent: ($0 * 100).rounded())) }
             )
@@ -22,6 +24,7 @@ struct ThermalsApp: App {
 /// The chosen reading(s), each colored from the same heat gradient as the popover.
 private struct MenuBarReading: View {
     let item: MenuBarItem
+    let unit: TemperatureUnit
     let temperature: (celsius: Double, level: HeatLevel)?
     let load: (fraction: Double, level: HeatLevel)?
 
@@ -37,7 +40,7 @@ private struct MenuBarReading: View {
     }
 
     private var parts: [(String, HeatLevel)] {
-        let temp = temperature.map { (Format.degrees($0.celsius), $0.level) }
+        let temp = temperature.map { (Format.degrees($0.celsius, unit: unit), $0.level) }
         let cpu = load.map { (Format.percent($0.fraction), $0.level) }
         return switch item {
         case .temperature: [temp].compactMap { $0 }
@@ -53,7 +56,7 @@ private struct MenuBarReading: View {
     }
 
     private var accessibilityText: String {
-        [temperature.map { "CPU \(Format.degrees($0.celsius))" }, load.map { "load \(Format.percent($0.fraction))" }]
+        [temperature.map { "CPU \(Format.degrees($0.celsius, unit: unit))" }, load.map { "load \(Format.percent($0.fraction))" }]
             .compactMap { $0 }
             .joined(separator: ", ")
     }

@@ -12,9 +12,12 @@ struct PopoverView: View {
     let monitor: Monitor
     /// Pins the board for snapshots; the live popover uses the stored choice.
     var pinnedBoard: BoardKind?
+    /// Pins the temperature unit for snapshots.
+    var pinnedUnit: TemperatureUnit?
 
     @AppStorage("board") private var storedBoard = BoardKind.heat
     @AppStorage("menuBarItem") private var menuBarItem = MenuBarItem.temperature
+    @AppStorage("temperatureUnit") private var temperatureUnit = TemperatureUnit.system
     @State private var launchAtLogin = LaunchAtLogin.off
 
     private var board: BoardKind { pinnedBoard ?? storedBoard }
@@ -45,6 +48,11 @@ struct PopoverView: View {
                 FlapTabs(selection: $menuBarItem, noun: "in menu bar")
             }
             HStack {
+                ColumnLabel("TEMPERATURE")
+                Spacer()
+                FlapTabs(selection: Binding(get: { pinnedUnit ?? temperatureUnit }, set: { temperatureUnit = $0 }), noun: "temperature unit")
+            }
+            HStack {
                 ColumnLabel("UPDATE EVERY")
                 Spacer()
                 FlapTabs(selection: Binding(get: { monitor.rate }, set: { monitor.rate = $0 }), noun: "update interval")
@@ -60,6 +68,7 @@ struct PopoverView: View {
         .frame(width: Board.popoverWidth)
         .background(Board.steelFrame)
         .environment(\.colorScheme, .dark)
+        .environment(\.temperatureUnit, pinnedUnit ?? temperatureUnit)
         .onAppear {
             sample(board)
             if pinnedBoard == nil { launchAtLogin = .current }

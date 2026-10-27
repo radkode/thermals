@@ -193,7 +193,7 @@ A near-black and steel board where all chroma belongs to heat: steel blue for co
 
 ## Layout
 
-A single vertical column inside a 400pt-wide popover with a 14pt frame and 14pt between sections: flap tabs (HEAT, CPU, RAM; Cmd-1 to Cmd-3), the selected board, MENU BAR tabs (TEMP, LOAD, BOTH), UPDATE EVERY tabs (3 S, 6 S, 10 S), LAUNCH AT LOGIN tabs (ON, OFF), then a footer with UPDATED clock left and Quit right.
+A single vertical column inside a 400pt-wide popover with a 14pt frame and 14pt between sections: flap tabs (HEAT, CPU, RAM; Cmd-1 to Cmd-3), the selected board, MENU BAR tabs (TEMP, LOAD, BOTH), TEMPERATURE tabs (°C, °F), UPDATE EVERY tabs (3 S, 6 S, 10 S), LAUNCH AT LOGIN tabs (ON, OFF), then a footer with UPDATED clock left and Quit right.
 
 Each board opens with a header (hero flap strip left under its label, two right-aligned stats stacked 9pt apart on the right), then the lamp meter, then board panels. Board panels pad 8pt; rows stack 3pt apart; columns sit 6pt apart at widths computed from cell counts (lamp 6pt, name 18 cells on HEAT or 17 on CPU processes, value 3 or 4 cells, STATUS 4 cells), so headers align with rows exactly. The CPU board splits cores into PERFORMANCE and EFFICIENCY platforms side by side, 12pt apart. The RAM board's hero is MEMORY USED (app + wired + compressed) with SWAP and PRESSURE stats, then a MEMORY breakdown panel (APP, WIRED, COMPRESSED, CACHED, FREE in fixed order, each with a share bar and GB), then YOUR APPS ranked by footprint.
 
