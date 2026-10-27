@@ -130,7 +130,7 @@ components:
 
 Thermals is a rail concourse departure board where sensors, cores and processes are departures and heat is what lights them. Every reading is set in matte split-flap cells (two leaves with a hinge gap, axle pins on the large cells) inside black housings, mounted on a steel frame. Type is Barlow Condensed in capitals throughout the board. Color is not decoration: a cell's ink and a lamp's glow come from one continuous heat gradient, so the board reads hot or cool before a single number is parsed.
 
-The board is dense and ordered the way a real departures board is. Rows hold their position (sensors by natural name, cores P1.. then E1..) so the eye can return to the same slot; only the user's processes are ranked, and they slide to their new rank rather than jumping. The popover is a fixed 400pt wide, and all three boards (HEAT, CPU and RAM) share one height so the footer and Quit never move when switching. The board is always rendered dark, regardless of system appearance; only the menu bar reading adapts to a light scheme.
+The board is dense and ordered the way a real departures board is. Rows hold their position (sensors by natural order of their board label, cores P1.. then E1..) so the eye can return to the same slot; only the user's processes are ranked, and they slide to their new rank rather than jumping. The popover is a fixed 400pt wide, and all three boards (HEAT, CPU and RAM) share one height so the footer and Quit never move when switching. The board is always rendered dark, regardless of system appearance; only the menu bar reading adapts to a light scheme.
 
 This world was chosen by the owner over a liquid-crystal strip. It refuses the stock stats popover (gauges, rings, system-gray list rows) and refuses gamer RGB: no rainbow cycling, no neon, no glow beyond a lit lamp.
 
@@ -197,7 +197,7 @@ A single vertical column inside a 400pt-wide popover with a 14pt frame and 14pt 
 
 Each board opens with a header (hero flap strip left under its label, two right-aligned stats stacked 9pt apart on the right), then the lamp meter, then board panels. Board panels pad 8pt; rows stack 3pt apart; columns sit 6pt apart at widths computed from cell counts (lamp 6pt, name 18 cells on HEAT or 17 on CPU processes, value 3 or 4 cells, STATUS 4 cells), so headers align with rows exactly. The CPU board splits cores into PERFORMANCE and EFFICIENCY platforms side by side, 12pt apart. The RAM board's hero is MEMORY USED (app + wired + compressed) with SWAP and PRESSURE stats, then a MEMORY breakdown panel (APP, WIRED, COMPRESSED, CACHED, FREE in fixed order, each with a share bar and GB), then YOUR APPS ranked by footprint.
 
-**The Fixed Platform Rule.** Measured rows keep a fixed order: sensors by natural name, cores P1.. then E1.., memory parts APP to FREE. Rows never re-sort by value; ranked rows that jump were rejected.
+**The Fixed Platform Rule.** Measured rows keep a fixed order: sensors by board label, cores P1.. then E1.., memory parts APP to FREE. Rows never re-sort by value; ranked rows that jump were rejected.
 
 **The Still Footer Rule.** Every board is laid out at all times and the popover takes the tallest height, so switching boards never moves the footer. The HEAT and RAM boards fill spare height with rows, never with empty space: HEAT pads its sensors with blank flap rows (unlit lamp, empty strips) and scrolls past the space available; RAM shows as many ranked apps as fit, then blank rows.
 

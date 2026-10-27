@@ -83,7 +83,32 @@ struct ByNameTests {
             SensorReading(id: 2, name: "NAND CH0 temp", celsius: 60),
             SensorReading(id: 3, name: "PMU tdie1", celsius: 70),
         ]
-        #expect(TemperatureSensors.byName(input).map(\.name) == ["NAND CH0 temp", "PMU tdie1", "PMU tdie2", "PMU tdie10"])
+        #expect(TemperatureSensors.byName(input).map(\.label) == ["CPU DIE 1", "CPU DIE 2", "CPU DIE 10", "SSD"])
+    }
+}
+
+struct SensorLabelTests {
+    static let m3Pro = ["gas gauge battery", "NAND CH0 temp"] + (1...8).map { "PMU tdev\($0)" } + (1...10).map { "PMU tdie\($0)" }
+
+    @Test func everyM3ProSensorGetsALabelThatFitsTheBoard() {
+        for name in Self.m3Pro {
+            let label = SensorLabels.label(for: name)
+            #expect(label != name, "\(name) has no label")
+            #expect(label.count <= SensorBoard.nameCells, "\(label) overflows")
+        }
+    }
+
+    @Test(arguments: [
+        ("PMU tdie6", "CPU DIE 6"), ("PMU tdev3", "PMU DEV 3"), ("gas gauge battery", "BATTERY"),
+        ("NAND CH0 temp", "SSD"), ("NAND CH1 temp", "SSD CH 1"), ("SOC MTR Temp Sensor0", "SOC 0"),
+    ])
+    func knownNamesMapToLabels(name: String, label: String) {
+        #expect(SensorLabels.label(for: name) == label)
+    }
+
+    @Test(arguments: ["PMU tdie", "PMU tdieX", "Mystery Sensor 4", "PMU tcal"])
+    func unknownNamesStayRaw(name: String) {
+        #expect(SensorLabels.label(for: name) == name)
     }
 }
 

@@ -4,6 +4,8 @@ struct SensorReading: Identifiable, Equatable {
     let id: Int
     let name: String
     let celsius: Double
+
+    var label: String { SensorLabels.label(for: name) }
 }
 
 enum TemperatureSensors {
@@ -16,13 +18,16 @@ enum TemperatureSensors {
         }
     }
 
-    /// One reading per sensor name (the hottest), in stable natural name order. Clusters repeat names like `PMU tdie2`.
+    /// One reading per sensor name (the hottest), in stable natural order of board labels. Clusters repeat names like `PMU tdie2`.
     static func byName(_ readings: [SensorReading]) -> [SensorReading] {
         var byName: [String: SensorReading] = [:]
         for reading in readings where reading.celsius > (byName[reading.name]?.celsius ?? -.infinity) {
             byName[reading.name] = reading
         }
-        return byName.values.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        return byName.values.sorted {
+            let order = $0.label.localizedStandardCompare($1.label)
+            return order == .orderedSame ? $0.name < $1.name : order == .orderedAscending
+        }
     }
 
     /// Hottest CPU die reading. Prefers `tdie` sensors, falls back to other PMU sensors, never guesses from battery or storage.

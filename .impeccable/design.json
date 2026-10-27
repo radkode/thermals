@@ -492,7 +492,7 @@
   ],
   "narrative": {
     "northStar": "The Concourse Departure Board",
-    "overview": "Thermals is a rail concourse departure board where sensors, cores and processes are departures and heat is what lights them. Every reading is set in matte split-flap cells (two leaves with a hinge gap, axle pins on the large cells) inside black housings, mounted on a steel frame. Type is Barlow Condensed in capitals throughout the board. Color is not decoration: a cell's ink and a lamp's glow come from one continuous heat gradient, so the board reads hot or cool before a single number is parsed.\n\nThe board is dense and ordered the way a real departures board is. Rows hold their position (sensors by natural name, cores P1.. then E1..) so the eye can return to the same slot; only the user's processes are ranked, and they slide to their new rank rather than jumping. The popover is a fixed 400pt wide, and all three boards (HEAT, CPU and RAM) share one height so the footer and Quit never move when switching. The board is always rendered dark, regardless of system appearance; only the menu bar reading adapts to a light scheme.\n\nThis world was chosen by the owner over a liquid-crystal strip. It refuses the stock stats popover (gauges, rings, system-gray list rows) and refuses gamer RGB: no rainbow cycling, no neon, no glow beyond a lit lamp.",
+    "overview": "Thermals is a rail concourse departure board where sensors, cores and processes are departures and heat is what lights them. Every reading is set in matte split-flap cells (two leaves with a hinge gap, axle pins on the large cells) inside black housings, mounted on a steel frame. Type is Barlow Condensed in capitals throughout the board. Color is not decoration: a cell's ink and a lamp's glow come from one continuous heat gradient, so the board reads hot or cool before a single number is parsed.\n\nThe board is dense and ordered the way a real departures board is. Rows hold their position (sensors by natural order of their board label, cores P1.. then E1..) so the eye can return to the same slot; only the user's processes are ranked, and they slide to their new rank rather than jumping. The popover is a fixed 400pt wide, and all three boards (HEAT, CPU and RAM) share one height so the footer and Quit never move when switching. The board is always rendered dark, regardless of system appearance; only the menu bar reading adapts to a light scheme.\n\nThis world was chosen by the owner over a liquid-crystal strip. It refuses the stock stats popover (gauges, rings, system-gray list rows) and refuses gamer RGB: no rainbow cycling, no neon, no glow beyond a lit lamp.",
     "keyCharacteristics": [
       "Split-flap cells for every value; steel column labels name the data.",
       "One heat gradient, continuous within bands, shared by the popover and the menu bar.",
@@ -533,7 +533,7 @@
       },
       {
         "name": "The Fixed Platform Rule",
-        "body": "Measured rows keep a fixed order: sensors by natural name, cores P1.. then E1.., memory parts APP to FREE. Rows never re-sort by value; ranked rows that jump were rejected.",
+        "body": "Measured rows keep a fixed order: sensors by board label, cores P1.. then E1.., memory parts APP to FREE. Rows never re-sort by value; ranked rows that jump were rejected.",
         "section": "layout"
       },
       {

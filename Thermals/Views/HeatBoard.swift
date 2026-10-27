@@ -130,12 +130,12 @@ struct SensorBoard: View {
         let band = level.band
         return columns(
             Lamp(lit: band >= .hot, color: Board.heat(level)),
-            FlapText(text: sensor.name, cells: Self.nameCells, ink: band == .burn ? Board.heat(level) : Board.steelLight),
+            FlapText(text: sensor.label, cells: Self.nameCells, ink: band == .burn ? Board.heat(level) : Board.steelLight),
             FlapText(text: "\(Int(sensor.celsius.rounded()))", cells: Self.tempCells, ink: Board.heat(level), alignment: .trailing),
             FlapText(text: band.title, cells: Self.statusCells, ink: Board.heat(level))
         )
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(sensor.name), \(Format.degrees(sensor.celsius)), \(band.title.lowercased())")
+        .accessibilityLabel("\(sensor.label), \(Format.degrees(sensor.celsius)), \(band.title.lowercased())")
     }
 
     /// Lamp, name, temperature and status columns at fixed widths, so the header lines up with the scrolling rows.
