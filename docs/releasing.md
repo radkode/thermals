@@ -4,8 +4,8 @@ Thermals ships as a Homebrew cask from the public tap [`radkode/homebrew-thermal
 
 ## Cutting a release
 
-1. Bump `MARKETING_VERSION` in `project.yml` (and `CURRENT_PROJECT_VERSION`), commit, and push to `main`.
-2. `.github/workflows/release.yml` runs on any push that touches `project.yml`. Its `check` job skips versions that already have a `v<version>` tag. Otherwise the `release` job runs `scripts/release.sh --ci` on a `macos-26` runner: Release build, Developer ID signing with hardened runtime, notarization and stapling, then the zip goes up as a release in the tap, `Casks/thermals.rb` is rewritten there, and `v<version>` is tagged here.
+1. Bump `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `project.yml`, commit, and push to `main`. Sparkle offers an update only when the build number goes up.
+2. `.github/workflows/release.yml` runs on any push that touches `project.yml`. Its `check` job skips versions that already have a `v<version>` tag. Otherwise the `release` job runs `scripts/release.sh --ci` on a `macos-26` runner: Release build, Developer ID signing with hardened runtime, notarization and stapling, then the zip is signed for Sparkle, the zip and `appcast.xml` go up as a release in the tap, `Casks/thermals.rb` is rewritten there, and `v<version>` is tagged here.
 3. Verify:
    - `gh run list -R radkode/thermals --workflow release.yml --limit 3`
    - `gh release list -R radkode/homebrew-thermals`
@@ -42,3 +42,19 @@ The workflow's secrets live on `radkode/thermals`; the originals belong in the p
 - **Xcode's "Developer ID Application" option was greyed out** for the account holder. Workaround: generate a CSR with Certificate Assistant, then create the certificate at developer.apple.com › Certificates › + › Developer ID Application (G2 Sub-CA) and double-click the downloaded `.cer`. On macOS 27, Keychain Access no longer has the Certificate Assistant menu; the app is at `/System/Library/CoreServices/Certificate Assistant.app`.
 - **Keychain Access exports `.p12` files with legacy RC2-40 encryption.** OpenSSL 3 and later read them only with `-legacy`; the helper falls back to it. macOS `security import` (used in CI) reads them fine.
 - **HTTP 401 from the tap** means `TAP_TOKEN` is invalid (in our case a token pasted twice). `scripts/release.sh` now checks write access to the tap before building. A fine-grained token is shown only once; regenerate it if lost.
+
+## In-app updates (Sparkle)
+
+The app reads `https://github.com/radkode/homebrew-thermals/releases/latest/download/appcast.xml` (`SUFeedURL` in `project.yml`) and only installs a zip whose EdDSA signature matches `SUPublicEDKey`. That signature comes from the private key in the login keychain under the Sparkle account `thermals`, and in CI from the `SPARKLE_ED_PRIVATE_KEY` secret. Back the key up in the private credential store, because losing it means shipped copies can't be updated in-app. To set or rotate the secret from the keychain (resolve packages first so `build/SourcePackages` exists):
+
+```bash
+(K="$(mktemp)"; trap 'rm -f "$K"' EXIT
+  build/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_keys --account thermals -x "$K" \
+    && gh secret set SPARKLE_ED_PRIVATE_KEY -R radkode/thermals < "$K")
+```
+
+The release script refuses to publish when `CURRENT_PROJECT_VERSION` isn't above the last tag's, or when the zip's signature doesn't verify against the app's `SUPublicEDKey` (checked with Homebrew's `openssl@3`; the system LibreSSL can't verify Ed25519). It re-signs Sparkle's nested code (XPC services, Autoupdate, Updater.app, the framework) inside out with the Developer ID before signing the app, because notarization rejects the ad-hoc signatures Xcode leaves on them.
+
+To test an update end to end without releasing, build the release script's dry-run app twice, set `SUFeedURL` in both copies to `http://127.0.0.1:<port>/appcast.xml`, give the second a higher `CFBundleVersion`, re-sign both with the Developer ID, then zip the second, sign it with `sign_update --account thermals` and serve it with a one-item appcast. Set `SUHasLaunchedBefore` true and `SULastCheckTime` in the past in `com.radkode.thermals` defaults so the first copy checks at launch, then delete those keys and `updateNotifiedVersion` afterwards. A Thermals process is a menu bar app, so `Updater.install` activates it first, otherwise Sparkle's window opens behind other apps.
+
+The cask does not declare `auto_updates true` yet. Brew judges that flag from the tap's current cask, so adding it in the first Sparkle release would stop `brew upgrade` from moving 0.2.0 installs onto a version that can update itself.

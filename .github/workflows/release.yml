@@ -11,6 +11,7 @@
 #   NOTARY_KEY_ID                  the API key's Key ID
 #   NOTARY_KEY_ISSUER              the API key's Issuer ID
 #   TAP_TOKEN                      fine-grained token with Contents: read and write on radkode/homebrew-thermals
+#   SPARKLE_ED_PRIVATE_KEY         Sparkle EdDSA private key that signs the update zip (see docs/releasing.md)
 
 name: Release
 
@@ -94,6 +95,7 @@ jobs:
           NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
           NOTARY_KEY_ISSUER: ${{ secrets.NOTARY_KEY_ISSUER }}
           GH_TOKEN: ${{ secrets.TAP_TOKEN }}
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

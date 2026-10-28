@@ -29,6 +29,9 @@ targets:
         LSUIElement: true
         LSApplicationCategoryType: public.app-category.utilities
         ATSApplicationFontsPath: "."
+        SUFeedURL: https://github.com/radkode/homebrew-thermals/releases/latest/download/appcast.xml
+        SUPublicEDKey: 2DAa6zgJ+e+bkkW2zpdhfToM4QeViebrtAE7Rj3iPjk=
+        SUEnableAutomaticChecks: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.radkode.thermals

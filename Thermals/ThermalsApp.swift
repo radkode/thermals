@@ -3,12 +3,13 @@ import SwiftUI
 @main
 struct ThermalsApp: App {
     @State private var monitor = Monitor()
+    @State private var updater = Updater()
     @AppStorage("menuBarItem") private var menuBarItem = MenuBarItem.temperature
     @AppStorage("temperatureUnit") private var temperatureUnit = TemperatureUnit.system
 
     var body: some Scene {
         MenuBarExtra {
-            PopoverView(monitor: monitor)
+            PopoverView(monitor: monitor, updater: updater)
         } label: {
             MenuBarReading(
                 item: menuBarItem,

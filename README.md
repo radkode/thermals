@@ -46,7 +46,7 @@ The popover can't be captured with scripted clicks, so an opt-in test renders it
 TEST_RUNNER_SNAPSHOT_DIR=$PWD/.impeccable/shots xcodebuild -project Thermals.xcodeproj -scheme Thermals -destination 'platform=macOS' -derivedDataPath build test
 ```
 
-This writes `popover-cool.png`, `popover-hot.png`, `popover-no-sensors.png`, `popover-cpu-cool.png`, `popover-cpu-hot.png`, `popover-ram-cool.png`, `popover-ram-hot.png`, `popover-ram-unavailable.png` and `popover-hot-fahrenheit.png`. The app icon is drawn the same way, from `AppIcon` in `ThermalsTests/AppIconTests.swift`; `TEST_RUNNER_ICON_DIR=$PWD/Thermals/Assets.xcassets/AppIcon.appiconset` rewrites every size in the asset catalog (build again afterwards to compile them in). Scroll views draw blank offscreen, so snapshots set `snapshotRendering` to lay the rows out unscrolled. Swift Charts doesn't draw in these offscreen renders, which is one reason the history strip is a `Canvas`.
+This writes `popover-cool.png`, `popover-hot.png`, `popover-no-sensors.png`, `popover-cpu-cool.png`, `popover-cpu-hot.png`, `popover-ram-cool.png`, `popover-ram-hot.png`, `popover-ram-unavailable.png`, `popover-hot-fahrenheit.png` and `popover-update-available.png`. The app icon is drawn the same way, from `AppIcon` in `ThermalsTests/AppIconTests.swift`; `TEST_RUNNER_ICON_DIR=$PWD/Thermals/Assets.xcassets/AppIcon.appiconset` rewrites every size in the asset catalog (build again afterwards to compile them in). Scroll views draw blank offscreen, so snapshots set `snapshotRendering` to lay the rows out unscrolled. Swift Charts doesn't draw in these offscreen renders, which is one reason the history strip is a `Canvas`.
 
 ## Website
 
@@ -57,6 +57,8 @@ This writes `popover-cool.png`, `popover-hot.png`, `popover-no-sensors.png`, `po
 Thermals ships as a Homebrew cask from the public tap `radkode/homebrew-thermals`, which hosts the signed release zips so this repo can stay private.
 
 **To release:** bump `MARKETING_VERSION` in `project.yml` and push to `main`. The Release workflow (`.github/workflows/release.yml`) notices a version with no `v<version>` tag, then on a macOS runner builds Release, signs with the Developer ID and hardened runtime, notarizes and staples, uploads `Thermals-<version>.zip` as a release in the tap, writes `Casks/thermals.rb` there, and tags `v<version>` here. Pushes that don't change the version do nothing. It can also be started by hand from the Actions tab.
+
+**In-app updates:** the app embeds Sparkle (`Thermals/Updater.swift`). It checks daily against `appcast.xml` on the tap's latest release, which the release script signs with an EdDSA key and uploads beside the zip. A found update shows as a NEW VERSION row on the board plus one notification per version; INSTALL hands off to Sparkle's window. Debug builds never check. Bump `CURRENT_PROJECT_VERSION` with every release: Sparkle compares build numbers, so a release with an unchanged build number is never offered.
 
 **One-time setup:** the workflow needs the secrets listed at its top. `scripts/set-release-secrets.sh <DeveloperID.p12> <AuthKey_KEYID.p8>` sets all of them, prompting for the `.p12` password, the App Store Connect Issuer ID and a fine-grained token with Contents read and write on the tap.
 

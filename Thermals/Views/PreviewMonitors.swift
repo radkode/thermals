@@ -79,3 +79,4 @@ enum PreviewMonitors {
 #Preview("RAM, cool") { PopoverView(monitor: PreviewMonitors.cool(), pinnedBoard: .ram) }
 #Preview("RAM, hot") { PopoverView(monitor: PreviewMonitors.hot(), pinnedBoard: .ram) }
 #Preview("No sensors") { PopoverView(monitor: PreviewMonitors.noSensors(), pinnedBoard: .heat) }
+#Preview("Update available") { PopoverView(monitor: PreviewMonitors.cool(), updater: Updater(previewing: "0.3.0"), pinnedBoard: .heat) }

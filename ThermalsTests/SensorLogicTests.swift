@@ -438,6 +438,14 @@ struct LaunchAtLoginTests {
     }
 }
 
+struct UpdateNoticeTests {
+    @Test func eachVersionIsNotifiedOnce() {
+        #expect(UpdateNotice.shouldNotify(version: "0.3.0", lastNotified: nil))
+        #expect(!UpdateNotice.shouldNotify(version: "0.3.0", lastNotified: "0.3.0"))
+        #expect(UpdateNotice.shouldNotify(version: "0.3.1", lastNotified: "0.3.0"))
+    }
+}
+
 struct TemperatureUnitTests {
     @Test(arguments: [(0.0, 32.0), (100, 212), (37, 98.6), (-40, -40)])
     func fahrenheitConversion(celsius: Double, fahrenheit: Double) {

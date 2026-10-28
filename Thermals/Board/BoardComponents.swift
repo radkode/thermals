@@ -72,6 +72,25 @@ struct QuitButton: View {
     }
 }
 
+/// A flap strip that acts. Hover inks it amber, like Quit.
+struct FlapButton: View {
+    let title: String
+    let accessibilityName: String
+    let action: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            FlapText(text: title, cells: title.count, ink: hovering ? Board.amber : Board.letterWhite)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .animation(.easeOut(duration: 0.12), value: hovering)
+        .accessibilityLabel(accessibilityName)
+    }
+}
+
 extension ProcessInfo.ThermalState {
     var boardTitle: String {
         switch self {

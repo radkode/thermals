@@ -10,6 +10,8 @@ import SwiftUI
 
 struct PopoverView: View {
     let monitor: Monitor
+    /// Absent in previews and snapshots that don't show an update.
+    var updater: Updater?
     /// Pins the board for snapshots; the live popover uses the stored choice.
     var pinnedBoard: BoardKind?
     /// Pins the temperature unit for snapshots.
@@ -61,6 +63,19 @@ struct PopoverView: View {
                 ColumnLabel("LAUNCH AT LOGIN")
                 Spacer()
                 FlapTabs(selection: Binding(get: { launchAtLogin }, set: { launchAtLogin = LaunchAtLogin.set($0) }), noun: "launch at login")
+            }
+            if let version = updater?.available {
+                HStack {
+                    ColumnLabel("NEW VERSION")
+                    Spacer()
+                    HStack(spacing: 10) {
+                        HStack(spacing: 5) {
+                            Lamp(lit: true, color: Board.amber)
+                            FlapText(text: version, cells: version.count)
+                        }
+                        FlapButton(title: "INSTALL", accessibilityName: "Install Thermals \(version)") { updater?.install() }
+                    }
+                }
             }
             footer
         }
