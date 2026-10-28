@@ -74,6 +74,7 @@ jobs:
     needs: check
     if: needs.check.outputs.release == 'true'
     runs-on: macos-26
+    environment: release
     timeout-minutes: 45
     permissions:
       contents: write
