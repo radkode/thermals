@@ -18,9 +18,11 @@
 <meta property="og:image" content="https://thermals.dev/icon.png">
 <link rel="icon" href="favicon.png">
 <meta name="theme-color" content="#2A2D31">
+<link rel="preload" href="fonts/BarlowCondensed-SemiBold.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/BarlowCondensed-Medium.woff2" as="font" type="font/woff2" crossorigin>
 <style>
-@font-face { font-family: "Barlow Condensed"; font-weight: 500; src: url("fonts/BarlowCondensed-Medium.ttf") format("truetype"); font-display: swap; }
-@font-face { font-family: "Barlow Condensed"; font-weight: 600; src: url("fonts/BarlowCondensed-SemiBold.ttf") format("truetype"); font-display: swap; }
+@font-face { font-family: "Barlow Condensed"; font-weight: 500; src: url("fonts/BarlowCondensed-Medium.woff2") format("woff2"); font-display: swap; }
+@font-face { font-family: "Barlow Condensed"; font-weight: 600; src: url("fonts/BarlowCondensed-SemiBold.woff2") format("woff2"); font-display: swap; }
 
 :root {
   color-scheme: dark;
@@ -76,9 +78,14 @@ a { color: inherit; }
 .strip.giant { --w: clamp(30px, 9vw, 92px); --h: calc(var(--w) * 1.53); --fs: calc(var(--w) * 1.32); --gap: calc(var(--w) * 0.08); --housing: calc(var(--w) * 0.13); --cell: calc(var(--w) * 0.08); --hinge: calc(var(--w) * 0.05); }
 .cell {
   position: relative; width: var(--w); height: var(--h);
-  border-radius: var(--cell); perspective: calc(var(--h) * 4);
+  border-radius: var(--cell);
   color: var(--ink, var(--letter-white));
   font-weight: 600; font-size: var(--fs); line-height: var(--h);
+}
+.cell.flipping { perspective: calc(var(--h) * 4); }
+.face {
+  display: block; height: 100%; text-align: center; border-radius: inherit;
+  background: linear-gradient(var(--flap-top), rgba(36, 37, 41, 0.92) 50%, var(--flap-bottom) 50%, rgba(36, 37, 41, 0.85));
 }
 .half {
   position: absolute; left: 0; right: 0; height: 50%; overflow: hidden;
@@ -327,7 +334,7 @@ footer a:hover { color: var(--amber); }
     for (let i = 0; i < cells; i++) {
       const cell = document.createElement("span");
       cell.className = "cell";
-      cell.innerHTML = '<span class="half top"><span></span></span><span class="half bottom"><span></span></span>';
+      cell.innerHTML = '<span class="face"></span>';
       el.append(cell);
       chars.push(" ");
     }
@@ -345,19 +352,23 @@ footer a:hover { color: var(--amber); }
   }
 
   function flip(cell, from, to, index) {
-    const [top, bottom] = cell.querySelectorAll(".half.top > span, .half.bottom > span");
-    if (reduceMotion || settling || !cell.isConnected) { top.textContent = to; bottom.textContent = to; return; }
+    const face = cell.firstChild;
+    if (reduceMotion || settling || !cell.isConnected) { face.textContent = to; return; }
     setTimeout(() => {
-      top.textContent = to;
+      face.textContent = to;
+      cell.classList.add("flipping");
       const falling = document.createElement("span");
       falling.className = "half top falling";
       falling.innerHTML = `<span>${from === " " ? "&nbsp;" : from}</span>`;
       const rising = document.createElement("span");
       rising.className = "half bottom rising";
       rising.innerHTML = `<span>${to === " " ? "&nbsp;" : to}</span>`;
-      cell.append(falling, rising);
+      const previous = document.createElement("span");
+      previous.className = "half bottom";
+      previous.innerHTML = `<span>${from === " " ? "&nbsp;" : from}</span>`;
+      cell.append(previous, falling, rising);
       // A timer, not animationend: paused or offscreen animations never end, and a blank cell would stick.
-      setTimeout(() => { bottom.textContent = to; falling.remove(); rising.remove(); }, 200);
+      setTimeout(() => { previous.remove(); falling.remove(); rising.remove(); cell.classList.remove("flipping"); }, 200);
     }, 28 * index);
   }
 
@@ -391,15 +402,21 @@ footer a:hover { color: var(--amber); }
       push(value) {
         history.push(value);
         if (history.length > 30) history.shift();
+      },
+      render() {
         const lo = Math.min(...history), hi = Math.max(...history);
         const span = Math.max(hi - lo, minSpan), start = hi - lo >= minSpan ? lo : (lo + hi) / 2 - span / 2;
         const rows = [...Array(8)].map((_, i) => start + span * i / 7);
         range.textContent = `${Math.round(lo)}–${Math.round(hi)}${unit}`;
         const cols = Array(30 - history.length).fill(null).concat(history);
+        const inks = rows.map(value => {
+          const t = levelOf(value), ink = heat(t);
+          return [ink, t >= HOT ? `color-mix(in srgb, ${ink} 16%, transparent)` : LENS];
+        });
         [...grid.children].forEach((lens, k) => {
-          const row = 7 - Math.floor(k / 30), value = cols[k % 30], t = levelOf(rows[row]);
+          const row = 7 - Math.floor(k / 30), value = cols[k % 30];
           const lit = value != null && value >= rows[row] - 1e-9;
-          lens.style.background = lit ? heat(t) : t >= HOT ? `color-mix(in srgb, ${heat(t)} 16%, transparent)` : LENS;
+          lens.style.background = inks[row][lit ? 0 : 1];
         });
       },
     };
@@ -510,103 +527,140 @@ footer a:hover { color: var(--amber); }
     el.replaceWith(s.el);
   });
 
-  function tick() {
+  function tick(record = true, all = false) {
     const { x, wobble } = sample();
     const die = 44 + 50 * x + wobble(0);
     const load = Math.min(100, 8 + 88 * x + wobble(1) * 2);
     const pressure = die > 90 ? ["SERIOUS", AMBER] : die > 80 ? ["FAIR", WHITE] : ["NOMINAL", STEEL];
+    const used = 58 + 34 * x + wobble(2) * 0.4;
+    if (record) {
+      heatMeter.push(die);
+      cpuMeter.push(load);
+      ramMeter.push(used);
+    }
 
     menuTemp.textContent = `${Math.round(die)}°`; menuTemp.style.color = heat(level.celsius(Math.round(die)));
     menuLoad.textContent = `${Math.round(load)}%`; menuLoad.style.color = heat(level.load(Math.round(load)));
 
     // HEAT
-    heatHead.hero.set(`${Math.round(die)}°`, heat(level.celsius(Math.round(die))));
-    heatHead.stats[0].set(`${Math.round(8 + 44 * x + wobble(3))}W`, WHITE);
-    heatHead.stats[1].set(`${Math.round(load)}%`, heat(level.load(Math.round(load))));
-    heatHead.stats[2].set(pressure[0], pressure[1]);
-    heatMeter.push(die);
-    fanRows.forEach((f, i) => {
-      const share = Math.max(0, Math.min(1, (x - 0.35) / 0.6)) * (0.95 - i * 0.06);
-      const t = level.load(share * 100);
-      f.bar.set(share * 100, heatLens);
-      f.rpm.set(share === 0 ? "0" : String(Math.round(1350 + (5350 - 1350) * share)), heat(t));
-      setLamp(f.l, t >= HOT, heat(t));
-      f.name.set(`FAN ${i + 1}`, t >= BURN ? heat(t) : STEEL);
-    });
-    const offsets = [-14, 0, -2, -4, -8, -11];
-    sensors.rows.forEach((row, i) => {
-      const c = Math.round(die + offsets[i] * (0.6 + x * 0.5));
-      setRow(row, sensorNames[i], String(c), level.celsius(c));
-    });
+    if (all || visibleBoards.has(heatBoard)) {
+      heatHead.hero.set(`${Math.round(die)}°`, heat(level.celsius(Math.round(die))));
+      heatHead.stats[0].set(`${Math.round(8 + 44 * x + wobble(3))}W`, WHITE);
+      heatHead.stats[1].set(`${Math.round(load)}%`, heat(level.load(Math.round(load))));
+      heatHead.stats[2].set(pressure[0], pressure[1]);
+      heatMeter.render();
+      fanRows.forEach((f, i) => {
+        const share = Math.max(0, Math.min(1, (x - 0.35) / 0.6)) * (0.95 - i * 0.06);
+        const t = level.load(share * 100);
+        f.bar.set(share * 100, heatLens);
+        f.rpm.set(share === 0 ? "0" : String(Math.round(1350 + (5350 - 1350) * share)), heat(t));
+        setLamp(f.l, t >= HOT, heat(t));
+        f.name.set(`FAN ${i + 1}`, t >= BURN ? heat(t) : STEEL);
+      });
+      const offsets = [-14, 0, -2, -4, -8, -11];
+      sensors.rows.forEach((row, i) => {
+        const c = Math.round(die + offsets[i] * (0.6 + x * 0.5));
+        setRow(row, sensorNames[i], String(c), level.celsius(c));
+      });
+    }
 
     // CPU
-    cpuHead.hero.set(`${Math.round(load)}%`, heat(level.load(Math.round(load))));
-    cpuHead.stats[0].set(`${Math.round(die)}°`, heat(level.celsius(Math.round(die))));
-    cpuHead.stats[1].set(pressure[0], pressure[1]);
-    cpuMeter.push(load);
-    cores.forEach((group, g) => group.forEach((core, i) => {
-      const p = Math.max(0, Math.min(100, Math.round(load * (g === 0 ? 1.08 - i * 0.07 : 0.55 - i * 0.06) + wobble(i + g) * 2)));
-      const t = level.load(p);
-      core.bar.set(p, heatLens);
-      core.value.set(String(p), heat(t));
-      setLamp(core.l, t >= HOT, heat(t));
-      core.name.set(`${g === 0 ? "P" : "E"}${i + 1}`, t >= BURN ? heat(t) : STEEL);
-    }));
-    const procLoads = [["XCODE", 3.1], ["SWIFT-FRONTEND", 2.3], ["WINDOWSERVER", 0.4], ["SAFARI", 0.5], ["MUSIC", 0.12]]
-      .map(([name, k]) => [name, Math.round(load * k)]).sort((a, b) => b[1] - a[1]);
-    procs.rows.forEach((row, i) => setRow(row, procLoads[i][0], String(procLoads[i][1]), level.load(procLoads[i][1])));
-    kernel.value.set(String(Math.round(load * 0.9 + 6)), STEEL);
+    if (all || visibleBoards.has(cpuBoard)) {
+      cpuHead.hero.set(`${Math.round(load)}%`, heat(level.load(Math.round(load))));
+      cpuHead.stats[0].set(`${Math.round(die)}°`, heat(level.celsius(Math.round(die))));
+      cpuHead.stats[1].set(pressure[0], pressure[1]);
+      cpuMeter.render();
+      cores.forEach((group, g) => group.forEach((core, i) => {
+        const p = Math.max(0, Math.min(100, Math.round(load * (g === 0 ? 1.08 - i * 0.07 : 0.55 - i * 0.06) + wobble(i + g) * 2)));
+        const t = level.load(p);
+        core.bar.set(p, heatLens);
+        core.value.set(String(p), heat(t));
+        setLamp(core.l, t >= HOT, heat(t));
+        core.name.set(`${g === 0 ? "P" : "E"}${i + 1}`, t >= BURN ? heat(t) : STEEL);
+      }));
+      const procLoads = [["XCODE", 3.1], ["SWIFT-FRONTEND", 2.3], ["WINDOWSERVER", 0.4], ["SAFARI", 0.5], ["MUSIC", 0.12]]
+        .map(([name, k]) => [name, Math.round(load * k)]).sort((a, b) => b[1] - a[1]);
+      procs.rows.forEach((row, i) => setRow(row, procLoads[i][0], String(procLoads[i][1]), level.load(procLoads[i][1])));
+      kernel.value.set(String(Math.round(load * 0.9 + 6)), STEEL);
+    }
 
     // RAM
-    const used = 58 + 34 * x + wobble(2) * 0.4;
-    const memPressure = used > 90 ? ["WARN", AMBER] : ["NORMAL", STEEL];
-    const memLevel = Math.max(level.memory(Math.round(used)), memPressure[0] === "WARN" ? HOT : 0);
-    ramHead.hero.set(`${Math.round(used)}%`, heat(memLevel));
-    const swap = Math.max(0, (used - 82) * 0.4);
-    ramHead.stats[0].set(`${swap.toFixed(1)}G`, swap > 0 ? WHITE : STEEL);
-    ramHead.stats[1].set(memPressure[0], memPressure[1]);
-    ramMeter.push(used);
-    const total = 18, usedGB = total * used / 100;
-    const gb = [usedGB * 0.62, usedGB * 0.22, usedGB * 0.16, (total - usedGB) * 0.75, (total - usedGB) * 0.25];
-    const exact = gb.map((v) => v / total * 8), lit = exact.map(Math.floor);
-    exact.map((v, i) => [v - lit[i], i]).sort((a, b) => b[0] - a[0]).slice(0, Math.round(exact.reduce((a, b) => a + b)) - lit.reduce((a, b) => a + b)).forEach(([, i]) => lit[i]++);
-    parts.forEach((p, i) => {
-      const ink = p.used ? STEEL : STEEL_MID;
-      [...p.bar.el.children].forEach((lens, k) => { lens.style.background = k < lit[i] ? ink : LENS; });
-      p.value.set(gb[i].toFixed(1), p.used ? WHITE : STEEL);
-    });
-    const appGB = [["XCODE", 0.26], ["SAFARI", 0.17], ["SIMULATOR", 0.12], ["MUSIC", 0.04]];
-    apps.rows.forEach((row, i) => {
-      const g = usedGB * appGB[i][1];
-      setRow(row, appGB[i][0], g.toFixed(1), level.app(Math.round(g / total * 100)));
-    });
-
-    phase += 1;
+    if (all || visibleBoards.has(ramBoard)) {
+      const memPressure = used > 90 ? ["WARN", AMBER] : ["NORMAL", STEEL];
+      const memLevel = Math.max(level.memory(Math.round(used)), memPressure[0] === "WARN" ? HOT : 0);
+      ramHead.hero.set(`${Math.round(used)}%`, heat(memLevel));
+      const swap = Math.max(0, (used - 82) * 0.4);
+      ramHead.stats[0].set(`${swap.toFixed(1)}G`, swap > 0 ? WHITE : STEEL);
+      ramHead.stats[1].set(memPressure[0], memPressure[1]);
+      ramMeter.render();
+      const total = 18, usedGB = total * used / 100;
+      const gb = [usedGB * 0.62, usedGB * 0.22, usedGB * 0.16, (total - usedGB) * 0.75, (total - usedGB) * 0.25];
+      const exact = gb.map((v) => v / total * 8), lit = exact.map(Math.floor);
+      exact.map((v, i) => [v - lit[i], i]).sort((a, b) => b[0] - a[0]).slice(0, Math.round(exact.reduce((a, b) => a + b)) - lit.reduce((a, b) => a + b)).forEach(([, i]) => lit[i]++);
+      parts.forEach((p, i) => {
+        const ink = p.used ? STEEL : STEEL_MID;
+        [...p.bar.el.children].forEach((lens, k) => { lens.style.background = k < lit[i] ? ink : LENS; });
+        p.value.set(gb[i].toFixed(1), p.used ? WHITE : STEEL);
+      });
+      const appGB = [["XCODE", 0.26], ["SAFARI", 0.17], ["SIMULATOR", 0.12], ["MUSIC", 0.04]];
+      apps.rows.forEach((row, i) => {
+        const g = usedGB * appGB[i][1];
+        setRow(row, appGB[i][0], g.toFixed(1), level.app(Math.round(g / total * 100)));
+      });
+    }
   }
 
   // Tabs: on narrow screens the track scrolls between platforms; the lit tab follows whichever is in view.
   const track = document.getElementById("track");
   const tabs = [...document.querySelectorAll(".tab")];
+  const platforms = [...document.querySelectorAll(".platform")];
+  let selected = tabs[0];
+  const select = (tab) => {
+    selected = tab;
+    tabs.forEach(t => t.setAttribute("aria-pressed", String(t === tab)));
+  };
+  const destination = (platform) => Math.max(0, Math.min(track.scrollWidth - track.clientWidth,
+    track.scrollLeft + platform.getBoundingClientRect().left - track.getBoundingClientRect().left - (track.clientWidth - platform.clientWidth) / 2));
+  const syncSelection = () => {
+    if (track.scrollWidth <= track.clientWidth + 1) return;
+    const distances = platforms.map(p => Math.abs(track.scrollLeft - destination(p)));
+    const closest = Math.min(...distances);
+    if (distances[tabs.indexOf(selected)] > closest + 1) select(tabs[distances.indexOf(closest)]);
+  };
   tabs.forEach((tab) => tab.addEventListener("click", () => {
     const target = document.getElementById(`platform-${tab.dataset.board}`);
-    track.scrollTo({ left: target.offsetLeft - (track.clientWidth - target.clientWidth) / 2, behavior: reduceMotion ? "auto" : "smooth" });
-    tabs.forEach((t) => t.setAttribute("aria-pressed", String(t === tab)));
+    select(tab);
+    track.scrollTo({ left: destination(target), behavior: reduceMotion ? "auto" : "smooth" });
   }));
-  const ratios = new Map();
+  let selectionTimer;
+  track.addEventListener("scroll", () => {
+    clearTimeout(selectionTimer);
+    selectionTimer = setTimeout(syncSelection, 120);
+  }, { passive: true });
+  const visibleBoards = new Set();
   const visible = new IntersectionObserver((entries) => {
-    entries.forEach((e) => ratios.set(e.target.id, e.intersectionRatio));
-    const [best] = [...ratios].sort((a, b) => b[1] - a[1]);
-    if (!best || best[1] === 0 || track.scrollWidth <= track.clientWidth + 1) return;
-    tabs.forEach((t) => t.setAttribute("aria-pressed", String(`platform-${t.dataset.board}` === best[0])));
-  }, { root: track, threshold: [0, 0.25, 0.5, 0.75, 1] });
-  document.querySelectorAll(".platform").forEach((p) => visible.observe(p));
+    entries.forEach(({target, intersectionRatio}) => {
+      if (intersectionRatio >= 0.01) visibleBoards.add(target);
+      else visibleBoards.delete(target);
+    });
+    settling = true;
+    tick(false);
+    settling = false;
+  }, { threshold: 0.01 });
+  [heatBoard, cpuBoard, ramBoard].forEach(board => visible.observe(board));
 
   // Boards are drawn at the app's 1:1 size and scaled down to fit narrow platforms.
-  const fit = () => document.querySelectorAll(".platform").forEach((p) => {
-    const board = p.querySelector(".board"), scale = Math.min(1, p.clientWidth / board.offsetWidth);
-    board.style.transform = `scale(${scale})`;
-    board.parentElement.style.height = `${board.offsetHeight * scale}px`;
-  });
+  const fit = () => {
+    const sizes = platforms.map(p => {
+      const board = p.querySelector(".board"), scale = Math.min(1, p.clientWidth / board.offsetWidth);
+      return {board, scale, height: board.offsetHeight * scale};
+    });
+    sizes.forEach(({board, scale, height}) => {
+      board.style.transform = `scale(${scale})`;
+      board.parentElement.style.height = `${height}px`;
+    });
+    syncSelection();
+  };
   addEventListener("resize", fit);
   document.fonts?.ready.then(fit);
 
@@ -639,15 +693,21 @@ footer a:hover { color: var(--amber); }
   const showHold = () => { hold.setAttribute("aria-pressed", String(held)); holdStrip.set(held ? "RUN" : "HOLD", held ? WHITE : STEEL); };
   hold.addEventListener("click", () => { held = !held; showHold(); });
   new IntersectionObserver(([entry]) => { onScreen = entry.isIntersecting; }).observe(document.querySelector(".platforms"));
-  setInterval(() => { if (!held && onScreen && !document.hidden) tick(); }, 1500);
+  setInterval(() => { if (!held && onScreen && !document.hidden) { phase += 1; tick(); } }, 1500);
 
   // With every platform in view, tabs would only move a lamp, so they show only when the track scrolls.
   const tabGroup = document.getElementById("tabs");
   const showTabs = () => { tabGroup.hidden = track.scrollWidth <= track.clientWidth + 1; };
   addEventListener("resize", showTabs);
 
-  for (let i = 0; i < 30; i++) { phase = i - 30 + 12; tick(); }
-  phase = 12;
+  for (let i = 0; i < 30; i++) {
+    phase = i - 30 + 12;
+    const {x, wobble} = sample();
+    heatMeter.push(44 + 50 * x + wobble(0));
+    cpuMeter.push(Math.min(100, 8 + 88 * x + wobble(1) * 2));
+    ramMeter.push(58 + 34 * x + wobble(2) * 0.4);
+  }
+  tick(false, true);
   settling = false;
   fit();
   showTabs();

@@ -4,6 +4,8 @@ Thermals is a SwiftUI macOS menu bar app. Product truth lives in [PRODUCT.md](./
 
 The [2026-10-28 UX audit](./docs/ux-audit-2026-10-28.md) records evidence, limitations and tracked improvement proposals. Its implementation checkpoint records the owner-authorized follow-up scope.
 
+The [website performance investigation](./docs/website-performance.md) records rendering constraints, measurements and browser regression checks for `site/`.
+
 - `project.yml` is the source of truth for the Xcode project. Never hand-edit or commit `Thermals.xcodeproj`; run `xcodegen generate` after changing targets, settings or file layout.
 - Run tests with `xcodebuild -project Thermals.xcodeproj -scheme Thermals -destination 'platform=macOS' -derivedDataPath build test`.
 - Sensor access uses private IOKit symbols. Keep that code inside `Thermals/Sensors/` and keep reading-selection logic as pure functions with tests in `ThermalsTests/`.
