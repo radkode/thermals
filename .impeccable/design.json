@@ -512,6 +512,11 @@
         "section": "colors"
       },
       {
+        "name": "The Unscaled Is Neutral Rule",
+        "body": "A reading with no scale shared across Macs (system POWER in watts: an Air peaks near 20 W, a Max past 100 W) is inked letter white, never placed on the heat gradient, since the same watts would mean different heat on different chips.",
+        "section": "colors"
+      },
+      {
         "name": "The Always Colored Rule",
         "body": "The menu bar reading is always heat-colored (rendered as a non-template image), in both appearances, and its level is raised to at least HOT under serious and BURN under critical thermal pressure.",
         "section": "colors"

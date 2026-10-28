@@ -30,6 +30,8 @@ final class Monitor {
     private(set) var appMemory: [AppMemory] = []
     /// Empty on fanless Macs and when the SMC can't be opened.
     private(set) var fans: [FanReading] = []
+    /// Whole-system power in watts, from the SMC.
+    private(set) var systemPower: Double?
     private(set) var updatedAt = Date.now
 
     var rate = SampleRate.six {
@@ -63,7 +65,7 @@ final class Monitor {
     }
 
     @ObservationIgnored private let reader = HIDTemperatureReader()
-    @ObservationIgnored private let fanReader = SMCFanReader()
+    @ObservationIgnored private let smc = SMCReader()
     @ObservationIgnored private let coreNames = CoreLayout.names(for: CoreLayout.read())
     @ObservationIgnored private let processSampler = ProcessSampler()
     @ObservationIgnored private var previousTicks: [CPUTicks]?
@@ -87,7 +89,8 @@ final class Monitor {
         memory: MemoryReading? = nil,
         memoryHistory: [TimedValue] = [],
         appMemory: [AppMemory] = [],
-        fans: [FanReading] = []
+        fans: [FanReading] = [],
+        systemPower: Double? = nil
     ) {
         self.sensors = TemperatureSensors.byName(sensors)
         self.cpuTemperature = TemperatureSensors.cpuTemperature(from: self.sensors)
@@ -102,6 +105,7 @@ final class Monitor {
         self.memoryHistory = memoryHistory
         self.appMemory = appMemory
         self.fans = fans
+        self.systemPower = systemPower
     }
 
     init() {
@@ -128,7 +132,8 @@ final class Monitor {
         cpuTemperature = TemperatureSensors.cpuTemperature(from: sensors)
         thermalState = ProcessInfo.processInfo.thermalState
         memory = MemoryStats.read()
-        fans = fanReader?.read() ?? []
+        fans = smc?.fans() ?? []
+        systemPower = smc?.systemPower()
         updatedAt = .now
 
         if let ticks = CPULoad.sample() {

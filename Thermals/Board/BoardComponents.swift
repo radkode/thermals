@@ -9,6 +9,10 @@ enum Format {
         "\(Int((fraction * 100).rounded()))%"
     }
 
+    static func watts(_ watts: Double) -> String {
+        "\(Int(watts.rounded()))W"
+    }
+
     /// Binary gigabytes, as Activity Monitor counts them: one decimal under 100.
     static func gigabytes(_ bytes: UInt64) -> String {
         let value = Double(bytes) / 1_073_741_824

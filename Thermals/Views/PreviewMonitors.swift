@@ -67,7 +67,8 @@ enum PreviewMonitors {
             memory: memory,
             memoryHistory: memoryHistory,
             appMemory: appMemory,
-            fans: fans
+            fans: fans,
+            systemPower: 6 + 52 * load
         )
     }
 }

@@ -358,6 +358,12 @@ struct MemoryStatsTests {
         #expect(Format.gigabytes(0) == "0.0")
         #expect(Format.gigabytes(1_073_741_824 * 128) == "128")
     }
+
+    @Test func wattsRoundToWholeWatts() {
+        #expect(Format.watts(19.84) == "20W")
+        #expect(Format.watts(0.4) == "0W")
+        #expect(Format.watts(142.5) == "143W")
+    }
 }
 
 struct MemoryBandTests {
@@ -503,6 +509,14 @@ struct SMCTests {
         #expect(SMC.plausibleRPM(1355.5) == 1355.5)
         #expect(SMC.plausibleRPM(-1) == nil)
         #expect(SMC.plausibleRPM(3e38) == nil)
+    }
+
+    @Test func systemPowerIsUnavailableWhenNotMeasuring() {
+        #expect(SMC.plausibleWatts(19.84) == 19.84)
+        #expect(SMC.plausibleWatts(0) == nil)
+        #expect(SMC.plausibleWatts(-2) == nil)
+        #expect(SMC.plausibleWatts(500) == nil)
+        #expect(SMC.plausibleWatts(3e38) == nil)
     }
 
     @Test func fanFractionIsShareOfItsRange() {

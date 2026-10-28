@@ -15,8 +15,8 @@ struct FanReading: Identifiable, Equatable {
     }
 }
 
-/// Fan speeds from the System Management Controller (`FNum`, `F<n>Ac`, `F<n>Mn`, `F<n>Mx`). Fanless Macs report no fans.
-final class SMCFanReader {
+/// Fan speeds (`FNum`, `F<n>Ac`, `F<n>Mn`, `F<n>Mx`) and system power (`PSTR`) from the System Management Controller. Fanless Macs report no fans.
+final class SMCReader {
     private let connection: io_connect_t
 
     init?() {
@@ -32,11 +32,16 @@ final class SMCFanReader {
         IOServiceClose(connection)
     }
 
-    func read() -> [FanReading] {
+    func fans() -> [FanReading] {
         guard let count = value("FNum"), let fans = SMC.fanCount(count) else { return [] }
         return (0..<fans).map { fan in
             FanReading(id: fan + 1, rpm: rpm("F\(fan)Ac"), minimum: rpm("F\(fan)Mn"), maximum: rpm("F\(fan)Mx"))
         }
+    }
+
+    /// Whole-system power in watts; nil when the key is missing or implausible.
+    func systemPower() -> Double? {
+        value("PSTR").flatMap(SMC.plausibleWatts)
     }
 
     private func rpm(_ key: String) -> Double? {
@@ -103,13 +108,18 @@ enum SMC {
         (0...20_000).contains(value) ? value : nil
     }
 
+    /// A Mac draws some power while it runs, and none draws 500 W; zero means the key isn't measuring.
+    static func plausibleWatts(_ value: Double) -> Double? {
+        value > 0 && value < 500 ? value : nil
+    }
+
     static func fourCharCode(_ text: String) -> UInt32? {
         let scalars = Array(text.unicodeScalars)
         guard scalars.count == 4, scalars.allSatisfy(\.isASCII) else { return nil }
         return scalars.reduce(0) { $0 << 8 | $1.value }
     }
 
-    /// Decodes the value types fan keys use; anything else is nil rather than a guess.
+    /// Decodes the value types fan and power keys use; anything else is nil rather than a guess.
     static func decode(_ bytes: [UInt8], type: UInt32) -> Double? {
         switch type {
         case float:

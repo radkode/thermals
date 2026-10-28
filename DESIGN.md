@@ -167,6 +167,8 @@ A near-black and steel board where all chroma belongs to heat: steel blue for co
 
 **The Derived Is Neutral Rule.** An aggregate the app derives rather than measures (KERNEL + OTHERS) is shown in steel light with an unlit lamp and an empty STATUS. It is never banded with per-process thresholds.
 
+**The Unscaled Is Neutral Rule.** A reading with no scale shared across Macs (system POWER in watts: an Air peaks near 20 W, a Max past 100 W) is inked letter white, never placed on the heat gradient, since the same watts would mean different heat on different chips.
+
 **The Always Colored Rule.** The menu bar reading is always heat-colored (rendered as a non-template image), in both appearances, and its level is raised to at least HOT under serious and BURN under critical thermal pressure.
 
 **The Pressure Is A State Rule.** Thermal and memory pressure are discrete OS states, not readings, so they use fixed inks, not the gradient: thermal NOMINAL steel light, FAIR letter white, SERIOUS amber, CRITICAL burn red; memory NORMAL steel light, WARN amber, CRITICAL burn red.
@@ -195,7 +197,7 @@ A near-black and steel board where all chroma belongs to heat: steel blue for co
 
 A single vertical column inside a 400pt-wide popover with a 14pt frame and 14pt between sections: flap tabs (HEAT, CPU, RAM; Cmd-1 to Cmd-3), the selected board, MENU BAR tabs (TEMP, LOAD, BOTH), TEMPERATURE tabs (°C, °F), UPDATE EVERY tabs (3 S, 6 S, 10 S), LAUNCH AT LOGIN tabs (ON, OFF), a failure row only when macOS refuses a login-item change, a NEW VERSION row only while an update waits, then a footer with UPDATED clock left and Quit right.
 
-Each board opens with a header (hero flap strip left under its label, two right-aligned stats stacked 9pt apart on the right), then the lamp meter, then board panels. Board panels pad 8pt; rows stack 3pt apart; columns sit 6pt apart at widths computed from cell counts (lamp 6pt, name 18 cells on HEAT or 17 on CPU processes, value 3 or 4 cells, STATUS 4 cells), so headers align with rows exactly. The CPU board splits cores into PERFORMANCE and EFFICIENCY platforms side by side, 12pt apart. The RAM board's hero is MEMORY USED (app + wired + compressed) with SWAP and PRESSURE stats, then a MEMORY breakdown panel (APP, WIRED, COMPRESSED, CACHED, FREE in fixed order, each with a share bar and GB), then YOUR APPS ranked by footprint.
+Each board opens with a header (hero flap strip left under its label, two right-aligned stats stacked 9pt apart on the right; on HEAT the top one is a pair, POWER then LOAD 12pt apart), then the lamp meter, then board panels. Board panels pad 8pt; rows stack 3pt apart; columns sit 6pt apart at widths computed from cell counts (lamp 6pt, name 18 cells on HEAT or 17 on CPU processes, value 3 or 4 cells, STATUS 4 cells), so headers align with rows exactly. The CPU board splits cores into PERFORMANCE and EFFICIENCY platforms side by side, 12pt apart. The RAM board's hero is MEMORY USED (app + wired + compressed) with SWAP and PRESSURE stats, then a MEMORY breakdown panel (APP, WIRED, COMPRESSED, CACHED, FREE in fixed order, each with a share bar and GB), then YOUR APPS ranked by footprint.
 
 **The Fixed Platform Rule.** Measured rows keep a fixed order: sensors by board label, cores P1.. then E1.., memory parts APP to FREE. Rows never re-sort by value; ranked rows that jump were rejected.
 
