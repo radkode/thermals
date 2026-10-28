@@ -101,7 +101,8 @@ enum PreviewMonitors {
             memoryHistory: memoryHistory,
             appMemory: appMemory,
             fans: fans,
-            systemPower: 6 + 52 * load
+            systemPower: 6 + 52 * load,
+            gpuPower: 1.5 + 21 * load
         )
     }
 }

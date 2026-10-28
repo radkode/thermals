@@ -167,7 +167,7 @@ A near-black and steel board uses steel blue, letter white and pale sodium for u
 
 **The Derived Is Neutral Rule.** An aggregate the app derives rather than measures (UNMEASURED EST) is shown in steel light with an unlit lamp and an empty STATUS. It is never banded with per-process thresholds.
 
-**The Unscaled Is Neutral Rule.** A reading with no scale shared across Macs (system POWER in watts: an Air peaks near 20 W, a Max past 100 W) is inked letter white, never placed on the heat gradient, since the same watts would mean different heat on different chips.
+**The Unscaled Is Neutral Rule.** A reading with no scale shared across Macs (system POWER and GPU in watts: an Air peaks near 20 W, a Max past 100 W) is inked letter white, never placed on the heat gradient, since the same watts would mean different heat on different chips.
 
 **The Always Colored Rule.** Menu-bar values remain non-template colored images in both appearances. OS serious/critical pressure adds an explicit warning in every menu mode and raises temperature ink even when the temperature is unavailable. A stale selected source is withheld and marked with a question mark.
 
@@ -197,7 +197,7 @@ A near-black and steel board uses steel blue, letter white and pale sodium for u
 
 A 400pt-wide shell has a 14pt frame and section gaps. The selected board uses its natural height, limited only by the current screen visible height minus 32pt. Normal readings stay fully visible whenever they fit. Overflow uses one scrolling content viewport with board tabs, available-update action and footer outside it. Only the selected board exists. Settings replaces the readings, with Back and Cmd-comma to return; Escape returns from Settings or dismisses the panel. Settings holds menu mode, units, sample interval, heat alerts and login items. Footer freshness is age since the selected board's last successful reading, not time since a timer fired.
 
-Each board opens with its hero and contextual stats, followed by source notices and compact units guidance, then a lamp meter and panels. Detailed definitions use help text rather than paragraphs between readings. CPU shows its top five processes before the two core platforms. RAM states used and installed GB, OS pressure, the five memory parts, and up to ten apps. HEAT links directly to CPU for attribution. Panels pad 8pt; rows stack 3pt apart. Names use 16 cells for sensors and 15 for processes/apps, with flexible spacing before fixed numeric/status columns so rows fit with persistent native scrollbars.
+Each board opens with its hero and contextual stats, followed by source notices and compact units guidance, then a lamp meter and panels. HEAT's contextual stats are a 2x2 grid: POWER and LOAD, then GPU directly under POWER (so it reads as part of the power figure) beside PRESSURE. Detailed definitions use help text rather than paragraphs between readings. CPU shows its top five processes before the two core platforms. RAM states used and installed GB, OS pressure, the five memory parts, and up to ten apps. HEAT links directly to CPU for attribution. Panels pad 8pt; rows stack 3pt apart. Names use 16 cells for sensors and 15 for processes/apps, with flexible spacing before fixed numeric/status columns so rows fit with persistent native scrollbars.
 
 **The Fixed Platform Rule.** Measured rows keep a fixed order: sensors by board label, cores P1.. then E1.., memory parts APP to FREE. Rows never re-sort by value; ranked rows that jump were rejected.
 

@@ -44,6 +44,8 @@ final class Monitor {
     private(set) var fans: [FanReading] = []
     /// Whole-system power in watts, from the SMC.
     private(set) var systemPower: Double?
+    /// GPU power in watts, from IOReport; nil until its energy counter has moved.
+    private(set) var gpuPower: Double?
     private(set) var temperatureState = ReadingState.loading
     private(set) var cpuState = ReadingState.loading
     private(set) var memoryState = ReadingState.loading
@@ -87,6 +89,8 @@ final class Monitor {
 
     @ObservationIgnored private let reader = HIDTemperatureReader()
     @ObservationIgnored private let smc = SMCReader()
+    @ObservationIgnored private let gpuReader = GPUPowerReader()
+    @ObservationIgnored private var gpuMeter = GPUPowerMeter()
     @ObservationIgnored private let coreNames = CoreLayout.names(for: CoreLayout.read())
     @ObservationIgnored private let processSampler = ProcessSampler()
     @ObservationIgnored private var previousTicks: [CPUTicks]?
@@ -114,6 +118,7 @@ final class Monitor {
         appMemory: [AppMemory] = [],
         fans: [FanReading] = [],
         systemPower: Double? = nil,
+        gpuPower: Double? = nil,
         sampledAt: Date? = nil,
         processState: ReadingState? = nil,
         appMemoryState: ReadingState? = nil,
@@ -133,6 +138,7 @@ final class Monitor {
         self.appMemory = appMemory
         self.fans = fans
         self.systemPower = systemPower
+        self.gpuPower = gpuPower
         let now = sampledAt ?? history.last?.date ?? loadHistory.last?.date ?? memoryHistory.last?.date ?? Date.now
         temperatureState = cpuTemperature == nil ? .unavailable : .available(now)
         cpuState = cpuLoad == nil ? .unavailable : .available(now)
@@ -179,6 +185,7 @@ final class Monitor {
         fans = fanReadings ?? []
         fanState = fanReadings == nil ? .unavailable : .available(now)
         systemPower = smc?.systemPower()
+        gpuPower = gpuReader?.sample().flatMap { gpuMeter.watts($0) }
         updateCPU(ticks: CPULoad.sample(), at: now)
         if let cpuTemperature { history.append(TimedValue(date: now, value: cpuTemperature)) }
         if let memory { memoryHistory.append(TimedValue(date: now, value: memory.usedPercent)) }

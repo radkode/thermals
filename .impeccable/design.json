@@ -514,7 +514,7 @@
       },
       {
         "name": "The Unscaled Is Neutral Rule",
-        "body": "A reading with no scale shared across Macs (system POWER in watts: an Air peaks near 20 W, a Max past 100 W) is inked letter white, never placed on the heat gradient, since the same watts would mean different heat on different chips.",
+        "body": "A reading with no scale shared across Macs (system POWER and GPU in watts: an Air peaks near 20 W, a Max past 100 W) is inked letter white, never placed on the heat gradient, since the same watts would mean different heat on different chips.",
         "section": "colors"
       },
       {

@@ -44,15 +44,10 @@ struct HeatBoard: View {
                 )
             }
             Spacer(minLength: 12)
-            VStack(alignment: .trailing, spacing: 9) {
-                HStack(alignment: .top, spacing: 12) {
-                    // Watts have no scale shared across chips, so power stays neutral rather than claim a heat color.
-                    BoardStat(
-                        label: "POWER",
-                        value: monitor.systemPower.map(Format.watts) ?? "--",
-                        cells: 4,
-                        ink: monitor.systemPower == nil ? Board.steelLight : Board.letterWhite
-                    )
+            // GPU sits under POWER so it reads as part of the power figure.
+            Grid(alignment: .trailing, horizontalSpacing: 12, verticalSpacing: 9) {
+                GridRow {
+                    watts("POWER", monitor.systemPower)
                     BoardStat(
                         label: "LOAD",
                         value: monitor.cpuLoad.map(Format.percent) ?? "--",
@@ -60,9 +55,17 @@ struct HeatBoard: View {
                         ink: monitor.cpuLoad.map { Board.usage(HeatLevel(loadPercent: ($0 * 100).rounded())) } ?? Board.steelLight
                     )
                 }
-                BoardStat(label: "PRESSURE", value: monitor.thermalState.boardTitle, cells: 8, ink: monitor.thermalState.ink)
+                GridRow {
+                    watts("GPU", monitor.gpuPower)
+                    BoardStat(label: "PRESSURE", value: monitor.thermalState.boardTitle, cells: 8, ink: monitor.thermalState.ink)
+                }
             }
         }
+    }
+
+    /// Watts have no scale shared across chips, so power stays neutral rather than claim a heat color.
+    private func watts(_ label: String, _ watts: Double?) -> some View {
+        BoardStat(label: label, value: watts.map(Format.watts) ?? "--", cells: 4, ink: watts == nil ? Board.steelLight : Board.letterWhite)
     }
 }
 
