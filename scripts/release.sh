@@ -144,6 +144,8 @@ cask "thermals" do
   depends_on arch: :arm64
   depends_on macos: :sonoma
 
+  auto_updates true
+
   app "Thermals.app"
 
   uninstall quit: "com.radkode.thermals"
