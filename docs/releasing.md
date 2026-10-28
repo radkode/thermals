@@ -11,7 +11,7 @@ Thermals ships as a Homebrew cask from the public tap [`radkode/homebrew-thermal
    - `gh release list -R radkode/homebrew-thermals`
    - `brew update && brew upgrade --cask radkode/thermals/thermals`, then `spctl --assess --type execute -vv /Applications/Thermals.app` must print `source=Notarized Developer ID`.
 
-The workflow can also be started by hand (`gh workflow run release.yml -R radkode/thermals --ref main`); it still releases only an untagged version.
+On an already tagged version, `gh workflow run release.yml -R radkode/thermals --ref main` runs a secret-free build and test preflight on the release runner. On an untagged version, the same command starts a release, so check the current version and tag first.
 
 Don't:
 - hand-edit the tap's `Casks/thermals.rb`;

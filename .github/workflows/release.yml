@@ -49,6 +49,27 @@ jobs:
             echo "release=true" >> "$GITHUB_OUTPUT"
           fi
 
+  preflight:
+    needs: check
+    if: github.event_name == 'workflow_dispatch' && needs.check.outputs.release == 'false'
+    runs-on: macos-26
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Install XcodeGen 2.46.0
+        run: |
+          curl --fail --location --silent --show-error \
+            https://github.com/yonaskolb/XcodeGen/releases/download/2.46.0/xcodegen.zip \
+            --output "$RUNNER_TEMP/xcodegen.zip"
+          echo "4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806  $RUNNER_TEMP/xcodegen.zip" | shasum -a 256 --check
+          ditto -x -k "$RUNNER_TEMP/xcodegen.zip" "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/xcodegen/bin" >> "$GITHUB_PATH"
+      - name: Build and test without release secrets
+        run: |
+          xcodegen generate
+          xcodebuild -project Thermals.xcodeproj -scheme Thermals -destination 'platform=macOS' -derivedDataPath build test
+
   release:
     needs: check
     if: needs.check.outputs.release == 'true'
