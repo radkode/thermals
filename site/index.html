@@ -163,6 +163,7 @@ button, .button { font: inherit; color: inherit; cursor: pointer; border: 0; bac
 .board-scale { overflow: hidden; }
 .board-header { display: flex; justify-content: space-between; align-items: flex-start; }
 .board-header .stats { display: flex; flex-direction: column; align-items: flex-end; gap: 9px; }
+.stat-pair { display: flex; align-items: flex-start; gap: 12px; }
 .stat { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
 .hero-stat { display: flex; flex-direction: column; gap: 5px; }
 .panel { background: var(--flap-black); border-radius: 5px; border: 1px solid rgba(91, 94, 99, 0.45); padding: 8px; display: flex; flex-direction: column; gap: 3px; }
@@ -404,12 +405,14 @@ footer a:hover { color: var(--amber); }
     };
   }
 
-  function header(heroLabel, heroCells, stats) {
+  function header(heroLabel, heroCells, stats, pairFirst = false) {
     const hero = strip(heroCells, "hero", "right");
     const statStrips = stats.map(([name, cells]) => ({ name, strip: strip(cells, "row", "right") }));
+    const statEls = statStrips.map((s) => div("stat", label(s.name), s.strip.el));
+    const statRows = pairFirst ? [div("stat-pair", ...statEls.slice(0, 2)), ...statEls.slice(2)] : statEls;
     const el = div("board-header",
       div("hero-stat", label(heroLabel), hero.el),
-      div("stats", ...statStrips.map((s) => div("stat", label(s.name), s.strip.el))));
+      div("stats", ...statRows));
     return { el, hero, stats: statStrips.map((s) => s.strip) };
   }
 
@@ -446,7 +449,7 @@ footer a:hover { color: var(--amber); }
 
   // HEAT
   const heatBoard = document.getElementById("board-heat");
-  const heatHead = header("CPU DIE", 4, [["LOAD", 4], ["PRESSURE", 8]]);
+  const heatHead = header("CPU DIE", 4, [["POWER", 4], ["LOAD", 4], ["PRESSURE", 8]], true);
   const heatMeter = meter(level.celsius, 10, "°");
   const fanRows = [1, 2].map((id) => {
     const l = lamp(), name = strip(5), bar = lensBar(), rpm = strip(4, "row", "right");
@@ -518,8 +521,9 @@ footer a:hover { color: var(--amber); }
 
     // HEAT
     heatHead.hero.set(`${Math.round(die)}°`, heat(level.celsius(Math.round(die))));
-    heatHead.stats[0].set(`${Math.round(load)}%`, heat(level.load(Math.round(load))));
-    heatHead.stats[1].set(pressure[0], pressure[1]);
+    heatHead.stats[0].set(`${Math.round(8 + 44 * x + wobble(3))}W`, WHITE);
+    heatHead.stats[1].set(`${Math.round(load)}%`, heat(level.load(Math.round(load))));
+    heatHead.stats[2].set(pressure[0], pressure[1]);
     heatMeter.push(die);
     fanRows.forEach((f, i) => {
       const share = Math.max(0, Math.min(1, (x - 0.35) / 0.6)) * (0.95 - i * 0.06);
