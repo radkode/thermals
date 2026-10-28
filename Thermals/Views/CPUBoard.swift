@@ -10,7 +10,8 @@ struct CPUBoard: View {
         VStack(alignment: .leading, spacing: 14) {
             header
             ReadingNotice(state: monitor.cpuState, source: "CPU load", retry: monitor.refresh)
-            BoardNote("Whole-system load: 100% means all cores are fully occupied.")
+            BoardNote("Total: 100% = all cores.")
+                .help("Whole-system load: 100% means all cores are fully occupied. Load is utilization, not heat.")
             LampMeter(
                 readings: monitor.loadHistory,
                 scale: .load,
@@ -142,9 +143,9 @@ private struct ProcessBoard: View {
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel("Estimated unmeasured CPU work, percent of one core, derived from total load, \(Int(hiddenLoad.rounded())) percent CPU")
                 }
-                BoardNote("100% per process = one core; multithreaded apps can exceed 100%. Load is utilization, not heat.")
+                BoardNote("100% = one core. Rows are not additive.")
+                    .help("Multithreaded apps can exceed 100%. The top five are smoothed. Unmeasured work is estimated from all sampled processes, so these rows do not add up to the headline.")
                     .padding(.top, 5)
-                BoardNote("Top five are smoothed. Unmeasured work is estimated from all sampled processes, so these rows do not add up to the headline.")
             }
             .animation(reduceMotion ? nil : Board.settle, value: shown.map(\.name))
         }

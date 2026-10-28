@@ -195,13 +195,13 @@ A near-black and steel board uses steel blue, letter white and pale sodium for u
 
 ## Layout
 
-A 400pt-wide shell has a 14pt frame and section gaps. Height is capped at 640pt and the current screen visible height minus 32pt. Board tabs, available-update action and footer remain outside one scrolling content viewport. Only the selected board exists. Settings replaces the readings inside that viewport, with Back and Cmd-comma to return; Escape returns from Settings or dismisses the panel. Settings holds menu mode, units, sample interval, heat alerts and login items. Footer freshness is age since the selected board's last successful reading, not time since a timer fired.
+A 400pt-wide shell has a 14pt frame and section gaps. The selected board uses its natural height, limited only by the current screen visible height minus 32pt. Normal readings stay fully visible whenever they fit. Overflow uses one scrolling content viewport with board tabs, available-update action and footer outside it. Only the selected board exists. Settings replaces the readings, with Back and Cmd-comma to return; Escape returns from Settings or dismisses the panel. Settings holds menu mode, units, sample interval, heat alerts and login items. Footer freshness is age since the selected board's last successful reading, not time since a timer fired.
 
-Each board opens with its hero and contextual stats, followed by source notices and units guidance, then a lamp meter and panels. CPU shows its top five processes before the two core platforms. RAM states used and installed GB, OS pressure, the five memory parts, and up to ten apps. HEAT links directly to CPU for attribution. Panels pad 8pt; rows stack 3pt apart. Names use 16 cells for sensors and 15 for processes/apps, with flexible spacing before fixed numeric/status columns so rows fit with persistent native scrollbars.
+Each board opens with its hero and contextual stats, followed by source notices and compact units guidance, then a lamp meter and panels. Detailed definitions use help text rather than paragraphs between readings. CPU shows its top five processes before the two core platforms. RAM states used and installed GB, OS pressure, the five memory parts, and up to ten apps. HEAT links directly to CPU for attribution. Panels pad 8pt; rows stack 3pt apart. Names use 16 cells for sensors and 15 for processes/apps, with flexible spacing before fixed numeric/status columns so rows fit with persistent native scrollbars.
 
 **The Fixed Platform Rule.** Measured rows keep a fixed order: sensors by board label, cores P1.. then E1.., memory parts APP to FREE. Rows never re-sort by value; ranked rows that jump were rejected.
 
-**The Still Footer Rule.** The shell bounds the selected content instead of measuring every board. The single content viewport scrolls; navigation, updates and footer remain reachable. No blank filler rows or nested sensor/app scrolling. Changing boards or opening Settings resets the content scroll position and stops irrelevant process/footprint sampling.
+**The Still Footer Rule.** The shell fits the selected content instead of measuring every board. Only content that exceeds the available screen height scrolls; navigation, updates and footer remain reachable. No blank filler rows or nested sensor/app scrolling. Changing boards or opening Settings resets the content scroll position and stops irrelevant process/footprint sampling.
 
 ## Elevation & Depth
 
@@ -247,7 +247,7 @@ Lamp plus 4-cell flap strip per option, 10pt apart. Selected: amber lamp lit, le
 A QUIT flap strip with a separate key segment (command symbol and Q on a flap-top face). Hover turns both amber over 0.12s ease-out. Bound to Cmd-Q.
 
 ### New Version Row
-Shown outside the scrolling viewport while Sparkle holds an available update: NEW VERSION, version strip and INSTALL. Installation uses Sparkle's own window. The row consumes space inside the fixed shell rather than increasing panel height.
+Shown outside the scrolling viewport while Sparkle holds an available update: NEW VERSION, version strip and INSTALL. Installation uses Sparkle's own window. The row participates in natural sizing and stays outside the overflow viewport when the screen limit is reached.
 
 ### Login Item Failure Row
 Settings distinguishes disabled, enabled, approval pending and failed login changes. Pending and failed states explain the condition and retain a button to Login Items. Heat Alerts distinguishes the requested preference from notification authorization; not-determined offers ALLOW, denied offers System Settings, and allowed notes that Focus can still silence notifications.
@@ -268,7 +268,7 @@ CPU die temperature, whole-system load, or both use Barlow Condensed at 15pt, co
 ### Do:
 - **Do** use `Board.heat` for temperature and `Board.usage` for utilization, with OS pressure kept explicit.
 - **Do** set board values in flap strips at hero (38 x 58pt) or row (11.5 x 19pt) size, uppercase, numbers right-aligned.
-- **Do** keep measured rows ordered and let only the selected board scroll inside the bounded shell.
+- **Do** keep measured rows ordered and show the complete selected board whenever it fits; scroll only for screen overflow.
 - **Do** reserve heat words for CPU temperature reference bands; use utilization words for CPU and memory.
 - **Do** honor Reduce Motion: flips swap instantly and ranked rows stop animating.
 - **Do** show placeholders (--, UNAVAILABLE, SAMPLING, COLLECTING READINGS) in steel light rather than a guessed value.

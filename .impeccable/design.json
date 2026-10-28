@@ -544,7 +544,7 @@
       },
       {
         "name": "The Still Footer Rule",
-        "body": "The shell bounds the selected content instead of measuring every board. The single content viewport scrolls; navigation, updates and footer remain reachable. No blank filler rows or nested sensor/app scrolling. Changing boards or opening Settings resets the content scroll position and stops irrelevant process/footprint sampling.",
+        "body": "The shell fits the selected content instead of measuring every board. Only content that exceeds the available screen height scrolls; navigation, updates and footer remain reachable. No blank filler rows or nested sensor/app scrolling. Changing boards or opening Settings resets the content scroll position and stops irrelevant process/footprint sampling.",
         "section": "layout"
       },
       {
@@ -556,7 +556,7 @@
     "dos": [
       "Do use `Board.heat` for temperature and `Board.usage` for utilization, with OS pressure kept explicit.",
       "Do set board values in flap strips at hero (38 x 58pt) or row (11.5 x 19pt) size, uppercase, numbers right-aligned.",
-      "Do keep measured rows ordered and let only the selected board scroll inside the bounded shell.",
+      "Do keep measured rows ordered and show the complete selected board whenever it fits; scroll only for screen overflow.",
       "Do reserve heat words for CPU temperature reference bands; use utilization words for CPU and memory.",
       "Do honor Reduce Motion: flips swap instantly and ranked rows stop animating.",
       "Do show placeholders (--, UNAVAILABLE, SAMPLING, COLLECTING READINGS) in steel light rather than a guessed value."

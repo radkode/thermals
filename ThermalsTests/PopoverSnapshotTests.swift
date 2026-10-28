@@ -9,6 +9,84 @@ import Testing
 struct PopoverSnapshotTests {
     nonisolated static let directory = ProcessInfo.processInfo.environment["SNAPSHOT_DIR"]
 
+    @Test func ordinaryBoardsFitWithoutOverflow() throws {
+        for board in BoardKind.allCases {
+            let monitor = PreviewMonitors.hot()
+            let natural = try render(monitor, board: board, height: 2000)
+            let laptop = try render(monitor, board: board, height: 736)
+            #expect(natural.height < 736, "\(board) must fit on an 800-point desktop after screen margins")
+            #expect(laptop.height == natural.height, "\(board) must keep its complete natural layout")
+            #expect(laptop.dataProvider?.data == natural.dataProvider?.data)
+        }
+    }
+
+    @Test func overflowUsesOnlyTheAvailableHeight() throws {
+        let monitor = PreviewMonitors.largeMachine()
+        let natural = try render(monitor, board: .cpu, height: 2000)
+        let bounded = try render(monitor, board: .cpu, height: 736)
+        #expect(natural.height > 736)
+        #expect(bounded.height == 736)
+        let compact = try render(PreviewMonitors.hot(), board: .heat, height: 520)
+        #expect(compact.height == 520)
+    }
+
+    @Test func tenAppRowsFitOnANineHundredPointDesktop() throws {
+        let source = PreviewMonitors.hot()
+        let monitor = Monitor(sensors: source.sensors, cpuLoad: source.cpuLoad, thermalState: source.thermalState,
+                              history: source.history, memory: source.memory, memoryHistory: source.memoryHistory,
+                              appMemory: source.appMemory + (7...10).map { AppMemory(name: "App \($0)", bytes: 100_000_000) })
+        let natural = try render(monitor, board: .ram, height: 2000)
+        let bounded = try render(monitor, board: .ram, height: 836)
+        #expect(natural.height < 836)
+        #expect(bounded.dataProvider?.data == natural.dataProvider?.data)
+    }
+
+    @Test func nativeHostingResizesAndOnlyScrollsOverflow() async throws {
+        let host = NSHostingView(rootView: PopoverView(monitor: PreviewMonitors.hot(), pinnedBoard: .heat))
+        let window = NSWindow(contentRect: .zero, styleMask: .borderless, backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        window.contentView = host
+        defer { window.close() }
+        for (monitor, board, height, needsScroll) in [
+            (PreviewMonitors.largeMachine(), BoardKind.cpu, 736.0, true),
+            (PreviewMonitors.hot(), BoardKind.heat, 736.0, false),
+            (PreviewMonitors.hot(), .cpu, 736.0, false),
+            (PreviewMonitors.hot(), .ram, 736.0, false),
+            (PreviewMonitors.hot(), .heat, 520.0, true),
+        ] {
+            host.rootView = PopoverView(monitor: monitor, pinnedBoard: board, previewHeight: height)
+            window.setContentSize(host.fittingSize)
+            host.layoutSubtreeIfNeeded()
+            try await Task.sleep(for: .milliseconds(100))
+            #expect(host.frame.height <= height)
+            if !needsScroll { #expect(host.fittingSize.height < height) }
+            let scrolls = scrollViews(in: host).filter { !$0.isHiddenOrHasHiddenAncestor }
+            #expect(!scrolls.isEmpty == needsScroll, "\(board) at \(height) points")
+            if needsScroll {
+                let scroll = try #require(scrolls.first)
+                let document = try #require(scroll.documentView)
+                #expect(document.frame.height > scroll.contentView.bounds.height)
+            }
+        }
+        host.rootView = PopoverView(monitor: PreviewMonitors.hot(), pinnedBoard: .heat, previewSettings: true, previewHeight: 736)
+        window.setContentSize(host.fittingSize)
+        host.layoutSubtreeIfNeeded()
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(host.fittingSize.height < 520, "Settings must relinquish the preceding overflow height")
+        #expect(scrollViews(in: host).filter { !$0.isHiddenOrHasHiddenAncestor }.isEmpty)
+    }
+
+    private func scrollViews(in view: NSView) -> [NSScrollView] {
+        (view as? NSScrollView).map { [$0] } ?? view.subviews.flatMap { scrollViews(in: $0) }
+    }
+
+    private func render(_ monitor: Monitor, board: BoardKind, height: CGFloat) throws -> CGImage {
+        let view = PopoverView(monitor: monitor, pinnedBoard: board, pinnedUnit: .celsius, previewHeight: height)
+            .environment(\.snapshotRendering, true)
+        let renderer = ImageRenderer(content: view)
+        return try #require(renderer.cgImage)
+    }
+
     @Test(.enabled(if: directory != nil))
     func boardsFitWithPersistentScrollbars() throws {
         let monitor = PreviewMonitors.largeMachine()
@@ -57,7 +135,7 @@ struct PopoverSnapshotTests {
         ]
         for (name, monitor, board) in states {
             let unit: TemperatureUnit = name.hasSuffix("fahrenheit") ? .fahrenheit : .celsius
-            let height: CGFloat = name == "compact" ? 520 : 640
+            let height: CGFloat = name == "compact" ? 520 : 768
             let view = PopoverView(
                 monitor: monitor, updater: name.hasPrefix("update") ? Updater(previewing: "0.3.3") : nil,
                 pinnedBoard: board, pinnedUnit: unit, previewLoginError: name == "login-error",
@@ -71,7 +149,7 @@ struct PopoverSnapshotTests {
             renderer.scale = 2
             let image = try #require(renderer.cgImage)
             #expect(image.width == 800)
-            #expect(image.height == Int(height * 2))
+            #expect(image.height <= Int(height * 2))
             let png = try #require(NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:]))
             try png.write(to: URL(fileURLWithPath: Self.directory!).appendingPathComponent("popover-\(name).png"))
         }

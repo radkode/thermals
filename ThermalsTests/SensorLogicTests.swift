@@ -627,9 +627,9 @@ struct UXPresentationTests {
         #expect(LampMeter.trend([]).contains("Not enough"))
     }
 
-    @Test func panelFitsSmallScreensAndCapsLargerOnes() {
-        #expect(Board.panelHeight(available: 768) == 640)
-        #expect(Board.panelHeight(available: 868) == 640)
+    @Test func panelUsesAvailableScreenHeightWithClearance() {
+        #expect(Board.panelHeight(available: 768) == 736)
+        #expect(Board.panelHeight(available: 868) == 836)
         #expect(Board.panelHeight(available: 550) == 518)
     }
 

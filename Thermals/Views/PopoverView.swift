@@ -2,7 +2,7 @@ import ServiceManagement
 import SwiftUI
 import UserNotifications
 
-// A bounded departure board: summary first, details scroll, navigation and actions stay put.
+// A content-sized departure board; only screen overflow scrolls, with navigation and actions outside.
 struct PopoverView: View {
     let monitor: Monitor
     var updater: Updater?
@@ -13,7 +13,7 @@ struct PopoverView: View {
     var previewLoginPending = false
     var previewNotification: NotificationAccess = .allowed
     var previewAlerts = HeatAlertsSetting.on
-    var previewHeight: CGFloat = 640
+    var previewHeight: CGFloat = 768
     var previewDate: Date = PreviewMonitors.referenceDate
 
     @AppStorage("board") private var storedBoard = BoardKind.heat
@@ -37,14 +37,15 @@ struct PopoverView: View {
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             let now = preview ? previewDate : context.date
-            VStack(alignment: .leading, spacing: 14) {
-                FlapTabs(selection: Binding(get: { board }, set: { storedBoard = $0; showsSettings = false }), shortcuts: true, noun: "board")
-                viewport
-                if let version = updater?.available { updateRow(version) }
-                footer(at: now)
+            let height = preview ? previewHeight : Board.panelHeight(available: screenHeight)
+            ViewThatFits(in: .vertical) {
+                shell(at: now) { content }
+                    .fixedSize(horizontal: false, vertical: true)
+                shell(at: now) { viewport }
+                    .frame(height: height)
             }
-            .padding(14)
-            .frame(width: Board.popoverWidth, height: preview ? previewHeight : Board.panelHeight(available: screenHeight))
+            .frame(width: Board.popoverWidth)
+            .frame(maxHeight: height)
             .background(Board.steelFrame)
             .environment(\.colorScheme, .dark)
             .environment(\.temperatureUnit, pinnedUnit ?? temperatureUnit)
@@ -66,6 +67,16 @@ struct PopoverView: View {
             if showsSettings { showsSettings = false }
             else { NSApp.keyWindow?.orderOut(nil) }
         }
+    }
+
+    private func shell(at now: Date, @ViewBuilder content: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            FlapTabs(selection: Binding(get: { board }, set: { storedBoard = $0; showsSettings = false }), shortcuts: true, noun: "board")
+            content()
+            if let version = updater?.available { updateRow(version) }
+            footer(at: now)
+        }
+        .padding(14)
     }
 
     private var viewport: some View {

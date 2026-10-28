@@ -11,7 +11,8 @@ struct HeatBoard: View {
             header
             ReadingNotice(state: monitor.temperatureState, source: "CPU temperature", retry: monitor.refresh)
             HStack {
-                BoardNote("Thermal pressure is macOS's assessment, not a temperature limit.")
+                BoardNote("Pressure: macOS assessment.")
+                    .help("Thermal pressure is macOS's assessment, not a temperature limit.")
                 Spacer(minLength: 8)
                 FlapButton(title: "CPU", accessibilityName: "Inspect current CPU activity", action: inspectCPU)
             }
@@ -127,7 +128,8 @@ struct SensorBoard: View {
                 )
                 ForEach(sensors, id: \.name, content: row)
                 if sensors.isEmpty { BoardNote("No temperature sensors available.") }
-                BoardNote("Bands apply only to CPU die sensors; they are reference ranges, not hardware safety limits.")
+                BoardNote("CPU bands are reference ranges.")
+                    .help("Bands apply only to CPU die sensors, not hardware safety limits.")
             }
         }
     }

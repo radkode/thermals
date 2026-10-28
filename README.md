@@ -35,7 +35,7 @@ HEAT ALERTS (on by default) sends one notification when the CPU has been at 85°
 
 ## Boards
 
-The 400pt-wide popover has three boards, switched with HEAT / CPU / RAM or Cmd-1/2/3. It is capped at 640pt and the current screen's visible height minus 32pt. One viewport scrolls the selected board; tabs, available updates and the footer stay reachable. CPU puts attribution before per-core detail. Settings (Cmd-comma) replaces readings, and Back or Escape returns. Closing the panel stops expensive process/footprint sampling.
+The 400pt-wide popover has three boards, switched with HEAT / CPU / RAM or Cmd-1/2/3. Each board uses its natural height, bounded only by the current screen's visible height minus 32pt. Ordinary readings stay fully visible whenever they fit. Only overflow scrolls; tabs, available updates and the footer stay reachable. CPU puts attribution before per-core detail. Settings (Cmd-comma) replaces readings, and Back or Escape returns. Closing the panel stops expensive process/footprint sampling.
 
 The CPU headline is percent of the whole machine; process rows use percent of one core and may exceed 100%. RAM states used and installed GB. Short notes explain OS pressure, estimated process remainder, memory categories and app footprint limits. Names truncate with an ellipsis and preserve full hover/accessibility text. Numeric overflow uses hashes instead of clipping magnitude; fan values fit all five supported RPM digits.
 
@@ -55,9 +55,9 @@ The popover can't be captured with scripted clicks, so an opt-in test renders it
 TEST_RUNNER_SNAPSHOT_DIR=$PWD/.impeccable/shots xcodebuild -project Thermals.xcodeproj -scheme Thermals -destination 'platform=macOS' -derivedDataPath build test
 ```
 
-`PopoverSnapshotTests` writes normal HEAT/CPU/RAM, unavailable and stale sources, Fahrenheit, update, login failure/pending, notification authorization with alerts on and off, compact-height, 48-core, long-name, low-temperature/critical-pressure and high-RAM/normal-pressure states. Time, preferences, permissions and sample values are pinned. It also renders each complete board at 356pt to check the width remaining with persistent scrollbars. CPU fixture totals match their cores and process estimates.
+`PopoverSnapshotTests` writes normal HEAT/CPU/RAM, unavailable and stale sources, Fahrenheit, update, login failure/pending, notification authorization with alerts on and off, compact-height, 48-core, long-name, low-temperature/critical-pressure and high-RAM/normal-pressure states. Time, preferences, permissions and sample values are pinned. It also renders each complete board at 356pt to check the width remaining with persistent scrollbars. CPU fixture totals match their cores and process estimates. Layout regressions compare complete ordinary boards at a laptop ceiling against unconstrained renders, cover all ten app rows on a 900pt desktop, and exercise native hosted resizing and overflow.
 
-Scroll views draw blank in ImageRenderer, so the snapshot path lays content out unscrolled and clips it to the same viewport. This proves composition and dimensions, not live scrolling, keyboard or VoiceOver behavior. The native automation timeout is tracked in [ai-toolkit #8](https://github.com/jacekradko/ai-toolkit/issues/8). The app icon is drawn separately by `AppIconTests`; `TEST_RUNNER_ICON_DIR=$PWD/Thermals/Assets.xcassets/AppIcon.appiconset` rewrites its sizes. Swift Charts cannot draw in these offscreen renders, so history uses Canvas.
+Scroll views draw blank in ImageRenderer, so only the overflow snapshot path lays content out unscrolled and clips it to the same viewport. Normal snapshots use the real natural-height branch. These renders prove composition and dimensions, not live scrolling, keyboard or VoiceOver behavior. The native automation timeout is tracked in [ai-toolkit #8](https://github.com/jacekradko/ai-toolkit/issues/8). The app icon is drawn separately by `AppIconTests`; `TEST_RUNNER_ICON_DIR=$PWD/Thermals/Assets.xcassets/AppIcon.appiconset` rewrites its sizes. Swift Charts cannot draw in these offscreen renders, so history uses Canvas.
 
 ## Website
 

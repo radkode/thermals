@@ -9,7 +9,8 @@ struct RAMBoard: View {
             header
             ReadingNotice(state: monitor.memoryState, source: "Memory", retry: monitor.refresh)
             if let memory = monitor.memory {
-                BoardNote("\(Format.gigabytes(memory.used)) of \(Format.gigabytes(memory.total)) GB used. OS pressure indicates memory strain; usage alone does not.")
+                BoardNote("\(Format.gigabytes(memory.used)) of \(Format.gigabytes(memory.total)) GB used.")
+                    .help("OS pressure indicates memory strain; usage alone does not.")
             }
             LampMeter(
                 readings: monitor.memoryHistory,
@@ -77,7 +78,8 @@ struct BreakdownBoard: View {
                 ForEach(Array(parts.enumerated()), id: \.element.name) { index, part in
                     row(part, lenses: lenses[index])
                 }
-                BoardNote("App, wired and compressed count as used. Cached files can be reclaimed; free memory is unused.")
+                BoardNote("Used = app + wired + compressed.")
+                    .help("Cached files can be reclaimed; free memory is unused.")
             }
         }
     }
@@ -141,7 +143,8 @@ private struct AppMemoryBoard: View {
                 columns(Color.clear.frame(height: 1), ColumnLabel("TOP APPS"), ColumnLabel("GB"), ColumnLabel("SHARE"))
                 ReadingNotice(state: state, source: "Apps", empty: shown.isEmpty)
                 ForEach(shown, content: row)
-                BoardNote("Up to ten apps, by physical footprint. Share is a portion of installed RAM, not a heat warning; app footprints do not add up to total memory used.")
+                BoardNote("Share of installed RAM, by footprint.")
+                    .help("Up to ten apps, by physical footprint. Share is not a heat warning; app footprints do not add up to total memory used.")
                     .padding(.top, 5)
             }
             .animation(reduceMotion ? nil : Board.settle, value: shown.map(\.name))

@@ -41,7 +41,7 @@ enum Board {
         heat(level.utilization)
     }
 
-    static func panelHeight(available: CGFloat) -> CGFloat { min(640, max(0, available - 32)) }
+    static func panelHeight(available: CGFloat) -> CGFloat { max(0, available - 32) }
 
     typealias HeatStop = (position: Double, rgb: (Double, Double, Double))
 
