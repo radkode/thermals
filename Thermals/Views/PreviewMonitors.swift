@@ -36,7 +36,8 @@ enum PreviewMonitors {
             + (1...16).map { CoreLoad(name: "E\($0)", cluster: .efficiency, usage: 0.5) }
         return Monitor(sensors: [SensorReading(id: 0, name: "An unknown sensor with a long name", celsius: 40)], cpuLoad: 0.5, thermalState: .nominal, history: [], coreLoads: cores,
                        processes: [ProcessLoad(name: "A long application name sharing prefix Alpha", percent: 250), ProcessLoad(name: "A long application name sharing prefix Beta", percent: 125)],
-                       fans: [FanReading(id: 1, rpm: 10_000, minimum: 0, maximum: 20_000)], sampledAt: referenceDate)
+                       fans: [FanReading(id: 1, rpm: 10_000, minimum: 0, maximum: 20_000)],
+                       dailyPeak: DailyPeak(celsius: 104, date: referenceDate.addingTimeInterval(-600), culprit: "swift-frontend-with-a-long-name"), sampledAt: referenceDate)
     }
 
     static func make(peak: Double, load: Double, state: ProcessInfo.ThermalState, memoryUsed: Double, pressure: MemoryPressure) -> Monitor {
@@ -102,7 +103,8 @@ enum PreviewMonitors {
             appMemory: appMemory,
             fans: fans,
             systemPower: 6 + 52 * load,
-            gpuPower: 1.5 + 21 * load
+            gpuPower: 1.5 + 21 * load,
+            dailyPeak: DailyPeak(celsius: peak + 3, date: now.addingTimeInterval(-5_400), culprit: load > 0.5 ? "xcodebuild" : "Google Chrome")
         )
     }
 }

@@ -19,6 +19,11 @@ enum Format {
         return value < 99.95 ? String(format: "%.1f", value) : "\(Int(value.rounded()))"
     }
 
+    /// 24-hour local time, as departure boards show it; a 12-hour clock with AM/PM wouldn't fit five cells.
+    static func clock(_ date: Date, calendar: Calendar = .current) -> String {
+        let parts = calendar.dateComponents([.hour, .minute], from: date)
+        return String(format: "%02d:%02d", parts.hour ?? 0, parts.minute ?? 0)
+    }
 }
 
 struct ColumnLabel: View {
@@ -228,6 +233,8 @@ struct LampMeter: View {
     var state: ReadingState = .loading
     /// Converts a reading for the range readout only; rows and colors use the reading as measured.
     var display: (Double) -> Double = { $0 }
+    /// A row under the lamps that reads with the window, such as HEAT's peak today, and what it says for VoiceOver.
+    var footer: (view: AnyView, description: String)?
 
     static let columns = 30
     static let loadRows: [Double] = [1, 12.5, 25, 37.5, 50, 62.5, 75, 87.5]
@@ -271,10 +278,11 @@ struct LampMeter: View {
                     }
                 }
                 .frame(height: 46)
+                if let footer { footer.view }
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(accessibilityName) over the last three minutes. \(Self.trend(recent)). Observed minimum and maximum \(range ?? "unavailable"). Fixed scale \(axisRange), bottom to top. Color shows magnitude; OS pressure is reported separately. Newest readings on the right; gaps mean no recent measurement.")
+        .accessibilityLabel("\(accessibilityName) over the last three minutes. \(Self.trend(recent)). Observed minimum and maximum \(range ?? "unavailable"). Fixed scale \(axisRange), bottom to top. Color shows magnitude; OS pressure is reported separately. Newest readings on the right; gaps mean no recent measurement.\(footer.map { " \($0.description)" } ?? "")")
         .help("Fixed scale \(axisRange), bottom to top. Color shows magnitude; OS pressure is reported separately. MIN/MAX shows observed extrema; gaps indicate missing measurements.")
     }
 

@@ -63,6 +63,16 @@ final class ProcessSampler {
         return ProcessSnapshot(times: parse(String(decoding: output, as: UTF8.self)), uptimeNanoseconds: DispatchTime.now().uptimeNanoseconds)
     }
 
+    /// The process using the most CPU right now: two snapshots `gap` apart, off the main actor. For one-off attribution only.
+    nonisolated static func busiest(gap: Duration = .seconds(2)) async -> ProcessLoad? {
+        guard let first = await Task.detached(priority: .utility, operation: { snapshot() }).value else { return nil }
+        try? await Task.sleep(for: gap)
+        guard let second = await Task.detached(priority: .utility, operation: { snapshot() }).value,
+              second.uptimeNanoseconds > first.uptimeNanoseconds
+        else { return nil }
+        return ranked(percents(previous: first.times, current: second.times, elapsedNanoseconds: second.uptimeNanoseconds - first.uptimeNanoseconds)).first
+    }
+
     /// `ps -axo pid=,time=,comm=` lines: pid, cumulative CPU time, then the executable path, which may contain spaces.
     static func parse(_ output: String) -> [pid_t: ProcessTimes] {
         var result: [pid_t: ProcessTimes] = [:]

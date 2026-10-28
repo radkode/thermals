@@ -46,6 +46,7 @@ final class Monitor {
     private(set) var systemPower: Double?
     /// GPU power in watts, from IOReport; nil until its energy counter has moved.
     private(set) var gpuPower: Double?
+    private(set) var dailyPeak: DailyPeak?
     private(set) var temperatureState = ReadingState.loading
     private(set) var cpuState = ReadingState.loading
     private(set) var memoryState = ReadingState.loading
@@ -91,6 +92,10 @@ final class Monitor {
     @ObservationIgnored private let smc = SMCReader()
     @ObservationIgnored private let gpuReader = GPUPowerReader()
     @ObservationIgnored private var gpuMeter = GPUPowerMeter()
+    /// Live monitors only; previews keep a fixed peak and never sample or persist.
+    @ObservationIgnored private var tracksPeak = false
+    @ObservationIgnored private var peakSampledAt: Date?
+    @ObservationIgnored private var peakTask: Task<Void, Never>?
     @ObservationIgnored private let coreNames = CoreLayout.names(for: CoreLayout.read())
     @ObservationIgnored private let processSampler = ProcessSampler()
     @ObservationIgnored private var previousTicks: [CPUTicks]?
@@ -119,6 +124,7 @@ final class Monitor {
         fans: [FanReading] = [],
         systemPower: Double? = nil,
         gpuPower: Double? = nil,
+        dailyPeak: DailyPeak? = nil,
         sampledAt: Date? = nil,
         processState: ReadingState? = nil,
         appMemoryState: ReadingState? = nil,
@@ -139,6 +145,7 @@ final class Monitor {
         self.fans = fans
         self.systemPower = systemPower
         self.gpuPower = gpuPower
+        self.dailyPeak = dailyPeak
         let now = sampledAt ?? history.last?.date ?? loadHistory.last?.date ?? memoryHistory.last?.date ?? Date.now
         temperatureState = cpuTemperature == nil ? .unavailable : .available(now)
         cpuState = cpuLoad == nil ? .unavailable : .available(now)
@@ -151,6 +158,8 @@ final class Monitor {
     init() {
         rate = UserDefaults.standard.string(forKey: Self.rateKey).flatMap(SampleRate.init(rawValue:)) ?? .six
         heatAlerts = HeatAlerts()
+        tracksPeak = true
+        dailyPeak = UserDefaults.standard.data(forKey: DailyPeak.storageKey).flatMap { try? JSONDecoder().decode(DailyPeak.self, from: $0) }
         refresh()
         schedule()
         #if DEBUG
@@ -188,10 +197,30 @@ final class Monitor {
         gpuPower = gpuReader?.sample().flatMap { gpuMeter.watts($0) }
         updateCPU(ticks: CPULoad.sample(), at: now)
         if let cpuTemperature { history.append(TimedValue(date: now, value: cpuTemperature)) }
+        if tracksPeak, let cpuTemperature { trackPeak(cpuTemperature, at: now) }
         if let memory { memoryHistory.append(TimedValue(date: now, value: memory.usedPercent)) }
         pruneHistory(at: now)
         if samplesAppMemory { sampleAppMemory(at: now) }
         if samplesProcesses { sampleProcesses() }
+    }
+
+    private func trackPeak(_ celsius: Double, at now: Date) {
+        let peak = DailyPeak.updated(dailyPeak, celsius: celsius, at: now)
+        if peak != dailyPeak { setPeak(peak) }
+        guard peakTask == nil, peak.needsAttribution(at: now, lastSampled: peakSampledAt) else { return }
+        peakSampledAt = now
+        let date = peak.date
+        peakTask = Task { [weak self] in
+            let culprit = await ProcessSampler.busiest()
+            guard let self else { return }
+            peakTask = nil
+            if let current = dailyPeak { setPeak(current.attributed(culprit?.name, for: date)) }
+        }
+    }
+
+    private func setPeak(_ peak: DailyPeak) {
+        dailyPeak = peak
+        if let data = try? JSONEncoder().encode(peak) { UserDefaults.standard.set(data, forKey: DailyPeak.storageKey) }
     }
 
     func updateCPU(ticks: [CPUTicks]?, at now: Date) {

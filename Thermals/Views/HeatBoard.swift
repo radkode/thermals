@@ -5,6 +5,7 @@ struct HeatBoard: View {
     var inspectCPU: () -> Void = {}
 
     @Environment(\.temperatureUnit) private var unit
+    @Environment(\.readingDate) private var now
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -22,7 +23,8 @@ struct HeatBoard: View {
                 unit: "°",
                 accessibilityName: "CPU temperature",
                 state: monitor.temperatureState,
-                display: unit.value
+                display: unit.value,
+                footer: todaysPeak.map { (AnyView(peakRow($0)), peakDescription($0)) }
             )
             if !monitor.fans.isEmpty { FanBoard(fans: monitor.fans) }
             ReadingNotice(state: monitor.fanState, source: "Fan readings", retry: monitor.refresh)
@@ -60,6 +62,26 @@ struct HeatBoard: View {
                 }
             }
         }
+    }
+
+    private var todaysPeak: DailyPeak? {
+        monitor.dailyPeak.flatMap { Calendar.current.isDate($0.date, inSameDayAs: now) ? $0 : nil }
+    }
+
+    /// A departure: when, the busiest process then, and how hot.
+    private func peakRow(_ peak: DailyPeak) -> some View {
+        HStack(spacing: 6) {
+            ColumnLabel("PEAK TODAY")
+            Spacer(minLength: 0)
+            FlapText(text: Format.clock(peak.date), cells: 5, ink: Board.steelLight)
+            FlapText(text: peak.culprit ?? "", cells: 10, ink: Board.steelLight)
+            FlapText(text: Format.degrees(peak.celsius, unit: unit), cells: 4, ink: Board.heat(HeatLevel(celsius: peak.celsius.rounded())), alignment: .trailing)
+        }
+        .help("Hottest CPU die reading since midnight\(peak.culprit.map { ", with \($0) using the most CPU around then" } ?? "").")
+    }
+
+    private func peakDescription(_ peak: DailyPeak) -> String {
+        "Peak today \(Format.degrees(peak.celsius, unit: unit)) at \(Format.clock(peak.date))\(peak.culprit.map { ", \($0) using the most CPU" } ?? "")."
     }
 
     /// Watts have no scale shared across chips, so power stays neutral rather than claim a heat color.

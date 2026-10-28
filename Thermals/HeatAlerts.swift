@@ -70,8 +70,6 @@ enum HeatAlertMessage {
 final class HeatAlerts {
     static let settingKey = "heatAlerts"
     static let notificationID = "heat"
-    /// Long enough for `ps` CPU times to separate a busy process from an idle one.
-    private static let sampleGap: Duration = .seconds(2)
 
     private var trigger = HeatAlertTrigger()
     private var sending = false
@@ -89,7 +87,7 @@ final class HeatAlerts {
         let unit = UserDefaults.standard.string(forKey: "temperatureUnit").flatMap(TemperatureUnit.init(rawValue:)) ?? .system
         Task {
             defer { sending = false }
-            let culprit = await Self.topProcess()
+            let culprit = await ProcessSampler.busiest()
             let center = UNUserNotificationCenter.current()
             // Permission is asked only once there is something to announce.
             guard (try? await center.requestAuthorization(options: [.alert])) == true,
@@ -100,17 +98,6 @@ final class HeatAlerts {
             content.body = HeatAlertMessage.body(celsius: celsius, unit: unit, thermalState: thermalState, culprit: culprit)
             try? await center.add(UNNotificationRequest(identifier: Self.notificationID, content: content, trigger: nil))
         }
-    }
-
-    /// Two `ps` snapshots a moment apart, off the main actor; sampling runs only when an alert fires.
-    nonisolated private static func topProcess() async -> ProcessLoad? {
-        guard let first = await Task.detached(priority: .utility, operation: { ProcessSampler.snapshot() }).value else { return nil }
-        try? await Task.sleep(for: sampleGap)
-        guard let second = await Task.detached(priority: .utility, operation: { ProcessSampler.snapshot() }).value,
-              second.uptimeNanoseconds > first.uptimeNanoseconds
-        else { return nil }
-        let percents = ProcessSampler.percents(previous: first.times, current: second.times, elapsedNanoseconds: second.uptimeNanoseconds - first.uptimeNanoseconds)
-        return ProcessSampler.ranked(percents).first
     }
 }
 
