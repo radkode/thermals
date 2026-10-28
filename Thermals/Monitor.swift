@@ -115,6 +115,10 @@ final class Monitor {
         heatAlerts = HeatAlerts()
         refresh()
         schedule()
+        #if DEBUG
+        // Checks notification permission and delivery without heating the Mac.
+        if CommandLine.arguments.contains("-heatAlertTest") { heatAlerts?.send(celsius: cpuTemperature, thermalState: thermalState) }
+        #endif
         // Load needs two samples; take the second one quickly instead of a full interval later.
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
             MainActor.assumeIsolated { self?.refresh() }

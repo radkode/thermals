@@ -19,14 +19,14 @@ struct HeatAlertTriggerTests {
         }
     }
 
-    @Test func staysQuietBelowBurn() {
+    @Test func staysQuietBelowEightyFive() {
         var trigger = HeatAlertTrigger()
-        #expect(run(&trigger, celsius: 89, state: .fair, from: 0, to: 300).isEmpty)
+        #expect(run(&trigger, celsius: 84.4, state: .fair, from: 0, to: 300).isEmpty)
     }
 
-    @Test func firesOnceBurnHasHeldForThirtySeconds() {
+    @Test func firesOnceEightyFiveHasHeldForThirtySeconds() {
         var trigger = HeatAlertTrigger()
-        #expect(run(&trigger, celsius: 94, from: 0, to: 120) == [30])
+        #expect(run(&trigger, celsius: 85, from: 0, to: 120) == [30])
     }
 
     @Test func aSpikeShorterThanTheSustainWindowStaysQuiet() {

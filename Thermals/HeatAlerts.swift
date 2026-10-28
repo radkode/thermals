@@ -12,9 +12,11 @@ enum HeatAlertsSetting: String, FlapTabOption {
     }
 }
 
-/// Decides when heat is worth a notification: BURN or serious thermal pressure held for `sustain`, once per episode.
+/// Decides when heat is worth a notification: `thresholdCelsius` or serious thermal pressure held for `sustain`, once per episode.
 /// An episode ends only when the Mac cools below HOT, and alerts stay at least `cooldown` apart.
 struct HeatAlertTrigger {
+    /// Below BURN's 90°C: fan-cooled Macs rarely reach BURN even at full load.
+    static let thresholdCelsius = 85.0
     static let sustain: TimeInterval = 30
     static let cooldown: TimeInterval = 600
 
@@ -26,9 +28,9 @@ struct HeatAlertTrigger {
     /// True when this reading should raise an alert.
     mutating func observe(celsius: Double?, thermalState: ProcessInfo.ThermalState, at now: Date) -> Bool {
         defer { lastObserved = now }
-        let burning = celsius.map { HeatBand(celsius: $0.rounded()) == .burn } ?? false
+        let hot = celsius.map { $0.rounded() >= Self.thresholdCelsius } ?? false
         let throttled = thermalState == .serious || thermalState == .critical
-        guard burning || throttled else {
+        guard hot || throttled else {
             hotSince = nil
             if (HeatLevel.menuBar(celsius: celsius?.rounded(), thermalState: thermalState)?.band ?? .cool) < .hot { armed = true }
             return false
@@ -75,9 +77,13 @@ final class HeatAlerts {
 
     func observe(celsius: Double?, thermalState: ProcessInfo.ThermalState) {
         guard trigger.observe(celsius: celsius, thermalState: thermalState, at: .now),
-              UserDefaults.standard.string(forKey: Self.settingKey) != HeatAlertsSetting.off.rawValue,
-              !sending
+              UserDefaults.standard.string(forKey: Self.settingKey) != HeatAlertsSetting.off.rawValue
         else { return }
+        send(celsius: celsius, thermalState: thermalState)
+    }
+
+    func send(celsius: Double?, thermalState: ProcessInfo.ThermalState) {
+        guard !sending else { return }
         sending = true
         let unit = UserDefaults.standard.string(forKey: "temperatureUnit").flatMap(TemperatureUnit.init(rawValue:)) ?? .system
         Task {
