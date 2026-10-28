@@ -11,8 +11,8 @@ packages:
 settings:
   base:
     SWIFT_VERSION: "6.0"
-    MARKETING_VERSION: "0.3.0"
-    CURRENT_PROJECT_VERSION: "3"
+    MARKETING_VERSION: "0.3.1"
+    CURRENT_PROJECT_VERSION: "4"
 targets:
   Thermals:
     type: application
@@ -32,6 +32,7 @@ targets:
         SUFeedURL: https://github.com/radkode/homebrew-thermals/releases/latest/download/appcast.xml
         SUPublicEDKey: 2DAa6zgJ+e+bkkW2zpdhfToM4QeViebrtAE7Rj3iPjk=
         SURequireSignedFeed: true
+        SUVerifyUpdateBeforeExtraction: true
         SUEnableAutomaticChecks: true
     settings:
       base:
