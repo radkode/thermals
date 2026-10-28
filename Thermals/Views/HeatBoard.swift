@@ -2,21 +2,30 @@ import SwiftUI
 
 struct HeatBoard: View {
     let monitor: Monitor
+    var inspectCPU: () -> Void = {}
 
     @Environment(\.temperatureUnit) private var unit
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             header
+            ReadingNotice(state: monitor.temperatureState, source: "CPU temperature", retry: monitor.refresh)
+            HStack {
+                BoardNote("Thermal pressure is macOS's assessment, not a temperature limit.")
+                Spacer(minLength: 8)
+                FlapButton(title: "CPU", accessibilityName: "Inspect current CPU activity", action: inspectCPU)
+            }
             LampMeter(
                 readings: monitor.history,
                 scale: .temperature,
                 level: HeatLevel.init(celsius:),
                 unit: "°",
                 accessibilityName: "CPU temperature",
+                state: monitor.temperatureState,
                 display: unit.value
             )
             if !monitor.fans.isEmpty { FanBoard(fans: monitor.fans) }
+            ReadingNotice(state: monitor.fanState, source: "Fan readings", retry: monitor.refresh)
             SensorBoard(sensors: monitor.sensors)
         }
     }
@@ -29,7 +38,7 @@ struct HeatBoard: View {
                     text: monitor.cpuTemperature.map { Format.degrees($0, unit: unit) } ?? "--°",
                     cells: 4,
                     size: .hero,
-                    ink: monitor.cpuTemperature.map { Board.heat(HeatLevel(celsius: $0.rounded())) } ?? Board.steelLight,
+                    ink: monitor.menuBarLevel.map { Board.heat($0) } ?? Board.steelLight,
                     alignment: .trailing
                 )
             }
@@ -47,7 +56,7 @@ struct HeatBoard: View {
                         label: "LOAD",
                         value: monitor.cpuLoad.map(Format.percent) ?? "--",
                         cells: 4,
-                        ink: monitor.cpuLoad.map { Board.heat(HeatLevel(loadPercent: ($0 * 100).rounded())) } ?? Board.steelLight
+                        ink: monitor.cpuLoad.map { Board.usage(HeatLevel(loadPercent: ($0 * 100).rounded())) } ?? Board.steelLight
                     )
                 }
                 BoardStat(label: "PRESSURE", value: monitor.thermalState.boardTitle, cells: 8, ink: monitor.thermalState.ink)
@@ -61,7 +70,7 @@ private struct FanBoard: View {
     let fans: [FanReading]
 
     static let nameCells = 5
-    static let rpmCells = 4
+    static let rpmCells = 5
 
     var body: some View {
         BoardPanel {
@@ -80,33 +89,31 @@ private struct FanBoard: View {
         // A fan's share of its range reads on the load scale, the same floors its lens bar lights at.
         let percent = (fan.fraction ?? 0) * 100
         let level = fan.fraction.map { _ in HeatLevel(loadPercent: percent.rounded()) }
-        let ink = level.map { Board.heat($0) } ?? Board.steelLight
+        let ink = level.map { Board.usage($0) } ?? Board.steelLight
         let rpm = fan.rpm.map { "\(Int($0.rounded()))" } ?? "--"
         return HStack(spacing: 5) {
             Lamp(lit: (level?.band ?? .cool) >= .hot, color: ink)
             FlapText(text: "FAN \(fan.id)", cells: Self.nameCells, ink: level?.band == .burn ? ink : Board.steelLight)
             LensBar(percent: fan.fraction == nil ? 0 : percent) { floor, lit in
                 let level = HeatLevel(loadPercent: floor)
-                return lit ? Board.heat(level) : (level.band >= .hot ? Board.heat(level).opacity(0.16) : Board.lens)
+                return lit ? Board.usage(level) : (level.band >= .hot ? Board.usage(level).opacity(0.16) : Board.lens)
             }
             FlapText(text: rpm, cells: Self.rpmCells, ink: ink, alignment: .trailing)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Fan \(fan.id), \(fan.rpm.map { "\(Int($0.rounded())) RPM" } ?? "unavailable")\(level.map { ", \($0.band.title.lowercased())" } ?? "")")
+        .accessibilityLabel("Fan \(fan.id), \(fan.rpm.map { "\(Int($0.rounded())) RPM" } ?? "unavailable")\(level.map { ", \($0.band.usageTitle.lowercased()) speed" } ?? "")")
     }
 }
 
 struct SensorBoard: View {
     let sensors: [SensorReading]
 
-    static let nameCells = 18
+    static let nameCells = 16
     static let tempCells = 3
     static let statusCells = 4
     static let columnSpacing: CGFloat = 6
     static let rowSpacing: CGFloat = 3
-    static let minimumRows = 8
 
-    @Environment(\.snapshotRendering) private var snapshotRendering
     @Environment(\.temperatureUnit) private var unit
 
     var body: some View {
@@ -118,85 +125,33 @@ struct SensorBoard: View {
                     ColumnLabel(unit.title),
                     ColumnLabel("STATUS")
                 )
-                // Takes whatever height the popover gives it; blank flap rows fill what the sensors don't.
-                Color.clear
-                    .frame(height: Self.height(rows: Self.minimumRows))
-                    .frame(maxHeight: .infinity)
-                    .overlay(alignment: .top) {
-                        GeometryReader { geometry in
-                            list(fitting: Self.rowsThatFit(height: geometry.size.height))
-                        }
-                    }
-            }
-        }
-    }
-
-    @ViewBuilder private func list(fitting fit: Int) -> some View {
-        if sensors.count > fit {
-            if snapshotRendering {
-                rows.frame(height: Self.height(rows: fit), alignment: .top).clipped()
-            } else {
-                ScrollView(.vertical) { rows }
-                    .frame(height: Self.height(rows: fit))
-            }
-        } else {
-            VStack(alignment: .leading, spacing: Self.rowSpacing) {
-                if sensors.isEmpty {
-                    columns(
-                        Lamp(lit: false, color: Board.steelLight),
-                        FlapText(text: "UNAVAILABLE", cells: Self.nameCells, ink: Board.steelLight),
-                        FlapText(text: "--", cells: Self.tempCells, ink: Board.steelLight, alignment: .trailing),
-                        FlapText(text: "", cells: Self.statusCells)
-                    )
-                }
                 ForEach(sensors, id: \.name, content: row)
-                ForEach(0..<max(0, fit - max(sensors.count, 1)), id: \.self) { _ in blankRow }
+                if sensors.isEmpty { BoardNote("No temperature sensors available.") }
+                BoardNote("Bands apply only to CPU die sensors; they are reference ranges, not hardware safety limits.")
             }
         }
-    }
-
-    private var rows: some View {
-        VStack(alignment: .leading, spacing: Self.rowSpacing) {
-            ForEach(sensors, id: \.name, content: row)
-        }
-    }
-
-    private var blankRow: some View {
-        columns(
-            Lamp(lit: false, color: Board.steelLight),
-            FlapText(text: "", cells: Self.nameCells),
-            FlapText(text: "", cells: Self.tempCells),
-            FlapText(text: "", cells: Self.statusCells)
-        )
-        .accessibilityHidden(true)
-    }
-
-    static func height(rows: Int) -> CGFloat {
-        CGFloat(rows) * FlapSize.row.stripHeight + CGFloat(max(0, rows - 1)) * rowSpacing
-    }
-
-    static func rowsThatFit(height: CGFloat) -> Int {
-        max(1, Int((height + rowSpacing) / (FlapSize.row.stripHeight + rowSpacing)))
     }
 
     private func row(_ sensor: SensorReading) -> some View {
         let level = HeatLevel(celsius: sensor.celsius.rounded())
         let band = level.band
+        let isCPU = sensor.name.hasPrefix("PMU tdie")
+        let ink = isCPU ? Board.heat(level) : Board.steelLight
         return columns(
-            Lamp(lit: band >= .hot, color: Board.heat(level)),
-            FlapText(text: sensor.label, cells: Self.nameCells, ink: band == .burn ? Board.heat(level) : Board.steelLight),
-            FlapText(text: "\(Int(unit.value(sensor.celsius).rounded()))", cells: Self.tempCells, ink: Board.heat(level), alignment: .trailing),
-            FlapText(text: band.title, cells: Self.statusCells, ink: Board.heat(level))
+            Lamp(lit: isCPU && band >= .hot, color: ink),
+            FlapText(text: sensor.label, cells: Self.nameCells, ink: isCPU && band == .burn ? ink : Board.steelLight),
+            FlapText(text: "\(Int(unit.value(sensor.celsius).rounded()))", cells: Self.tempCells, ink: ink, alignment: .trailing),
+            FlapText(text: isCPU ? band.title : "", cells: Self.statusCells, ink: ink)
         )
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(sensor.label), \(Format.degrees(sensor.celsius, unit: unit)), \(band.title.lowercased())")
+        .accessibilityLabel("\(sensor.label), \(Format.degrees(sensor.celsius, unit: unit)), \(isCPU ? band.title.lowercased() + " CPU reference band" : "unbanded reading")")
     }
 
     /// Lamp, name, temperature and status columns at fixed widths, so the header lines up with the scrolling rows.
     private func columns(_ lamp: some View, _ name: some View, _ temp: some View, _ status: some View) -> some View {
         HStack(spacing: Self.columnSpacing) {
             lamp.frame(width: 6)
-            name.frame(width: FlapSize.row.stripWidth(cells: Self.nameCells), alignment: .leading)
+            name.frame(maxWidth: .infinity, alignment: .leading)
             temp.frame(width: FlapSize.row.stripWidth(cells: Self.tempCells), alignment: .trailing)
             status.frame(width: FlapSize.row.stripWidth(cells: Self.statusCells), alignment: .leading)
         }

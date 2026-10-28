@@ -6,6 +6,18 @@ struct TimedValue: Equatable {
     let value: Double
 }
 
+enum ReadingState: Equatable {
+    case loading, available(Date), unavailable, failed
+
+    var sampledAt: Date? {
+        if case let .available(date) = self { date } else { nil }
+    }
+
+    func isStale(at now: Date, interval: TimeInterval) -> Bool {
+        sampledAt.map { now.timeIntervalSince($0) > max(15, interval * 2) } ?? false
+    }
+}
+
 @MainActor
 @Observable
 final class Monitor {
@@ -32,7 +44,12 @@ final class Monitor {
     private(set) var fans: [FanReading] = []
     /// Whole-system power in watts, from the SMC.
     private(set) var systemPower: Double?
-    private(set) var updatedAt = Date.now
+    private(set) var temperatureState = ReadingState.loading
+    private(set) var cpuState = ReadingState.loading
+    private(set) var memoryState = ReadingState.loading
+    private(set) var fanState = ReadingState.loading
+    private(set) var processState = ReadingState.loading
+    private(set) var appMemoryState = ReadingState.loading
 
     var rate = SampleRate.six {
         didSet {
@@ -48,10 +65,12 @@ final class Monitor {
         didSet {
             guard samplesProcesses != oldValue, timer != nil else { return }
             processEpoch += 1
+            processTask?.cancel()
             processTask = nil
             processSampler.reset()
             processes = []
             hiddenLoad = nil
+            processState = .loading
             if samplesProcesses { sampleProcesses() }
         }
     }
@@ -60,7 +79,9 @@ final class Monitor {
     var samplesAppMemory = false {
         didSet {
             guard samplesAppMemory != oldValue, timer != nil else { return }
-            appMemory = samplesAppMemory ? MemoryStats.ranked(MemoryStats.appFootprints()) : []
+            appMemory = []
+            appMemoryState = .loading
+            if samplesAppMemory { sampleAppMemory(at: .now) }
         }
     }
 
@@ -92,7 +113,11 @@ final class Monitor {
         memoryHistory: [TimedValue] = [],
         appMemory: [AppMemory] = [],
         fans: [FanReading] = [],
-        systemPower: Double? = nil
+        systemPower: Double? = nil,
+        sampledAt: Date? = nil,
+        processState: ReadingState? = nil,
+        appMemoryState: ReadingState? = nil,
+        fanState: ReadingState? = nil
     ) {
         self.sensors = TemperatureSensors.byName(sensors)
         self.cpuTemperature = TemperatureSensors.cpuTemperature(from: self.sensors)
@@ -108,6 +133,13 @@ final class Monitor {
         self.appMemory = appMemory
         self.fans = fans
         self.systemPower = systemPower
+        let now = sampledAt ?? history.last?.date ?? loadHistory.last?.date ?? memoryHistory.last?.date ?? Date.now
+        temperatureState = cpuTemperature == nil ? .unavailable : .available(now)
+        cpuState = cpuLoad == nil ? .unavailable : .available(now)
+        memoryState = memory == nil ? .unavailable : .available(now)
+        self.fanState = fanState ?? .available(now)
+        self.processState = processState ?? .available(now)
+        self.appMemoryState = appMemoryState ?? .available(now)
     }
 
     init() {
@@ -134,58 +166,90 @@ final class Monitor {
         self.timer = timer
     }
 
-    private func refresh() {
+    func refresh() {
+        let now = Date.now
         sensors = TemperatureSensors.byName(TemperatureSensors.usable(reader?.read() ?? []))
         cpuTemperature = TemperatureSensors.cpuTemperature(from: sensors)
+        temperatureState = cpuTemperature == nil ? .unavailable : .available(now)
         thermalState = ProcessInfo.processInfo.thermalState
         memory = MemoryStats.read()
+        memoryState = memory == nil ? .failed : .available(now)
         heatAlerts?.observe(celsius: cpuTemperature, thermalState: thermalState)
-        fans = smc?.fans() ?? []
+        let fanReadings = smc?.fans()
+        fans = fanReadings ?? []
+        fanState = fanReadings == nil ? .unavailable : .available(now)
         systemPower = smc?.systemPower()
-        updatedAt = .now
-
-        if let ticks = CPULoad.sample() {
-            if let previousTicks, previousTicks.count == ticks.count {
-                cpuLoad = CPULoad.usage(from: previousTicks.reduce(.zero, +), to: ticks.reduce(.zero, +))
-                let names = coreNames.isEmpty
-                    ? CoreLayout.names(for: ticks.indices.map { CoreInfo(logicalID: $0, cluster: nil) })
-                    : coreNames
-                coreLoads = names.compactMap { core in
-                    guard core.logicalID < ticks.count,
-                          let usage = CPULoad.usage(from: previousTicks[core.logicalID], to: ticks[core.logicalID])
-                    else { return nil }
-                    return CoreLoad(name: core.name, cluster: core.cluster, usage: usage)
-                }
-            }
-            previousTicks = ticks
-        }
-
-        let now = Date.now
-        if let cpuTemperature { append(TimedValue(date: now, value: cpuTemperature), to: &history) }
-        if let cpuLoad { append(TimedValue(date: now, value: cpuLoad * 100), to: &loadHistory) }
-        if let memory { append(TimedValue(date: now, value: memory.usedPercent), to: &memoryHistory) }
-        if samplesAppMemory { appMemory = MemoryStats.ranked(MemoryStats.appFootprints()) }
+        updateCPU(ticks: CPULoad.sample(), at: now)
+        if let cpuTemperature { history.append(TimedValue(date: now, value: cpuTemperature)) }
+        if let memory { memoryHistory.append(TimedValue(date: now, value: memory.usedPercent)) }
+        pruneHistory(at: now)
+        if samplesAppMemory { sampleAppMemory(at: now) }
         if samplesProcesses { sampleProcesses() }
     }
 
-    /// Reads process times off the main actor; a sample still running when the next tick fires is not doubled up.
+    func updateCPU(ticks: [CPUTicks]?, at now: Date) {
+        cpuLoad = nil
+        coreLoads = []
+        defer { previousTicks = ticks }
+        guard let ticks, !ticks.isEmpty else { cpuState = .failed; return }
+        guard let previousTicks, previousTicks.count == ticks.count else { cpuState = .loading; return }
+        guard let usage = CPULoad.usage(from: previousTicks.reduce(.zero, +), to: ticks.reduce(.zero, +))
+        else { cpuState = .failed; return }
+        cpuLoad = usage
+        cpuState = .available(now)
+        let names = coreNames.count == ticks.count ? coreNames : CoreLayout.names(for: ticks.indices.map { CoreInfo(logicalID: $0, cluster: nil) })
+        coreLoads = names.compactMap { core in
+            guard core.logicalID < ticks.count,
+                  let usage = CPULoad.usage(from: previousTicks[core.logicalID], to: ticks[core.logicalID])
+            else { return nil }
+            return CoreLoad(name: core.name, cluster: core.cluster, usage: usage)
+        }
+        loadHistory.append(TimedValue(date: now, value: usage * 100))
+    }
+
+    func pruneHistory(at now: Date) {
+        history.removeAll { now.timeIntervalSince($0.date) > Self.historyWindow }
+        loadHistory.removeAll { now.timeIntervalSince($0.date) > Self.historyWindow }
+        memoryHistory.removeAll { now.timeIntervalSince($0.date) > Self.historyWindow }
+    }
+
+    private func sampleAppMemory(at now: Date) {
+        guard let footprints = MemoryStats.appFootprints() else {
+            appMemory = []
+            appMemoryState = .failed
+            return
+        }
+        appMemory = MemoryStats.ranked(footprints)
+        appMemoryState = .available(now)
+    }
+
     private func sampleProcesses() {
         guard processTask == nil else { return }
         let epoch = processEpoch
         processTask = Task { [weak self] in
-            let snapshot = await Task.detached(priority: .utility) { ProcessSampler.snapshot() }.value
-            guard let self, epoch == processEpoch else { return }
-            processTask = nil
-            guard samplesProcesses else { return }
-            guard let snapshot else {
-                processSampler.reset()
-                processes = []
-                hiddenLoad = nil
-                return
+            guard let self else { return }
+            defer { if epoch == processEpoch { processTask = nil } }
+            for attempt in 0..<2 {
+                let snapshot = await Task.detached(priority: .utility) { ProcessSampler.snapshot() }.value
+                guard !Task.isCancelled, epoch == processEpoch, samplesProcesses else { return }
+                guard let snapshot else {
+                    processSampler.reset()
+                    processes = []
+                    hiddenLoad = nil
+                    processState = .failed
+                    return
+                }
+                if let sample = processSampler.sample(snapshot) {
+                    processes = sample.ranked
+                    processState = .available(.now)
+                    hiddenLoad = cpuLoad.map { Self.hiddenLoad(totalFraction: $0, cores: coreLoads.count, visibleTotal: sample.visibleTotal) }
+                    return
+                }
+                processState = .loading
+                if attempt == 0 {
+                    do { try await Task.sleep(for: .seconds(1)) } catch { return }
+                }
             }
-            guard let sample = processSampler.sample(snapshot) else { return }
-            processes = sample.ranked
-            hiddenLoad = cpuLoad.map { Self.hiddenLoad(totalFraction: $0, cores: coreLoads.count, visibleTotal: sample.visibleTotal) }
         }
     }
 
@@ -194,8 +258,4 @@ final class Monitor {
         max(0, totalFraction * Double(cores) * 100 - visibleTotal)
     }
 
-    private func append(_ reading: TimedValue, to series: inout [TimedValue]) {
-        series.append(reading)
-        series.removeAll { reading.date.timeIntervalSince($0.date) > Self.historyWindow }
-    }
 }

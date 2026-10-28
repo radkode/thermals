@@ -1,21 +1,27 @@
 import SwiftUI
 
-/// Memory in heat terms: how much is in use, raised by memory pressure, where it sits, and which apps hold it.
+/// Memory utilization, OS pressure, and the apps holding physical memory.
 struct RAMBoard: View {
     let monitor: Monitor
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             header
+            ReadingNotice(state: monitor.memoryState, source: "Memory", retry: monitor.refresh)
+            if let memory = monitor.memory {
+                BoardNote("\(Format.gigabytes(memory.used)) of \(Format.gigabytes(memory.total)) GB used. OS pressure indicates memory strain; usage alone does not.")
+            }
             LampMeter(
                 readings: monitor.memoryHistory,
                 scale: .memory,
                 level: HeatLevel.init(memoryPercent:),
                 unit: "%",
-                accessibilityName: "Memory used"
+                accessibilityName: "Memory used",
+                state: monitor.memoryState,
+                utilization: true
             )
             BreakdownBoard(memory: monitor.memory)
-            AppMemoryBoard(apps: monitor.appMemory, total: monitor.memory?.total)
+            AppMemoryBoard(apps: monitor.appMemory, total: monitor.memory?.total, state: monitor.appMemoryState)
         }
     }
 
@@ -28,7 +34,7 @@ struct RAMBoard: View {
                     text: memory.map { Format.percent($0.usedPercent / 100) } ?? "--%",
                     cells: 4,
                     size: .hero,
-                    ink: memory.map { Board.heat(HeatLevel.memory(usedPercent: $0.usedPercent.rounded(), pressure: $0.pressure)) } ?? Board.steelLight,
+                    ink: memory.map { Board.heat(HeatLevel.memory(usedPercent: $0.usedPercent, pressure: $0.pressure)) } ?? Board.steelLight,
                     alignment: .trailing
                 )
             }
@@ -71,6 +77,7 @@ struct BreakdownBoard: View {
                 ForEach(Array(parts.enumerated()), id: \.element.name) { index, part in
                     row(part, lenses: lenses[index])
                 }
+                BoardNote("App, wired and compressed count as used. Cached files can be reclaimed; free memory is unused.")
             }
         }
     }
@@ -115,80 +122,51 @@ struct BreakdownBoard: View {
     }
 }
 
-/// The user's apps ranked by physical footprint, sliding to their new rank; banded by their share of physical memory.
-/// Shows as many apps as the popover's shared height fits, padding with blank flap rows.
+/// The ten largest app footprints, labeled by their share of physical memory.
 private struct AppMemoryBoard: View {
     let apps: [AppMemory]
     let total: UInt64?
+    let state: ReadingState
 
-    static let minimumRows = 5
-    static let nameCells = 17
+    static let nameCells = 15
     static let valueCells = 4
     static let statusCells = 4
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        BoardPanel {
+        let shown = Array(apps.prefix(10))
+        return BoardPanel {
             VStack(alignment: .leading, spacing: SensorBoard.rowSpacing) {
-                columns(Color.clear.frame(height: 1), ColumnLabel("YOUR APPS"), ColumnLabel("GB"), ColumnLabel("STATUS"))
-                Color.clear
-                    .frame(height: SensorBoard.height(rows: Self.minimumRows))
-                    .frame(maxHeight: .infinity)
-                    .overlay(alignment: .top) {
-                        GeometryReader { geometry in
-                            list(fitting: SensorBoard.rowsThatFit(height: geometry.size.height))
-                        }
-                    }
-            }
-        }
-    }
-
-    private func list(fitting fit: Int) -> some View {
-        let shown = Array(apps.prefix(fit))
-        return VStack(alignment: .leading, spacing: SensorBoard.rowSpacing) {
-            if shown.isEmpty {
-                columns(
-                    Lamp(lit: false, color: Board.steelLight),
-                    FlapText(text: "SAMPLING", cells: Self.nameCells, ink: Board.steelLight),
-                    FlapText(text: "--", cells: Self.valueCells, ink: Board.steelLight, alignment: .trailing),
-                    FlapText(text: "", cells: Self.statusCells)
-                )
-            } else {
+                columns(Color.clear.frame(height: 1), ColumnLabel("TOP APPS"), ColumnLabel("GB"), ColumnLabel("SHARE"))
+                ReadingNotice(state: state, source: "Apps", empty: shown.isEmpty)
                 ForEach(shown, content: row)
+                BoardNote("Up to ten apps, by physical footprint. Share is a portion of installed RAM, not a heat warning; app footprints do not add up to total memory used.")
+                    .padding(.top, 5)
             }
-            ForEach(0..<max(0, fit - max(shown.count, 1)), id: \.self) { _ in
-                columns(
-                    Lamp(lit: false, color: Board.steelLight),
-                    FlapText(text: "", cells: Self.nameCells),
-                    FlapText(text: "", cells: Self.valueCells),
-                    FlapText(text: "", cells: Self.statusCells)
-                )
-                .accessibilityHidden(true)
-            }
+            .animation(reduceMotion ? nil : Board.settle, value: shown.map(\.name))
         }
-        .animation(reduceMotion ? nil : Board.settle, value: shown.map(\.name))
     }
 
     private func row(_ app: AppMemory) -> some View {
         // Without the physical total there is no share to band by, so the row stays neutral.
         let level = total.flatMap { $0 > 0 ? HeatLevel(appMemoryPercent: (Double(app.bytes) / Double($0) * 100).rounded()) : nil }
         let band = level?.band
-        let ink = level.map { Board.heat($0) } ?? Board.steelLight
+        let ink = level.map { Board.usage($0) } ?? Board.steelLight
         return columns(
             Lamp(lit: (band ?? .cool) >= .hot, color: ink),
             FlapText(text: app.name, cells: Self.nameCells, ink: band == .burn ? ink : Board.steelLight),
             FlapText(text: Format.gigabytes(app.bytes), cells: Self.valueCells, ink: ink, alignment: .trailing),
-            FlapText(text: band?.title ?? "", cells: Self.statusCells, ink: ink)
+            FlapText(text: band?.usageTitle ?? "", cells: Self.statusCells, ink: ink)
         )
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(app.name), \(Format.gigabytes(app.bytes)) gigabytes\(band.map { ", \($0.title.lowercased())" } ?? "")")
+        .accessibilityLabel("\(app.name), \(Format.gigabytes(app.bytes)) gigabytes\(band.map { ", \($0.usageTitle.lowercased() + " share of installed RAM")" } ?? "")")
     }
 
     private func columns(_ lamp: some View, _ name: some View, _ value: some View, _ status: some View) -> some View {
         HStack(spacing: 6) {
             lamp.frame(width: 6)
-            name.frame(width: FlapSize.row.stripWidth(cells: Self.nameCells), alignment: .leading)
+            name.frame(maxWidth: .infinity, alignment: .leading)
             value.frame(width: FlapSize.row.stripWidth(cells: Self.valueCells), alignment: .trailing)
             status.frame(width: FlapSize.row.stripWidth(cells: Self.statusCells), alignment: .leading)
         }

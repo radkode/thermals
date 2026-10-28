@@ -32,8 +32,8 @@ final class SMCReader {
         IOServiceClose(connection)
     }
 
-    func fans() -> [FanReading] {
-        guard let count = value("FNum"), let fans = SMC.fanCount(count) else { return [] }
+    func fans() -> [FanReading]? {
+        guard let count = value("FNum"), let fans = SMC.fanCount(count) else { return nil }
         return (0..<fans).map { fan in
             FanReading(id: fan + 1, rpm: rpm("F\(fan)Ac"), minimum: rpm("F\(fan)Mn"), maximum: rpm("F\(fan)Mx"))
         }

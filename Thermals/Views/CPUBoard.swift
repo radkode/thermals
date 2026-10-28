@@ -9,15 +9,19 @@ struct CPUBoard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             header
+            ReadingNotice(state: monitor.cpuState, source: "CPU load", retry: monitor.refresh)
+            BoardNote("Whole-system load: 100% means all cores are fully occupied.")
             LampMeter(
                 readings: monitor.loadHistory,
                 scale: .load,
                 level: HeatLevel.init(loadPercent:),
                 unit: "%",
-                accessibilityName: "CPU load"
+                accessibilityName: "Whole-system CPU load",
+                state: monitor.cpuState,
+                utilization: true
             )
-            CoreBoard(cores: monitor.coreLoads)
-            ProcessBoard(processes: monitor.processes, hiddenLoad: monitor.hiddenLoad)
+            ProcessBoard(processes: monitor.processes, hiddenLoad: monitor.hiddenLoad, state: monitor.processState)
+            if !monitor.coreLoads.isEmpty { CoreBoard(cores: monitor.coreLoads) }
         }
     }
 
@@ -29,7 +33,7 @@ struct CPUBoard: View {
                     text: monitor.cpuLoad.map(Format.percent) ?? "--%",
                     cells: 4,
                     size: .hero,
-                    ink: monitor.cpuLoad.map { Board.heat(HeatLevel(loadPercent: ($0 * 100).rounded())) } ?? Board.steelLight,
+                    ink: monitor.cpuLoad.map { Board.usage(HeatLevel(loadPercent: ($0 * 100).rounded())) } ?? Board.steelLight,
                     alignment: .trailing
                 )
             }
@@ -39,7 +43,7 @@ struct CPUBoard: View {
                     label: "CPU DIE",
                     value: monitor.cpuTemperature.map { Format.degrees($0, unit: unit) } ?? "--",
                     cells: 4,
-                    ink: monitor.cpuTemperature.map { Board.heat(HeatLevel(celsius: $0.rounded())) } ?? Board.steelLight
+                    ink: monitor.menuBarLevel.map { Board.heat($0) } ?? Board.steelLight
                 )
                 BoardStat(label: "PRESSURE", value: monitor.thermalState.boardTitle, cells: 8, ink: monitor.thermalState.ink)
             }
@@ -91,16 +95,16 @@ private struct CoreRow: View {
         let level = HeatLevel(loadPercent: percent)
         let band = level.band
         HStack(spacing: 5) {
-            Lamp(lit: band >= .hot, color: Board.heat(level))
-            FlapText(text: core.name, cells: nameCells, ink: band == .burn ? Board.heat(level) : Board.steelLight)
+            Lamp(lit: band >= .hot, color: Board.usage(level))
+            FlapText(text: core.name, cells: nameCells, ink: band == .burn ? Board.usage(level) : Board.steelLight)
             LensBar(percent: percent) { floor, lit in
                 let level = HeatLevel(loadPercent: floor)
-                return lit ? Board.heat(level) : (level.band >= .hot ? Board.heat(level).opacity(0.16) : Board.lens)
+                return lit ? Board.usage(level) : (level.band >= .hot ? Board.usage(level).opacity(0.16) : Board.lens)
             }
-            FlapText(text: "\(Int(percent))", cells: 3, ink: Board.heat(level), alignment: .trailing)
+            FlapText(text: "\(Int(percent))", cells: 3, ink: Board.usage(level), alignment: .trailing)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Core \(core.name), \(Int(percent)) percent, \(band.title.lowercased())")
+        .accessibilityLabel("Core \(core.name), \(Int(percent)) percent, \(band.usageTitle.lowercased())")
     }
 }
 
@@ -108,9 +112,10 @@ private struct CoreRow: View {
 private struct ProcessBoard: View {
     let processes: [ProcessLoad]
     let hiddenLoad: Double?
+    let state: ReadingState
 
     static let rankedRows = 5
-    static let nameCells = 17
+    static let nameCells = 15
     static let percentCells = 4
     static let statusCells = 4
 
@@ -120,31 +125,26 @@ private struct ProcessBoard: View {
         let shown = Array(processes.prefix(Self.rankedRows))
         BoardPanel {
             VStack(alignment: .leading, spacing: 3) {
-                columns(Color.clear.frame(height: 1), ColumnLabel("PROCESSES"), ColumnLabel("%CPU"), ColumnLabel("STATUS"))
-                if shown.isEmpty {
-                    columns(
-                        Lamp(lit: false, color: Board.steelLight),
-                        FlapText(text: "SAMPLING", cells: Self.nameCells, ink: Board.steelLight),
-                        FlapText(text: "--", cells: Self.percentCells, ink: Board.steelLight, alignment: .trailing),
-                        FlapText(text: "", cells: Self.statusCells)
-                    )
-                } else {
-                    ForEach(shown) { process in
-                        row(name: process.name, percent: process.percent, label: "\(process.name), \(Int(process.percent.rounded())) percent CPU")
-                    }
+                columns(Color.clear.frame(height: 1), ColumnLabel("TOP PROCESSES"), ColumnLabel("%CPU"), ColumnLabel("LOAD"))
+                ReadingNotice(state: state, source: "Processes", empty: shown.isEmpty)
+                ForEach(shown) { process in
+                    row(name: process.name, percent: process.percent, label: "\(process.name), \(Int(process.percent.rounded())) percent of one CPU core")
                 }
                 if let hiddenLoad {
                     // An aggregate of many processes, so it is never banded with the per-process thresholds.
                     columns(
                         Lamp(lit: false, color: Board.steelLight),
-                        FlapText(text: "KERNEL + OTHERS", cells: Self.nameCells, ink: Board.steelLight),
+                        FlapText(text: "UNMEASURED EST", cells: Self.nameCells, ink: Board.steelLight),
                         FlapText(text: "\(Int(hiddenLoad.rounded()))", cells: Self.percentCells, ink: Board.steelLight, alignment: .trailing),
                         FlapText(text: "", cells: Self.statusCells)
                     )
                     .padding(.top, 6)
                     .accessibilityElement(children: .ignore)
-                    .accessibilityLabel("Kernel and short-lived processes, derived from total load, \(Int(hiddenLoad.rounded())) percent CPU")
+                    .accessibilityLabel("Estimated unmeasured CPU work, percent of one core, derived from total load, \(Int(hiddenLoad.rounded())) percent CPU")
                 }
+                BoardNote("100% per process = one core; multithreaded apps can exceed 100%. Load is utilization, not heat.")
+                    .padding(.top, 5)
+                BoardNote("Top five are smoothed. Unmeasured work is estimated from all sampled processes, so these rows do not add up to the headline.")
             }
             .animation(reduceMotion ? nil : Board.settle, value: shown.map(\.name))
         }
@@ -155,10 +155,10 @@ private struct ProcessBoard: View {
         let level = HeatLevel(loadPercent: shown)
         let band = level.band
         return columns(
-            Lamp(lit: band >= .hot, color: Board.heat(level)),
-            FlapText(text: name, cells: Self.nameCells, ink: band == .burn ? Board.heat(level) : Board.steelLight),
-            FlapText(text: "\(Int(shown))", cells: Self.percentCells, ink: Board.heat(level), alignment: .trailing),
-            FlapText(text: band.title, cells: Self.statusCells, ink: Board.heat(level))
+            Lamp(lit: band >= .hot, color: Board.usage(level)),
+            FlapText(text: name, cells: Self.nameCells, ink: band == .burn ? Board.usage(level) : Board.steelLight),
+            FlapText(text: "\(Int(shown))", cells: Self.percentCells, ink: Board.usage(level), alignment: .trailing),
+            FlapText(text: band.usageTitle, cells: Self.statusCells, ink: Board.usage(level))
         )
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(label)
@@ -167,7 +167,7 @@ private struct ProcessBoard: View {
     private func columns(_ lamp: some View, _ name: some View, _ percent: some View, _ status: some View) -> some View {
         HStack(spacing: 6) {
             lamp.frame(width: 6)
-            name.frame(width: FlapSize.row.stripWidth(cells: Self.nameCells), alignment: .leading)
+            name.frame(maxWidth: .infinity, alignment: .leading)
             percent.frame(width: FlapSize.row.stripWidth(cells: Self.percentCells), alignment: .trailing)
             status.frame(width: FlapSize.row.stripWidth(cells: Self.statusCells), alignment: .leading)
         }

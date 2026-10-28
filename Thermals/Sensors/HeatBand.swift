@@ -19,7 +19,7 @@ struct HeatLevel: Comparable {
         self.init(position: Self.interpolate(celsius, anchors: [(30, 0), (50, Self.warmStart), (75, Self.hotStart), (90, Self.burnStart), (105, 1)]))
     }
 
-    /// Load as heat: `percent` is of one core for a single core or process, or of the whole CPU for the total.
+    /// Percent of one core for a core or process, or of the whole CPU for the total.
     init(loadPercent percent: Double) {
         self.init(position: Self.interpolate(percent, anchors: [(0, 0), (25, Self.warmStart), (60, Self.hotStart), (85, Self.burnStart), (100, 1)]))
     }
@@ -34,9 +34,11 @@ struct HeatLevel: Comparable {
         self.init(position: Self.interpolate(percent, anchors: [(0, 0), (10, Self.warmStart), (25, Self.hotStart), (40, Self.burnStart), (60, 1)]))
     }
 
-    /// Memory in use, raised to at least HOT under warn and BURN under critical memory pressure.
+    var utilization: HeatLevel { HeatLevel(position: position * 0.55) }
+
+    /// Usage stays below warning colors unless macOS reports memory pressure.
     static func memory(usedPercent: Double, pressure: MemoryPressure?) -> HeatLevel {
-        let reading = HeatLevel(memoryPercent: usedPercent)
+        let reading = HeatLevel(memoryPercent: usedPercent).utilization
         return switch pressure {
         case .warn: max(reading, HeatLevel(position: hotStart))
         case .critical: max(reading, HeatLevel(position: burnStart))
@@ -93,6 +95,8 @@ enum HeatBand: Int, Comparable, CaseIterable {
         case .burn: "BURN"
         }
     }
+
+    var usageTitle: String { self == .cool ? "LOW" : self == .warm ? "MOD" : "HIGH" }
 
     static func < (lhs: HeatBand, rhs: HeatBand) -> Bool { lhs.rawValue < rhs.rawValue }
 }

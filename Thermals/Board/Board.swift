@@ -13,7 +13,7 @@ enum Board {
     static let amber = color(amberRGB)
     static let burnRed = color(burnRedRGB)
     private static let amberRGB: (Double, Double, Double) = (0xFF, 0xB0, 0x00)
-    private static let burnRedRGB: (Double, Double, Double) = (0xE5, 0x38, 0x3B)
+    private static let burnRedRGB: (Double, Double, Double) = (0xFF, 0x70, 0x73)
 
     static func flapFont(_ size: CGFloat) -> Font { .custom("BarlowCondensed-SemiBold", size: size) }
     static func labelFont(_ size: CGFloat) -> Font { .custom("BarlowCondensed-Medium", size: size) }
@@ -37,6 +37,12 @@ enum Board {
         ))
     }
 
+    static func usage(_ level: HeatLevel) -> Color {
+        heat(level.utilization)
+    }
+
+    static func panelHeight(available: CGFloat) -> CGFloat { min(640, max(0, available - 32)) }
+
     typealias HeatStop = (position: Double, rgb: (Double, Double, Double))
 
     static let darkHeatStops: [HeatStop] = [
@@ -44,7 +50,7 @@ enum Board {
         (HeatLevel.warmStart, (0xDC, 0xE6, 0xEE)),
         (0.55, (0xFF, 0xE3, 0xA3)),
         (HeatLevel.hotStart, amberRGB),
-        (HeatLevel.burnStart, (0xF2, 0x5A, 0x2D)),
+        (HeatLevel.burnStart, (0xFF, 0x83, 0x55)),
         (1, burnRedRGB),
     ]
 
@@ -96,11 +102,20 @@ struct FlapText: View {
         .background(Board.flapBlack, in: RoundedRectangle(cornerRadius: size.isLarge ? 5 : 2.5))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(text)
+        .help(text)
+    }
+
+    static func fitted(_ text: String, cells: Int, numeric: Bool) -> String {
+        guard cells > 0 else { return "" }
+        let text = text.uppercased()
+        guard text.count > cells else { return text }
+        if numeric { return String(repeating: "#", count: cells) }
+        return String(text.prefix(cells - 1)) + "…"
     }
 
     private var characters: [Character] {
-        let clipped = Array(text.uppercased().prefix(cells))
-        let padding = Array(repeating: Character(" "), count: cells - clipped.count)
+        let clipped = Array(Self.fitted(text, cells: cells, numeric: alignment == .trailing))
+        let padding = Array(repeating: Character(" "), count: max(0, cells - clipped.count))
         return alignment == .trailing ? padding + clipped : clipped + padding
     }
 }

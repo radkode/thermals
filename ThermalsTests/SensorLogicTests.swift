@@ -121,8 +121,8 @@ struct LampMeterTests {
         TimedValue(date: newest.addingTimeInterval(-secondsAgo), value: value)
     }
 
-    @Test func columnsAreTimeSlicesEndingAtTheNewestReading() {
-        let peaks = LampMeter.columnPeaks([reading(7, 50), reading(2, 61), reading(0, 55)])
+    @Test func columnsAreTimeSlicesEndingAtNow() {
+        let peaks = LampMeter.columnPeaks([reading(7, 50), reading(2, 61), reading(0, 55)], now: newest)
         #expect(peaks.count == LampMeter.columns)
         #expect(peaks.last == 61)
         #expect(peaks[LampMeter.columns - 2] == 50)
@@ -130,20 +130,20 @@ struct LampMeterTests {
     }
 
     @Test func timerJitterAtTheSliceRateLeavesNoGaps() {
-        let peaks = LampMeter.columnPeaks([reading(17.8, 1), reading(12.0, 2), reading(5.9, 3), reading(0, 4)])
+        let peaks = LampMeter.columnPeaks([reading(17.8, 1), reading(12.0, 2), reading(5.9, 3), reading(0, 4)], now: newest)
         #expect(Array(peaks.suffix(4)) == [1, 2, 3, 4])
     }
 
     @Test func slowerRatesHoldTheLastValueAcrossEmptySlices() {
         let readings = stride(from: 60.0, through: 0, by: -10).enumerated().map { reading($0.element, Double($0.offset)) }
-        let peaks = LampMeter.columnPeaks(readings)
+        let peaks = LampMeter.columnPeaks(readings, now: newest)
         let firstFilled = peaks.firstIndex { $0 != nil }!
         #expect(peaks[firstFilled...].allSatisfy { $0 != nil })
         #expect(peaks.last == 6)
     }
 
     @Test func readingsOlderThanTheWindowAreDropped() {
-        let peaks = LampMeter.columnPeaks([reading(Monitor.historyWindow + 1, 99), reading(0, 40)])
+        let peaks = LampMeter.columnPeaks([reading(Monitor.historyWindow + 1, 99), reading(0, 40)], now: newest)
         #expect(peaks.compactMap { $0 } == [40])
     }
 }
@@ -316,14 +316,6 @@ struct MeterScaleTests {
     }
 }
 
-@MainActor
-struct SensorBoardFillTests {
-    @Test func rowsThatFitMatchesRowHeight() {
-        #expect(SensorBoard.rowsThatFit(height: SensorBoard.height(rows: 8)) == 8)
-        #expect(SensorBoard.rowsThatFit(height: SensorBoard.height(rows: 8) - 1) == 7)
-    }
-}
-
 struct MemoryStatsTests {
     @Test func breakdownCountsPurgeableAsCache() {
         let pages = VMPages(anonymous: 600, purgeable: 100, external: 200, wired: 150, compressed: 50, free: 20)
@@ -377,12 +369,13 @@ struct MemoryBandTests {
         #expect(HeatBand(appMemoryPercent: percent) == expected)
     }
 
-    @Test func pressureRaisesTheUsedLevel() {
+    @Test func onlyPressureUsesMemoryWarningColors() {
         #expect(HeatLevel.memory(usedPercent: 40, pressure: .normal).band == .cool)
         #expect(HeatLevel.memory(usedPercent: 40, pressure: .warn).band == .hot)
         #expect(HeatLevel.memory(usedPercent: 40, pressure: .critical).band == .burn)
-        #expect(HeatLevel.memory(usedPercent: 95, pressure: .warn).band == .burn)
-        #expect(HeatLevel.memory(usedPercent: 70, pressure: nil).band == .warm)
+        #expect(HeatLevel.memory(usedPercent: 95, pressure: .warn).band == .hot)
+        #expect(HeatLevel.memory(usedPercent: 100, pressure: .normal).band < .hot)
+        #expect(HeatLevel.memory(usedPercent: 100, pressure: nil).band < .hot)
     }
 }
 
@@ -525,5 +518,140 @@ struct SMCTests {
         #expect(FanReading(id: 1, rpm: 6000, minimum: 1350, maximum: 5350).fraction == 1)
         #expect(FanReading(id: 1, rpm: nil, minimum: 1350, maximum: 5350).fraction == nil)
         #expect(FanReading(id: 1, rpm: 1000, minimum: 0, maximum: 0).fraction == nil)
+    }
+}
+
+@MainActor
+struct ReadingFreshnessTests {
+    private let now = Date(timeIntervalSince1970: 10_000)
+
+    @Test func failedCPUReadDoesNotFabricateASample() {
+        let monitor = Monitor(sensors: [], cpuLoad: nil, thermalState: .nominal, history: [])
+        monitor.updateCPU(ticks: [.zero], at: now)
+        monitor.updateCPU(ticks: [CPUTicks(user: 25, system: 0, idle: 75, nice: 0)], at: now.addingTimeInterval(1))
+        #expect(monitor.cpuLoad == 0.25)
+        #expect(monitor.loadHistory.count == 1)
+        monitor.updateCPU(ticks: nil, at: now.addingTimeInterval(2))
+        #expect(monitor.cpuLoad == nil)
+        #expect(monitor.coreLoads.isEmpty)
+        #expect(monitor.cpuState == .failed)
+        #expect(monitor.loadHistory.count == 1)
+        monitor.updateCPU(ticks: [CPUTicks(user: 50, system: 0, idle: 150, nice: 0)], at: now.addingTimeInterval(3))
+        #expect(monitor.cpuLoad == nil)
+        #expect(monitor.cpuState == .loading)
+        #expect(monitor.loadHistory.count == 1)
+    }
+
+    @Test func unchangedCountersClearTheOldCPUValue() {
+        let monitor = Monitor(sensors: [], cpuLoad: nil, thermalState: .nominal, history: [])
+        let ticks = CPUTicks(user: 25, system: 0, idle: 75, nice: 0)
+        monitor.updateCPU(ticks: [.zero], at: now)
+        monitor.updateCPU(ticks: [ticks], at: now.addingTimeInterval(1))
+        monitor.updateCPU(ticks: [ticks], at: now.addingTimeInterval(2))
+        #expect(monitor.cpuLoad == nil)
+        #expect(monitor.cpuState == .failed)
+        #expect(monitor.loadHistory.count == 1)
+    }
+
+    @Test func historyExpiresEvenWhenItsSourceStops() {
+        let reading = TimedValue(date: now, value: 70)
+        let monitor = Monitor(sensors: [], cpuLoad: nil, thermalState: .nominal, history: [reading], loadHistory: [reading], memoryHistory: [reading])
+        monitor.pruneHistory(at: now.addingTimeInterval(181))
+        #expect(monitor.history.isEmpty)
+        #expect(monitor.loadHistory.isEmpty)
+        #expect(monitor.memoryHistory.isEmpty)
+    }
+
+    @Test func staleChartMovesAwayFromNowAndThenExpires() {
+        let readings = [TimedValue(date: now, value: 70)]
+        let delayed = LampMeter.columnPeaks(readings, now: now.addingTimeInterval(60))
+        #expect(delayed.suffix(8).allSatisfy { $0 == nil })
+        #expect(LampMeter.columnPeaks(readings, now: now.addingTimeInterval(181)).allSatisfy { $0 == nil })
+    }
+
+    @Test func sleepGapIsNotFilledWithAnInventedPlateau() {
+        let readings = [TimedValue(date: now.addingTimeInterval(-120), value: 90), TimedValue(date: now, value: 40)]
+        let columns = LampMeter.columnPeaks(readings, now: now)
+        #expect(columns[15...25].allSatisfy { $0 == nil })
+        #expect(columns.last == 40)
+    }
+
+    @Test func freshnessUsesTheSuccessfulSampleTime() {
+        let state = ReadingState.available(now)
+        #expect(!state.isStale(at: now.addingTimeInterval(10), interval: 10))
+        #expect(state.isStale(at: now.addingTimeInterval(21), interval: 10))
+        #expect(ReadingState.failed.sampledAt == nil)
+    }
+}
+
+@MainActor
+struct PressurePresentationTests {
+    @Test(arguments: [MenuBarItem.temperature, .load, .both])
+    func missingTemperatureStillWarns(item: MenuBarItem) {
+        let view = MenuBarReading(item: item, unit: .celsius, temperature: nil, load: 0.1, thermalState: .critical)
+        #expect(view.parts.first?.0 == "!")
+        #expect(view.parts.first?.1.band == .burn)
+        #expect(view.accessibilityText.contains("critical"))
+        if item != .load { #expect(view.parts.contains { $0.0 == "--°" }) }
+    }
+
+    @Test func nominalMissingTemperatureDoesNotInventAValue() {
+        let view = MenuBarReading(item: .temperature, unit: .celsius, temperature: nil, load: nil, thermalState: .nominal)
+        #expect(view.parts.isEmpty)
+        #expect(view.accessibilityText.contains("unavailable"))
+    }
+
+    @Test func lowTemperatureKeepsPressureColor() {
+        let view = MenuBarReading(item: .temperature, unit: .celsius, temperature: 45, load: nil, thermalState: .serious)
+        #expect(view.parts.last?.0 == "45°")
+        #expect(view.parts.last?.1.band == .hot)
+    }
+}
+
+@MainActor
+struct UXPresentationTests {
+    @Test func overflowNeverTurnsANumberIntoASmallerNumber() {
+        #expect(FlapText.fitted("9999", cells: 4, numeric: true) == "9999")
+        #expect(FlapText.fitted("10000", cells: 4, numeric: true) == "####")
+        #expect(FlapText.fitted("10000", cells: 5, numeric: true) == "10000")
+        #expect(FlapText.fitted("20000", cells: 5, numeric: true) == "20000")
+        #expect(FlapText.fitted("A very long app name", cells: 8, numeric: false) == "A VERY …")
+    }
+
+    @Test func historyDirectionsAreDistinctEvenWithTheSameExtrema() {
+        let now = Date.now
+        let rising = [TimedValue(date: now.addingTimeInterval(-60), value: 40), TimedValue(date: now, value: 80)]
+        let falling = [TimedValue(date: now.addingTimeInterval(-60), value: 80), TimedValue(date: now, value: 40)]
+        #expect(LampMeter.trend(rising).hasPrefix("Rising"))
+        #expect(LampMeter.trend(falling).hasPrefix("Falling"))
+        #expect(LampMeter.trend([]).contains("Not enough"))
+    }
+
+    @Test func panelFitsSmallScreensAndCapsLargerOnes() {
+        #expect(Board.panelHeight(available: 768) == 640)
+        #expect(Board.panelHeight(available: 868) == 640)
+        #expect(Board.panelHeight(available: 550) == 518)
+    }
+
+    @Test func fixturesHaveCoherentCPUCapacity() {
+        for monitor in [PreviewMonitors.cool(), PreviewMonitors.hot()] {
+            let average = monitor.coreLoads.map(\.usage).reduce(0, +) / Double(monitor.coreLoads.count)
+            #expect(abs((monitor.cpuLoad ?? -1) - average) < 0.00001)
+            let measured = monitor.processes.map(\.percent).reduce(0, +)
+            #expect(abs(measured + (monitor.hiddenLoad ?? -1) - average * 1200) < 0.00001)
+        }
+    }
+
+    @Test func utilizationWordsDoNotClaimOverheating() {
+        for band in HeatBand.allCases {
+            #expect(!["COOL", "WARM", "HOT", "BURN"].contains(band.usageTitle))
+        }
+    }
+
+    @Test func notificationPreferenceDoesNotImplyAuthorization() {
+        #expect(NotificationAccess(status: .notDetermined, alertsEnabled: false) == .notRequested)
+        #expect(NotificationAccess(status: .denied, alertsEnabled: false) == .denied)
+        #expect(NotificationAccess(status: .authorized, alertsEnabled: false) == .denied)
+        #expect(NotificationAccess(status: .authorized, alertsEnabled: true) == .allowed)
     }
 }

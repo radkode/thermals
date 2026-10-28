@@ -19,9 +19,6 @@ enum Format {
         return value < 99.95 ? String(format: "%.1f", value) : "\(Int(value.rounded()))"
     }
 
-    static func clock(_ date: Date) -> String {
-        date.formatted(.dateTime.hour(.twoDigits(amPM: .omitted)).minute(.twoDigits))
-    }
 }
 
 struct ColumnLabel: View {
@@ -33,6 +30,47 @@ struct ColumnLabel: View {
             .font(Board.labelFont(11))
             .tracking(1.6)
             .foregroundStyle(Board.steelLight)
+    }
+}
+
+struct BoardNote: View {
+    let text: String
+    init(_ text: String) { self.text = text }
+    var body: some View {
+        Text(text)
+            .font(Board.labelFont(14))
+            .foregroundStyle(Board.steelLight)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+struct ReadingNotice: View {
+    let state: ReadingState
+    let source: String
+    var empty = false
+    var retry: (() -> Void)?
+    @Environment(\.readingDate) private var now
+    @Environment(\.sampleInterval) private var interval
+
+    var body: some View {
+        if let message {
+            VStack(alignment: .leading, spacing: 6) {
+                BoardNote(message)
+                if let retry, state != .loading {
+                    FlapButton(title: "RETRY", accessibilityName: "Retry \(source) reading", action: retry)
+                }
+            }
+        }
+    }
+
+    private var message: String? {
+        if state.isStale(at: now, interval: interval) { return "\(source): stale. Waiting for a fresh sample." }
+        switch state {
+        case .loading: return "\(source): collecting readings…"
+        case .unavailable: return "\(source) unavailable. Support varies by Mac and macOS version. Restart Thermals if this worked before."
+        case .failed: return "\(source) could not be read. Retrying automatically."
+        case .available: return empty ? "No active \(source.lowercased()) in this sample." : nil
+        }
     }
 }
 
@@ -139,6 +177,8 @@ extension EnvironmentValues {
     /// Set by offscreen renders, where scroll views draw blank.
     @Entry var snapshotRendering = false
     @Entry var temperatureUnit = TemperatureUnit.celsius
+    @Entry var readingDate = Date.now
+    @Entry var sampleInterval: TimeInterval = 6
 }
 
 /// A labelled flap strip, right-aligned, for header stats.
@@ -153,6 +193,9 @@ struct BoardStat: View {
             ColumnLabel(label)
             FlapText(text: value, cells: cells, ink: ink, alignment: .trailing)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(label), \(value)")
+        .help("\(label): \(value)")
     }
 }
 
@@ -179,27 +222,31 @@ struct MeterScale {
 
 /// Three minutes of readings as a bank of lamps: columns are time, rows a scale fitted to the window, each lens tinted from the heat gradient at its row's value.
 struct LampMeter: View {
+    @Environment(\.readingDate) private var now
     let readings: [TimedValue]
     let scale: MeterScale
     let level: (Double) -> HeatLevel
     let unit: String
     let accessibilityName: String
+    var state: ReadingState = .loading
+    var utilization = false
     /// Converts a reading for the range readout only; rows and colors use the reading as measured.
     var display: (Double) -> Double = { $0 }
 
     static let columns = 30
     static let loadRows: [Double] = [1, 12.5, 25, 37.5, 50, 62.5, 75, 87.5]
 
-    private var values: [Double] { readings.map(\.value) }
+    private var recent: [TimedValue] { readings.filter { (0...Monitor.historyWindow).contains(now.timeIntervalSince($0.date)) } }
+    private var values: [Double] { recent.map(\.value) }
 
     var body: some View {
         BoardPanel {
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
-                    ColumnLabel("LAST 3 MIN")
+                    ColumnLabel("LAST 3 MIN · NOW →")
                     Spacer()
                     if let range {
-                        Text(range)
+                        Text("MIN/MAX " + range)
                             .font(Board.labelFont(12))
                             .tracking(1.2)
                             .foregroundStyle(Board.letterWhite)
@@ -209,7 +256,7 @@ struct LampMeter: View {
                 ZStack {
                     lamps
                     if values.count < 2 {
-                        Text("COLLECTING READINGS")
+                        Text(state == .loading ? "COLLECTING READINGS" : values.isEmpty ? "NO RECENT READINGS" : "WAITING FOR NEXT READING")
                             .font(Board.labelFont(11))
                             .tracking(1.6)
                             .foregroundStyle(Board.steelLight)
@@ -221,11 +268,12 @@ struct LampMeter: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(accessibilityName) over the last three minutes\(range.map { ", \($0)" } ?? "")")
+        .accessibilityLabel("\(accessibilityName) over the last three minutes. \(Self.trend(recent)). Observed minimum and maximum \(range ?? "unavailable"). Newest readings on the right; gaps mean no recent measurement.")
+        .help("Observed minimum and maximum are shown above. The chart scale adapts to the readings; gaps indicate missing measurements.")
     }
 
     private var lamps: some View {
-        let columns = Self.columnPeaks(readings)
+        let columns = Self.columnPeaks(recent, now: now)
         let rows = scale.floors(for: values).map { (floor: $0, level: level($0)) }
         return Canvas { context, size in
             let gap: CGFloat = 1.5
@@ -241,30 +289,38 @@ struct LampMeter: View {
                         width: cellWidth,
                         height: cellHeight
                     )
-                    let lens = lit ? Board.heat(row.level) : (row.level.band >= .hot ? Board.heat(row.level).opacity(0.16) : Board.lens)
+                    let color = utilization ? Board.usage(row.level) : Board.heat(row.level)
+                    let lens = lit ? color : (!utilization && row.level.band >= .hot ? color.opacity(0.16) : Board.lens)
                     context.fill(Path(roundedRect: rect, cornerRadius: 1), with: .color(lens))
                 }
             }
         }
     }
 
-    /// Peak reading per equal slice of the window, newest slice last. Readings go to the nearest slice so timer jitter can't
-    /// double one slice and skip the next; slices with no reading after the first one hold the previous value. Before the first reading, nil.
-    static func columnPeaks(_ readings: [TimedValue], window: TimeInterval = Monitor.historyWindow) -> [Double?] {
+    /// Short sampling gaps hold for at most two slices; sleep and failed-read gaps remain empty.
+    static func columnPeaks(_ readings: [TimedValue], now: Date, window: TimeInterval = Monitor.historyWindow) -> [Double?] {
         var peaks = [Double?](repeating: nil, count: columns)
-        guard let newest = readings.last?.date else { return peaks }
         let slice = window / Double(columns)
         for reading in readings {
-            let column = columns - 1 - Int((newest.timeIntervalSince(reading.date) / slice).rounded())
+            let age = now.timeIntervalSince(reading.date)
+            guard age >= 0, age <= window else { continue }
+            let column = columns - 1 - Int((age / slice).rounded())
             guard peaks.indices.contains(column) else { continue }
             peaks[column] = max(peaks[column] ?? -.infinity, reading.value)
         }
-        if let first = peaks.firstIndex(where: { $0 != nil }) {
-            for column in peaks.indices.dropFirst(first + 1) where peaks[column] == nil {
-                peaks[column] = peaks[column - 1]
-            }
+        var lastMeasured: Int?
+        for column in peaks.indices {
+            if peaks[column] != nil { lastMeasured = column }
+            else if let lastMeasured, column - lastMeasured < 2 { peaks[column] = peaks[lastMeasured] }
         }
         return peaks
+    }
+
+    static func trend(_ readings: [TimedValue]) -> String {
+        guard let first = readings.first, let last = readings.last, readings.count > 1 else { return "Not enough readings for a trend" }
+        let change = last.value - first.value
+        if abs(change) < 1 { return "Steady across the sampled period" }
+        return change > 0 ? "Rising across the sampled period" : "Falling across the sampled period"
     }
 
     private var range: String? {

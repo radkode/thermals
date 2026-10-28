@@ -140,12 +140,13 @@ final class ProcessSampler {
             .sorted { ($0.percent, $1.name) > ($1.percent, $0.name) }
     }
 
-    static func allPids() -> [pid_t] {
+    static func allPids() -> [pid_t]? {
         let capacity = proc_listallpids(nil, 0) + 64
-        guard capacity > 64 else { return [] }
+        guard capacity > 64 else { return nil }
         var pids = [pid_t](repeating: 0, count: Int(capacity))
         let count = proc_listallpids(&pids, capacity * Int32(MemoryLayout<pid_t>.size))
-        return pids.prefix(Int(max(count, 0))).filter { $0 > 0 }
+        guard count > 0 else { return nil }
+        return pids.prefix(Int(count)).filter { $0 > 0 }
     }
 
     /// The board name for a running pid: its outermost app, else its process name; nil once the process is gone.

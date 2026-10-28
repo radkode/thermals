@@ -107,9 +107,10 @@ enum MemoryStats {
     }
 
     /// Physical footprint per app (helpers grouped under their app), as Activity Monitor's Memory column. Only this user's processes are visible.
-    static func appFootprints() -> [String: UInt64] {
+    static func appFootprints() -> [String: UInt64]? {
         var result: [String: UInt64] = [:]
-        for pid in ProcessSampler.allPids() {
+        guard let pids = ProcessSampler.allPids() else { return nil }
+        for pid in pids {
             var info = rusage_info_v4()
             let status = withUnsafeMutablePointer(to: &info) {
                 $0.withMemoryRebound(to: rusage_info_t?.self, capacity: 1) { proc_pid_rusage(pid, RUSAGE_INFO_V4, $0) }
@@ -117,7 +118,7 @@ enum MemoryStats {
             guard status == 0, let name = ProcessSampler.groupName(pid: pid) else { continue }
             result[name, default: 0] += info.ri_phys_footprint
         }
-        return result
+        return result.isEmpty ? nil : result
     }
 
     static func ranked(_ footprints: [String: UInt64]) -> [AppMemory] {

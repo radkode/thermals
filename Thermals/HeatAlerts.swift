@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import UserNotifications
 
@@ -110,5 +111,31 @@ final class HeatAlerts {
         else { return nil }
         let percents = ProcessSampler.percents(previous: first.times, current: second.times, elapsedNanoseconds: second.uptimeNanoseconds - first.uptimeNanoseconds)
         return ProcessSampler.ranked(percents).first
+    }
+}
+
+/// Requested alerts and macOS delivery authorization are separate states.
+enum NotificationAccess: Equatable {
+    case checking, notRequested, allowed, denied
+
+    init(status: UNAuthorizationStatus, alertsEnabled: Bool) {
+        switch status {
+        case .notDetermined: self = .notRequested
+        case .authorized, .provisional: self = alertsEnabled ? .allowed : .denied
+        default: self = .denied
+        }
+    }
+
+    var message: String {
+        switch self {
+        case .checking: "Checking macOS notification permission…"
+        case .notRequested: "Permission needed. Allow notifications now, or macOS will ask at the first heat alert."
+        case .allowed: "Notifications allowed by macOS. Focus settings can still silence them."
+        case .denied: "Heat alerts are requested, but macOS notifications are blocked. Enable Thermals in Notifications settings."
+        }
+    }
+
+    @MainActor static func openSettings() {
+        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension")!)
     }
 }

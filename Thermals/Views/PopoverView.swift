@@ -1,56 +1,108 @@
-/*
- THESIS: A rail concourse departure board where sensors and cores are departures in fixed order, lit by heat; refuses the stock stats popover of gauges, rings and system-gray rows.
- OWN-WORLD: Matte flap cells with a hinge gap and axle pins in black housings on a steel frame; Barlow Condensed caps; steel light for cool, letter white for warm, amber lamps for hot, red type for burn.
- STORY: HEAT: the big flaps say how hot the CPU is, the lamps and amber or red rows say which sensors drive it. CPU: the big flaps say how loaded it is with the die temperature beside it, the core platforms say where the load sits, the processes say who is causing it. RAM: the big flaps say how much memory is in use, raised by memory pressure, the breakdown says where it sits, your apps say who holds it.
- FIRST VIEWPORT: HEAT / CPU / RAM flap tabs, then the selected board: hero flaps with two stats right, a three-minute lamp meter, the board panels, and a footer with update time and Quit.
- FORM: Split-flap concourse board, challenger chosen by the owner over assigned #4 (liquid-crystal strip); seed key 7dbf3ed9. CPU board structure: core departures, challenger chosen over assigned #7 (signal box panel); seed key a97472d0.
- FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
- */
+import ServiceManagement
 import SwiftUI
+import UserNotifications
 
+// A bounded departure board: summary first, details scroll, navigation and actions stay put.
 struct PopoverView: View {
     let monitor: Monitor
-    /// Absent in previews and snapshots that don't show an update.
     var updater: Updater?
-    /// Pins the board for snapshots; the live popover uses the stored choice.
     var pinnedBoard: BoardKind?
-    /// Pins the temperature unit for snapshots.
     var pinnedUnit: TemperatureUnit?
     var previewLoginError = false
+    var previewSettings = false
+    var previewLoginPending = false
+    var previewNotification: NotificationAccess = .allowed
+    var previewAlerts = HeatAlertsSetting.on
+    var previewHeight: CGFloat = 640
+    var previewDate: Date = PreviewMonitors.referenceDate
 
     @AppStorage("board") private var storedBoard = BoardKind.heat
     @AppStorage("menuBarItem") private var menuBarItem = MenuBarItem.temperature
     @AppStorage("temperatureUnit") private var temperatureUnit = TemperatureUnit.system
     @AppStorage(HeatAlerts.settingKey) private var heatAlerts = HeatAlertsSetting.on
-    @State private var launchAtLogin = LaunchAtLogin.off
+    @State private var launchStatus = SMAppService.Status.notRegistered
     @State private var loginError = false
+    @State private var showsSettings = false
+    @State private var notificationAccess = NotificationAccess.checking
+    @State private var notificationError = false
+    @State private var screenHeight: CGFloat = 800
+    @Environment(\.snapshotRendering) private var snapshotRendering
 
     private var board: BoardKind { pinnedBoard ?? storedBoard }
+    private var preview: Bool { pinnedBoard != nil }
+    private var settingsOpen: Bool { preview ? previewSettings : showsSettings }
+    private var alerts: HeatAlertsSetting { preview ? previewAlerts : heatAlerts }
+    private var notification: NotificationAccess { preview ? previewNotification : notificationAccess }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            FlapTabs(selection: Binding(get: { board }, set: { storedBoard = $0 }), shortcuts: true, noun: "board")
-            // Every board stays laid out so the popover keeps the tallest one's height and Quit never moves on switch.
-            ZStack(alignment: .topLeading) {
-                ForEach(BoardKind.allCases, id: \.self) { kind in
-                    let shown = kind == board
-                    Group {
-                        switch kind {
-                        case .heat: HeatBoard(monitor: monitor)
-                        case .cpu: CPUBoard(monitor: monitor)
-                        case .ram: RAMBoard(monitor: monitor)
-                        }
-                    }
-                    .frame(maxHeight: .infinity, alignment: .top)
-                    .opacity(shown ? 1 : 0)
-                    .allowsHitTesting(shown)
-                    .accessibilityHidden(!shown)
-                }
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            let now = preview ? previewDate : context.date
+            VStack(alignment: .leading, spacing: 14) {
+                FlapTabs(selection: Binding(get: { board }, set: { storedBoard = $0; showsSettings = false }), shortcuts: true, noun: "board")
+                viewport
+                if let version = updater?.available { updateRow(version) }
+                footer(at: now)
             }
+            .padding(14)
+            .frame(width: Board.popoverWidth, height: preview ? previewHeight : Board.panelHeight(available: screenHeight))
+            .background(Board.steelFrame)
+            .environment(\.colorScheme, .dark)
+            .environment(\.temperatureUnit, pinnedUnit ?? temperatureUnit)
+            .environment(\.readingDate, now)
+            .environment(\.sampleInterval, monitor.rate.seconds)
+            .background {
+                if !preview { PanelScreenReader { screenHeight = $0 }.frame(width: 0, height: 0) }
+            }
+        }
+        .onAppear { updateSampling() }
+        .onChange(of: board) { _, _ in updateSampling() }
+        .onChange(of: showsSettings) { _, _ in updateSampling() }
+        .onDisappear { sample(nil) }
+        .task { await refreshPermissions() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            Task { await refreshPermissions() }
+        }
+        .onExitCommand {
+            if showsSettings { showsSettings = false }
+            else { NSApp.keyWindow?.orderOut(nil) }
+        }
+    }
+
+    private var viewport: some View {
+        GeometryReader { geometry in
+            if snapshotRendering {
+                content
+                    .frame(width: geometry.size.width, alignment: .topLeading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(height: geometry.size.height, alignment: .top)
+                    .clipped()
+            } else {
+                ScrollView(.vertical) {
+                    content.frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .id("\(board.rawValue)-\(settingsOpen)")
+            }
+        }
+    }
+
+    @ViewBuilder private var content: some View {
+        if settingsOpen { settings }
+        else {
+            switch board {
+            case .heat: HeatBoard(monitor: monitor) { storedBoard = .cpu }
+            case .cpu: CPUBoard(monitor: monitor)
+            case .ram: RAMBoard(monitor: monitor)
+            }
+        }
+    }
+
+    private var settings: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            ColumnLabel("SETTINGS")
             HStack {
                 ColumnLabel("MENU BAR")
                 Spacer()
-                FlapTabs(selection: $menuBarItem, noun: "in menu bar")
+                FlapTabs(selection: Binding(get: { preview ? .temperature : menuBarItem }, set: { menuBarItem = $0 }), noun: "in menu bar")
             }
             HStack {
                 ColumnLabel("TEMPERATURE")
@@ -60,71 +112,121 @@ struct PopoverView: View {
             HStack {
                 ColumnLabel("UPDATE EVERY")
                 Spacer()
-                FlapTabs(selection: Binding(get: { monitor.rate }, set: { monitor.rate = $0 }), noun: "update interval")
+                FlapTabs(selection: Binding(get: { preview ? .six : monitor.rate }, set: { monitor.rate = $0 }), noun: "update interval")
             }
             HStack {
                 ColumnLabel("HEAT ALERTS")
                 Spacer()
-                FlapTabs(selection: $heatAlerts, noun: "heat alerts")
+                FlapTabs(selection: Binding(get: { alerts }, set: { heatAlerts = $0 }), noun: "heat alerts")
+            }
+            BoardNote("Alerts after 30 seconds at 85°C or serious thermal pressure, at most once per episode and ten minutes apart.")
+            if alerts == .on {
+                BoardNote(notification.message)
+                if notification == .notRequested {
+                    FlapButton(title: "ALLOW", accessibilityName: "Allow heat alert notifications") {
+                        Task {
+                            do { _ = try await UNUserNotificationCenter.current().requestAuthorization(options: [.alert]) }
+                            catch { notificationError = true }
+                            await refreshPermissions()
+                        }
+                    }
+                } else if notification == .denied {
+                    FlapButton(title: "SETTINGS", accessibilityName: "Open macOS notification settings") { NotificationAccess.openSettings() }
+                }
+                if notificationError { BoardNote("Notification permission could not be requested. Open System Settings, Notifications, Thermals.") }
             }
             HStack {
                 ColumnLabel("LAUNCH AT LOGIN")
                 Spacer()
-                FlapTabs(selection: Binding(get: { launchAtLogin }, set: {
+                FlapTabs(selection: Binding(get: { preview ? .off : LaunchAtLogin(status: launchStatus) }, set: {
                     let change = LaunchAtLogin.set($0)
-                    launchAtLogin = change.state
+                    launchStatus = SMAppService.mainApp.status
                     loginError = change.failed
                 }), noun: "launch at login")
             }
+            if launchStatus == .requiresApproval || previewLoginPending {
+                BoardNote("Approval pending. Thermals will not launch at login until you allow it in System Settings.")
+                loginSettingsButton
+            }
             if loginError || previewLoginError {
-                HStack(spacing: 5) {
-                    Lamp(lit: true, color: Board.amber)
-                    ColumnLabel("LOGIN ITEM CHANGE FAILED")
-                    Spacer()
-                    FlapButton(title: "SETTINGS", accessibilityName: "Open Login Items in System Settings") {
-                        LaunchAtLogin.openSettings()
-                    }
-                }
+                BoardNote("Login item change failed. Check Login Items in System Settings, then try again.")
+                loginSettingsButton
             }
-            if let version = updater?.available {
-                HStack {
-                    ColumnLabel("NEW VERSION")
-                    Spacer()
-                    HStack(spacing: 10) {
-                        HStack(spacing: 5) {
-                            Lamp(lit: true, color: Board.amber)
-                            FlapText(text: version, cells: version.count)
-                        }
-                        FlapButton(title: "INSTALL", accessibilityName: "Install Thermals \(version)") { updater?.install() }
-                    }
-                }
-            }
-            footer
+            BoardNote("Temperature bands are reference ranges. CPU and app memory labels describe utilization, not overheating. OS pressure reports system strain.")
         }
-        .padding(14)
-        .frame(width: Board.popoverWidth)
-        .background(Board.steelFrame)
-        .environment(\.colorScheme, .dark)
-        .environment(\.temperatureUnit, pinnedUnit ?? temperatureUnit)
-        .onAppear {
-            sample(board)
-            if pinnedBoard == nil { launchAtLogin = .current }
-        }
-        .onChange(of: board) { _, new in sample(new) }
-        .onDisappear { sample(nil) }
     }
 
+    private var loginSettingsButton: some View {
+        FlapButton(title: "SETTINGS", accessibilityName: "Open Login Items in System Settings") { LaunchAtLogin.openSettings() }
+    }
+
+    private func updateRow(_ version: String) -> some View {
+        HStack {
+            ColumnLabel("NEW VERSION")
+            Spacer()
+            FlapText(text: version, cells: min(10, version.count))
+            FlapButton(title: "INSTALL", accessibilityName: "Install Thermals \(version)") { updater?.install() }
+        }
+    }
+
+    private func footer(at now: Date) -> some View {
+        HStack(spacing: 10) {
+            Text(freshness(at: now))
+                .font(Board.labelFont(12))
+                .foregroundStyle(Board.steelLight)
+                .help("Age of the last successful reading on this board. Each source reports its own failures.")
+            Spacer(minLength: 0)
+            FlapButton(title: settingsOpen ? "BACK" : "SETTINGS", accessibilityName: settingsOpen ? "Back to readings" : "Open Thermals settings") {
+                showsSettings.toggle()
+            }
+            .keyboardShortcut(",", modifiers: .command)
+            QuitButton()
+        }
+    }
+
+    private func freshness(at now: Date) -> String {
+        if settingsOpen { return "⌘, SETTINGS" }
+        let state = switch board {
+        case .heat: monitor.temperatureState
+        case .cpu: monitor.cpuState
+        case .ram: monitor.memoryState
+        }
+        guard let date = state.sampledAt else { return state == .loading ? "WAITING" : "UNAVAILABLE" }
+        let age = max(0, Int(now.timeIntervalSince(date)))
+        return state.isStale(at: now, interval: monitor.rate.seconds) ? "STALE \(age)S" : "READ \(age)S AGO"
+    }
+
+    private func refreshPermissions() async {
+        guard !preview else { return }
+        launchStatus = SMAppService.mainApp.status
+        let settings = await UNUserNotificationCenter.current().notificationSettings()
+        notificationAccess = NotificationAccess(status: settings.authorizationStatus, alertsEnabled: settings.alertSetting == .enabled)
+        if notificationAccess == .allowed { notificationError = false }
+    }
+
+    private func updateSampling() { sample(settingsOpen ? nil : board) }
     private func sample(_ board: BoardKind?) {
+        guard !preview else { return }
         monitor.samplesProcesses = board == .cpu
         monitor.samplesAppMemory = board == .ram
     }
+}
 
-    private var footer: some View {
-        HStack(alignment: .center) {
-            ColumnLabel("UPDATED")
-            FlapText(text: Format.clock(monitor.updatedAt), cells: 5, ink: Board.steelLight)
-            Spacer()
-            QuitButton()
+private struct PanelScreenReader: NSViewRepresentable {
+    let onHeight: (CGFloat) -> Void
+    func makeNSView(context: Context) -> Probe { Probe(onHeight: onHeight) }
+    func updateNSView(_ view: Probe, context: Context) { view.report() }
+
+    final class Probe: NSView {
+        let onHeight: (CGFloat) -> Void
+        private var lastHeight: CGFloat?
+        init(onHeight: @escaping (CGFloat) -> Void) { self.onHeight = onHeight; super.init(frame: .zero) }
+        required init?(coder: NSCoder) { nil }
+        override func viewDidMoveToWindow() { super.viewDidMoveToWindow(); report() }
+        func report() {
+            guard let height = window?.screen?.visibleFrame.height, height != lastHeight else { return }
+            lastHeight = height
+            DispatchQueue.main.async { [weak self] in self?.onHeight(height) }
         }
     }
 }
