@@ -20,6 +20,7 @@ struct ThermalsApp: App {
                 temperature: temperatureStale ? nil : monitor.cpuTemperature,
                 load: loadStale ? nil : monitor.cpuLoad,
                 thermalState: monitor.thermalState,
+                trend: temperatureStale ? nil : TemperatureTrend(monitor.history, now: readingDate),
                 stale: (menuBarItem != .load && temperatureStale) || (menuBarItem != .temperature && loadStale)
             )
             .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { readingDate = $0 }
@@ -35,7 +36,11 @@ struct MenuBarReading: View {
     let temperature: Double?
     let load: Double?
     let thermalState: ProcessInfo.ThermalState
+    var trend: TemperatureTrend?
     var stale = false
+
+    /// Barlow Condensed has no arrows, so trend parts are drawn as SF Symbols at its cap height.
+    private static let arrowSymbols = ["↑": "arrow.up", "↓": "arrow.down"]
 
     @Environment(\.colorScheme) private var scheme
 
@@ -52,11 +57,12 @@ struct MenuBarReading: View {
     var parts: [(String, HeatLevel)] {
         let level = HeatLevel.menuBar(celsius: temperature?.rounded(), thermalState: thermalState)
         let temp = level.map { (temperature.map { Format.degrees($0, unit: unit) } ?? "--°", $0) }
+        let arrow: (String, HeatLevel)? = if temperature != nil, let glyph = trend?.glyph, let level { (glyph, level) } else { nil }
         let cpu = load.map { (Format.percent($0), HeatLevel(loadPercent: ($0 * 100).rounded()).utilization) }
         var values: [(String, HeatLevel)] = switch item {
-        case .temperature: [temp].compactMap { $0 }
+        case .temperature: [temp, arrow].compactMap { $0 }
         case .load: [cpu].compactMap { $0 }
-        case .both: [temp, cpu].compactMap { $0 }
+        case .both: [temp, arrow, cpu].compactMap { $0 }
         }
         if thermalState == .serious || thermalState == .critical, let level {
             values.insert(("!", level), at: 0)
@@ -66,15 +72,19 @@ struct MenuBarReading: View {
     }
 
     private var text: Text? {
-        let pieces = parts.map { Text($0.0).foregroundStyle(Board.heat($0.1, scheme: scheme)) }
-        guard let first = pieces.first else { return nil }
-        return pieces.dropFirst().reduce(first) { $0 + Text(" ") + $1 }
+        parts.reduce(nil) { text, part in
+            let symbol = Self.arrowSymbols[part.0]
+            let piece = (symbol.map { Text(Image(systemName: $0)).font(.system(size: 10, weight: .bold)) } ?? Text(part.0))
+                .foregroundStyle(Board.heat(part.1, scheme: scheme))
+            // The arrow hugs the temperature it qualifies.
+            return text.map { $0 + Text(symbol == nil ? " " : "") + piece } ?? piece
+        }
     }
 
     var accessibilityText: String {
         var descriptions = [String]()
         if item != .load {
-            descriptions.append(temperature.map { "CPU \(Format.degrees($0, unit: unit))" } ?? "CPU temperature unavailable")
+            descriptions.append(temperature.map { "CPU \(Format.degrees($0, unit: unit))\(trend.map { ", \($0.spoken)" } ?? "")" } ?? "CPU temperature unavailable")
         }
         if item != .temperature {
             descriptions.append(load.map { "whole-system CPU load \(Format.percent($0))" } ?? "CPU load unavailable")

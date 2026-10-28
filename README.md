@@ -48,6 +48,8 @@ Sources track loading, successful timestamp, unavailable and failed states separ
 
 `HeatLevel` defines CPU temperature reference boundaries at 50°C, 75°C and 90°C, shown as COOL, WARM, HOT and BURN. They are reference ranges, not hardware safety limits; only CPU die sensors use them. Other sensor types remain neutral. `Board.heat` uses the full blue/white/amber/red ramp. Serious or critical OS pressure raises temperature ink in HEAT, CPU and the menu bar, including when temperature is missing; every menu mode retains an explicit pressure warning.
 
+The menu bar temperature carries a trend arrow, ↑ while climbing and ↓ while cooling, from the least-squares slope of the last minute of readings (`TemperatureTrend` in `Thermals/TemperatureTrend.swift`). It needs at least three readings spanning 30 seconds, shows nothing when steady, and has a 5°C-per-minute dead zone: idle jitter on an M3 Pro reached 3.5°C per minute, while loaded climbs ran 6 to 10.
+
 Outside history charts, CPU, fan and app-memory utilization use LOW, MOD and HIGH and `Board.usage`, which stays within the first 55% of the palette. Load reference points remain 25/60/85%; app-share points are 10/25/40% of installed RAM. Memory-used reference points are 60/80/90%, but high usage under normal or unknown pressure stays below warning colors. Only OS WARN/CRITICAL pressure raises the RAM hero into warning colors. Critical small-text colors clear 4.5:1 against both flap leaves.
 
 ## Design snapshots
