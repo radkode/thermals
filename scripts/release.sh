@@ -115,6 +115,12 @@ cat >"$APPCAST" <<APPCAST
 </rss>
 APPCAST
 xmllint --noout "$APPCAST"
+if [[ -n "${SPARKLE_ED_PRIVATE_KEY:-}" ]]; then
+  printf '%s' "$SPARKLE_ED_PRIVATE_KEY" | "$SPARKLE_BIN/sign_update" --ed-key-file - "$APPCAST"
+else
+  "$SPARKLE_BIN/sign_update" --account thermals "$APPCAST"
+fi
+xmllint --noout "$APPCAST"
 # A zip signed with any other key than the app's SUPublicEDKey would be refused by every installed copy.
 OPENSSL="$(brew --prefix openssl@3)/bin/openssl"
 KEYS="$(mktemp -d)"

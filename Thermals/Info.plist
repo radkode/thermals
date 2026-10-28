@@ -32,5 +32,7 @@
 	<string>https://github.com/radkode/homebrew-thermals/releases/latest/download/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>2DAa6zgJ+e+bkkW2zpdhfToM4QeViebrtAE7Rj3iPjk=</string>
+	<key>SURequireSignedFeed</key>
+	<true/>
 </dict>
 </plist>

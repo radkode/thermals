@@ -31,6 +31,7 @@ targets:
         ATSApplicationFontsPath: "."
         SUFeedURL: https://github.com/radkode/homebrew-thermals/releases/latest/download/appcast.xml
         SUPublicEDKey: 2DAa6zgJ+e+bkkW2zpdhfToM4QeViebrtAE7Rj3iPjk=
+        SURequireSignedFeed: true
         SUEnableAutomaticChecks: true
     settings:
       base:
