@@ -11,8 +11,8 @@ packages:
 settings:
   base:
     SWIFT_VERSION: "6.0"
-    MARKETING_VERSION: "0.4.2"
-    CURRENT_PROJECT_VERSION: "8"
+    MARKETING_VERSION: "0.4.3"
+    CURRENT_PROJECT_VERSION: "9"
 targets:
   Thermals:
     type: application

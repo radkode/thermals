@@ -274,8 +274,8 @@ struct LampMeter: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(accessibilityName) over the last three minutes. \(Self.trend(recent)). Observed minimum and maximum \(range ?? "unavailable"). Fixed scale \(axisRange), bottom to top. Newest readings on the right; gaps mean no recent measurement.")
-        .help("Fixed scale \(axisRange), bottom to top. MIN/MAX shows observed extrema; gaps indicate missing measurements.")
+        .accessibilityLabel("\(accessibilityName) over the last three minutes. \(Self.trend(recent)). Observed minimum and maximum \(range ?? "unavailable"). Fixed scale \(axisRange), bottom to top. Color shows magnitude; OS pressure is reported separately. Newest readings on the right; gaps mean no recent measurement.")
+        .help("Fixed scale \(axisRange), bottom to top. Color shows magnitude; OS pressure is reported separately. MIN/MAX shows observed extrema; gaps indicate missing measurements.")
     }
 
     private var lamps: some View {
@@ -295,7 +295,7 @@ struct LampMeter: View {
                         width: cellWidth,
                         height: cellHeight
                     )
-                    let color = scale == .percentage ? Board.usage(level) : Board.heat(level)
+                    let color = Board.heat(level)
                     let lens = lit ? color : (scale == .temperature && level.band >= .hot ? color.opacity(0.16) : Board.lens)
                     context.fill(Path(roundedRect: rect, cornerRadius: 1), with: .color(lens))
                 }

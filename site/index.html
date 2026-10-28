@@ -412,7 +412,7 @@ footer a:hover { color: var(--amber); }
     const step = (high - low) / 8;
     const inks = [...Array(8)].map((_, row) => {
       const t = temperature ? level.celsius(low + (row + 1) * step) : (row + 1) / 8;
-      const ink = temperature ? heat(t) : usage(t);
+      const ink = heat(t);
       return [ink, temperature && t >= HOT ? `color-mix(in srgb, ${ink} 16%, transparent)` : LENS];
     });
     const grid = div("meter");
@@ -422,7 +422,7 @@ footer a:hover { color: var(--amber); }
     const axis = div("meter-axis");
     for (const value of [high, low]) { const text = document.createElement("span"); text.textContent = `${value}${unit}`; axis.append(text); }
     const el = div("panel", div("meter-head", label("LAST 3 MIN · NOW →"), range), div("meter-plot", axis, grid));
-    el.title = `Fixed scale ${low}–${high}${unit}, bottom to top. MIN/MAX shows observed extrema; newest readings are on the right.`;
+    el.title = `Fixed scale ${low}–${high}${unit}, bottom to top. Color shows magnitude; OS pressure is reported separately. MIN/MAX shows observed extrema; newest readings are on the right.`;
     const history = [];
     return {
       el,
@@ -432,7 +432,7 @@ footer a:hover { color: var(--amber); }
       },
       describe() {
         const change = history.at(-1) - history[0];
-        return `${Math.abs(change) < 1 ? "Steady" : change > 0 ? "Rising" : "Falling"} over the last three sample minutes. Observed minimum ${Math.round(Math.min(...history))}${unit}, maximum ${Math.round(Math.max(...history))}${unit}. Fixed scale ${low}–${high}${unit}, bottom to top. Newest readings on the right.`;
+        return `${Math.abs(change) < 1 ? "Steady" : change > 0 ? "Rising" : "Falling"} over the last three sample minutes. Observed minimum ${Math.round(Math.min(...history))}${unit}, maximum ${Math.round(Math.max(...history))}${unit}. Fixed scale ${low}–${high}${unit}, bottom to top. Color shows magnitude; OS pressure is reported separately. Newest readings on the right.`;
       },
       render() {
         const lo = Math.min(...history), hi = Math.max(...history);

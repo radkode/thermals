@@ -55,6 +55,7 @@ async page => {
     assert(JSON.stringify(state.axes) === JSON.stringify([['110°', '20°'], ['100%', '0%'], ['100%', '0%']]), 'Axis bounds must stay fixed and visible');
     for (let row = 0; row < 8; row++) {
       const cpu = state.palettes[1][row], ram = state.palettes[2][row];
+      if (row === 0) for (const ink of [...cpu, ...ram]) assert(ink === 'rgb(255, 112, 115)', 'Full percentage histories must reach red');
       assert(cpu.length <= 1 && ram.length <= 1, 'A row must not change color across columns');
       if (cpu.length && ram.length) assert(cpu[0] === ram[0], 'CPU/RAM use the same percentage colors');
       if (states.length) {
@@ -96,6 +97,7 @@ async page => {
     await page.clock.runFor(1500);
   }
   assert(states.some(s => s.memory.text === 'NORMAL' && parseInt(s.ram.text) >= 90), 'Exercise high RAM with normal OS pressure');
+  assert([1, 2].every(board => states.some(s => s.palettes[board][0].includes('rgb(255, 112, 115)'))), 'Exercise the red endpoint on both percentage histories');
   assert(states.some(s => s.thermal.text === 'CRITICAL' && parseInt(s.heat.text) < 75), 'Exercise low-temperature critical OS pressure');
   assert(states.some(s => s.memory.text === 'WARN') && states.some(s => s.memory.text === 'CRITICAL'), 'Exercise both memory warning states');
   assert(errors.length === 0, `Browser errors: ${errors.join(', ')}`);

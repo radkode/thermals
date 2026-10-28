@@ -305,9 +305,9 @@ struct MeterScaleTests {
     }
 
     @Test func percentageColorsUseOneLinearRamp() {
-        let positions = (0..<MeterScale.rows).map { MeterScale.percentage.level(row: $0).utilization.position }
-        #expect(positions == (1...8).map { Double($0) / 8 * 0.55 })
-        #expect(positions.last == 0.55)
+        let positions = (0..<MeterScale.rows).map { MeterScale.percentage.level(row: $0).position }
+        #expect(positions == (1...8).map { Double($0) / 8 })
+        #expect(positions.last == 1)
     }
 
     @Test func temperatureHasFixedPhysicalBounds() {

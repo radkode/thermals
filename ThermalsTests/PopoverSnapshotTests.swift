@@ -45,6 +45,26 @@ struct PopoverSnapshotTests {
         }
     }
 
+    @Test func fullPercentageHistoryReachesRed() throws {
+        let now = PreviewMonitors.referenceDate
+        let readings = [-6.0, 0].map { TimedValue(date: now.addingTimeInterval($0), value: 100) }
+        let renderer = ImageRenderer(content: LampMeter(readings: readings, scale: .percentage, unit: "%", accessibilityName: "Test")
+            .frame(width: 372).environment(\.readingDate, now))
+        let bitmap = NSBitmapImageRep(cgImage: try #require(renderer.cgImage))
+        if let directory = Self.directory, let png = bitmap.representation(using: .png, properties: [:]) {
+            try png.write(to: URL(fileURLWithPath: directory).appendingPathComponent("history-full-percentage.png"))
+        }
+        #expect(bitmap.bitsPerSample == 8)
+        var pixel = [UInt](repeating: 0, count: bitmap.samplesPerPixel)
+        let reachesRed = (0..<bitmap.pixelsHigh).contains { y in
+            (0..<bitmap.pixelsWide).contains { x in
+                bitmap.getPixel(&pixel, atX: x, y: y)
+                return pixel.prefix(3).elementsEqual([255, 112, 115])
+            }
+        }
+        #expect(reachesRed, "Full utilization must reach the full palette's red endpoint")
+    }
+
     @Test func ordinaryBoardsFitWithoutOverflow() throws {
         for board in BoardKind.allCases {
             let monitor = PreviewMonitors.hot()
