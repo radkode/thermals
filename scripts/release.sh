@@ -90,6 +90,8 @@ cask "thermals" do
 
   app "Thermals.app"
 
+  uninstall quit: "com.radkode.thermals"
+
   zap trash: "~/Library/Preferences/com.radkode.thermals.plist"
 end
 CASK

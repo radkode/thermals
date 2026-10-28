@@ -20,6 +20,8 @@ Don't:
 
 `scripts/release.sh --dry-run` builds, ad-hoc signs and writes the cask to `build/release/<version>/` without notarizing or publishing.
 
+The cask's `uninstall quit:` makes `brew upgrade` quit a running Thermals and reopen the new build. Without it the old process keeps running from a replaced bundle, and `SMAppService` refuses every register and unregister (`Register (<private>) error: 1` in the unified log), so LAUNCH AT LOGIN silently does nothing. To see those errors, use `/usr/bin/log show`, because zsh's builtin `log` shadows it.
+
 ## Toolchain gap
 
 CI builds with the default Xcode on the `macos-26` image (printed at the top of the build step), which is older than the Xcode used locally (27.x). Code that compiles locally can fail only in CI. The first 0.1.0 run on `macos-15` (Xcode 16.4) timed out type-checking one long expression in `PreviewMonitors.swift`. Long literal-heavy expressions should be split into typed `let`s.
