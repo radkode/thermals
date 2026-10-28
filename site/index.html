@@ -35,6 +35,8 @@
   --amber: #FFB000;
   --burn-red: #E5383B;
   --gutter: 16px;
+  /* The app popover is 400pt with a 14pt frame, so its boards are 372 wide. */
+  --board: 372px;
   --settle: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -147,17 +149,17 @@ button, .button { font: inherit; color: inherit; cursor: pointer; border: 0; bac
 .tab[aria-pressed="true"] .lamp { background: var(--amber); box-shadow: 0 0.5px 3px rgba(255, 176, 0, 0.7); }
 .track {
   display: flex; gap: 24px; margin-top: 18px;
-  padding: 4px max(var(--gutter), calc((100vw - 1272px) / 2)) 12px;
+  padding: 4px max(var(--gutter), calc((100vw - 3 * var(--board) - 48px) / 2)) 12px;
   overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: var(--gutter); scrollbar-width: none;
 }
 .track::-webkit-scrollbar { display: none; }
-.platform { flex: none; scroll-snap-align: center; width: min(408px, calc(100vw - 2 * var(--gutter))); }
+.platform { flex: none; scroll-snap-align: center; width: min(var(--board), calc(100vw - 2 * var(--gutter))); }
 .platform-sign { display: flex; justify-content: space-between; align-items: baseline; padding: 0 2px 8px; border-bottom: 1px solid rgba(91, 94, 99, 0.45); margin-bottom: 12px; }
 .platform-sign .number { font-weight: 600; font-size: 13px; letter-spacing: 1.6px; color: var(--amber); }
 .sample-note { max-width: 1320px; margin: 10px auto 0; padding: 0 var(--gutter); }
 
 /* Board */
-.board { width: 408px; transform-origin: top left; display: flex; flex-direction: column; gap: 14px; }
+.board { width: var(--board); transform-origin: top left; display: flex; flex-direction: column; gap: 14px; }
 .board-scale { overflow: hidden; }
 .board-header { display: flex; justify-content: space-between; align-items: flex-start; }
 .board-header .stats { display: flex; flex-direction: column; align-items: flex-end; gap: 9px; }
@@ -597,7 +599,7 @@ footer a:hover { color: var(--amber); }
 
   // Boards are drawn at the app's 1:1 size and scaled down to fit narrow platforms.
   const fit = () => document.querySelectorAll(".platform").forEach((p) => {
-    const board = p.querySelector(".board"), scale = Math.min(1, p.clientWidth / 408);
+    const board = p.querySelector(".board"), scale = Math.min(1, p.clientWidth / board.offsetWidth);
     board.style.transform = `scale(${scale})`;
     board.parentElement.style.height = `${board.offsetHeight * scale}px`;
   });

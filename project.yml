@@ -4,6 +4,10 @@ options:
   deploymentTarget:
     macOS: "14.0"
   createIntermediateGroups: true
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    exactVersion: 2.10.0
 settings:
   base:
     SWIFT_VERSION: "6.0"
@@ -14,6 +18,8 @@ targets:
     type: application
     platform: macOS
     sources: [Thermals]
+    dependencies:
+      - package: Sparkle
     info:
       path: Thermals/Info.plist
       properties:
