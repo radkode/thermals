@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Sets the GitHub Actions secrets the release workflow needs. Run it yourself in a terminal; it prompts for
-# passwords and IDs and never prints or stores a secret value.
+# Sets the release environment secrets the workflow needs. Run it yourself in a terminal; it prompts for
+# passwords and IDs and never prints or stores a local copy of a secret value.
 # Usage: scripts/set-release-secrets.sh <DeveloperID.p12> <AuthKey_KEYID.p8>
 set -euo pipefail
 
@@ -27,13 +27,13 @@ xcrun notarytool history --key "$P8" --key-id "$KEY_ID" --issuer "$ISSUER_ID" >/
 read -r -s -p "Token with Contents read/write on radkode/homebrew-thermals: " TAP_TOKEN; echo
 [[ -n "$TAP_TOKEN" ]] || { echo "Token is required" >&2; exit 1; }
 
-base64 -i "$P12" | gh secret set DEVELOPER_ID_CERT_P12_BASE64 -R "$REPO"
-printf '%s' "$P12_PASSWORD" | gh secret set DEVELOPER_ID_CERT_PASSWORD -R "$REPO"
-openssl rand -hex 24 | gh secret set KEYCHAIN_PASSWORD -R "$REPO"
-base64 -i "$P8" | gh secret set NOTARY_KEY_P8_BASE64 -R "$REPO"
-printf '%s' "$KEY_ID" | gh secret set NOTARY_KEY_ID -R "$REPO"
-printf '%s' "$ISSUER_ID" | gh secret set NOTARY_KEY_ISSUER -R "$REPO"
-printf '%s' "$TAP_TOKEN" | gh secret set TAP_TOKEN -R "$REPO"
+base64 -i "$P12" | gh secret set DEVELOPER_ID_CERT_P12_BASE64 -R "$REPO" --env release
+printf '%s' "$P12_PASSWORD" | gh secret set DEVELOPER_ID_CERT_PASSWORD -R "$REPO" --env release
+openssl rand -hex 24 | gh secret set KEYCHAIN_PASSWORD -R "$REPO" --env release
+base64 -i "$P8" | gh secret set NOTARY_KEY_P8_BASE64 -R "$REPO" --env release
+printf '%s' "$KEY_ID" | gh secret set NOTARY_KEY_ID -R "$REPO" --env release
+printf '%s' "$ISSUER_ID" | gh secret set NOTARY_KEY_ISSUER -R "$REPO" --env release
+printf '%s' "$TAP_TOKEN" | gh secret set TAP_TOKEN -R "$REPO" --env release
 
-echo "Set on $REPO:"
-gh secret list -R "$REPO"
+echo "Set in $REPO release environment:"
+gh secret list -R "$REPO" --env release
