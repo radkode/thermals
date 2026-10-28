@@ -31,7 +31,7 @@ Glanced at during ordinary work: builds, video calls, gaming, heavy browser sess
 - Distributed as a direct download, notarized, not sandboxed. This is what allows reading real sensor temperatures; the Mac App Store sandbox only exposes `ProcessInfo.thermalState`.
 - Apple Silicon temperatures come from the IOKit HID event system, a private interface loaded at runtime. Sensor names differ by chip generation and the interface can change between macOS releases, so the app must degrade to "unavailable" rather than crash or guess.
 - Intel Macs (SMC) are not supported yet.
-- Built since launch: friendly sensor names, °C / °F, fan speeds (from the SMC; fanless Macs show no fan panel), launch at login, whole-system power draw (SMC `PSTR`).
+- Built since launch: friendly sensor names, °C / °F, fan speeds (from the SMC; fanless Macs show no fan panel), launch at login, whole-system power draw (SMC `PSTR`), heat alerts (a notification naming the busiest process).
 - Undecided: GPU-specific readings, a CPU / GPU power split.
 
 ## Brand Commitments

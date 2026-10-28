@@ -21,6 +21,7 @@ struct PopoverView: View {
     @AppStorage("board") private var storedBoard = BoardKind.heat
     @AppStorage("menuBarItem") private var menuBarItem = MenuBarItem.temperature
     @AppStorage("temperatureUnit") private var temperatureUnit = TemperatureUnit.system
+    @AppStorage(HeatAlerts.settingKey) private var heatAlerts = HeatAlertsSetting.on
     @State private var launchAtLogin = LaunchAtLogin.off
     @State private var loginError = false
 
@@ -60,6 +61,11 @@ struct PopoverView: View {
                 ColumnLabel("UPDATE EVERY")
                 Spacer()
                 FlapTabs(selection: Binding(get: { monitor.rate }, set: { monitor.rate = $0 }), noun: "update interval")
+            }
+            HStack {
+                ColumnLabel("HEAT ALERTS")
+                Spacer()
+                FlapTabs(selection: $heatAlerts, noun: "heat alerts")
             }
             HStack {
                 ColumnLabel("LAUNCH AT LOGIN")

@@ -18,8 +18,8 @@ final class Updater: NSObject {
         // Debug builds and tests never replace themselves with a release.
         #if !DEBUG
         controller = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: self)
-        UNUserNotificationCenter.current().delegate = self
         #endif
+        UNUserNotificationCenter.current().delegate = self
     }
 
     /// Shows a found update without Sparkle, for snapshots and previews.
@@ -86,7 +86,7 @@ extension Updater: @preconcurrency UNUserNotificationCenterDelegate {
     }
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
-        install()
+        if response.notification.request.identifier == Self.notificationID { install() }
         completionHandler()
     }
 }

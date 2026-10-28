@@ -69,6 +69,8 @@ final class Monitor {
     @ObservationIgnored private let coreNames = CoreLayout.names(for: CoreLayout.read())
     @ObservationIgnored private let processSampler = ProcessSampler()
     @ObservationIgnored private var previousTicks: [CPUTicks]?
+    /// Live monitors only; previews and snapshots never notify.
+    @ObservationIgnored private var heatAlerts: HeatAlerts?
     @ObservationIgnored private var timer: Timer?
     @ObservationIgnored private var processTask: Task<Void, Never>?
     /// Bumped whenever sampling starts or stops, so a snapshot from before the change is dropped.
@@ -110,6 +112,7 @@ final class Monitor {
 
     init() {
         rate = UserDefaults.standard.string(forKey: Self.rateKey).flatMap(SampleRate.init(rawValue:)) ?? .six
+        heatAlerts = HeatAlerts()
         refresh()
         schedule()
         // Load needs two samples; take the second one quickly instead of a full interval later.
@@ -132,6 +135,7 @@ final class Monitor {
         cpuTemperature = TemperatureSensors.cpuTemperature(from: sensors)
         thermalState = ProcessInfo.processInfo.thermalState
         memory = MemoryStats.read()
+        heatAlerts?.observe(celsius: cpuTemperature, thermalState: thermalState)
         fans = smc?.fans() ?? []
         systemPower = smc?.systemPower()
         updatedAt = .now
