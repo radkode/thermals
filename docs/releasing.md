@@ -20,7 +20,7 @@ Don't:
 
 `scripts/release.sh --dry-run` builds, ad-hoc signs and writes the cask to `build/release/<version>/` without notarizing or publishing.
 
-The cask's `uninstall quit:` makes `brew upgrade` quit a running Thermals and reopen the new build. Without it the old process keeps running from a replaced bundle, and `SMAppService` refuses every register and unregister (`Register (<private>) error: 1` in the unified log), so LAUNCH AT LOGIN silently does nothing. To see those errors, use `/usr/bin/log show`, because zsh's builtin `log` shadows it.
+The cask's `uninstall quit:` makes `brew upgrade` quit a running Thermals and reopen the new build. Without it the old process keeps running from a replaced bundle, and `SMAppService` refuses every register and unregister (`Register (<private>) error: 1` in the unified log). Current builds show the refusal on the board and log the error. To see those errors, use `/usr/bin/log show`, because zsh's builtin `log` shadows it.
 
 ## Toolchain gap
 
