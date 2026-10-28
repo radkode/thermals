@@ -62,4 +62,4 @@ for source in Path("site/fonts").glob("*.ttf"):
 
 ## Delivery checkpoint
 
-Implementation and local verification are complete. The repository lands work directly on `main`. Pushing this site change deploys production through Vercel, so deployment is a separate owner-authorized step. No native version bump, app release, cask edit or tag is required.
+The owner authorized deployment on 2026-10-28. Commit `5c6a3696d8f4bfadc35fa56fdaba104b89bdef96` was pushed to `main`; [Vercel deployment](https://vercel.com/jacekradkos-projects/thermals/56p6vZfVdxccn1gsbYAwtNvoJs7H) completed successfully. Production HTML and both WOFF2 assets matched the local SHA-256 hashes. The complete browser check passed against `https://thermals.dev/`, including all eight widths, picker behavior, keyboard, scrolling, offscreen suspension, HOLD/RUN, Reduce Motion, clipboard and font loading, with no browser errors. Results are in `.impeccable/perf/production-check.txt`. No native version bump, app release, cask edit or tag was needed.
