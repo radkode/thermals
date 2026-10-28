@@ -45,12 +45,12 @@ The workflow's secrets live on `radkode/thermals`; the originals belong in the p
 
 ## In-app updates (Sparkle)
 
-The app reads `https://github.com/radkode/homebrew-thermals/releases/latest/download/appcast.xml` (`SUFeedURL` in `project.yml`) and only installs a zip whose EdDSA signature matches `SUPublicEDKey`. That signature comes from the private key in the login keychain under the Sparkle account `thermals`, and in CI from the `SPARKLE_ED_PRIVATE_KEY` secret. Back the key up in the private credential store, because losing it means shipped copies can't be updated in-app. To set or rotate the secret from the keychain (resolve packages first so `build/SourcePackages` exists):
+The app reads `https://github.com/radkode/homebrew-thermals/releases/latest/download/appcast.xml` (`SUFeedURL` in `project.yml`) and only installs a zip whose EdDSA signature matches `SUPublicEDKey`. That signature comes from the private key in the login keychain under the Sparkle account `thermals`, and in CI from the `SPARKLE_ED_PRIVATE_KEY` secret. Back the key up in the private credential store, because losing it means shipped copies can't be updated in-app. To set or rotate the secret from the keychain (resolve packages first so `build/SourcePackages` exists; `generate_keys -x` refuses a path that already exists, so it writes into a fresh directory):
 
 ```bash
-(K="$(mktemp)"; trap 'rm -f "$K"' EXIT
-  build/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_keys --account thermals -x "$K" \
-    && gh secret set SPARKLE_ED_PRIVATE_KEY -R radkode/thermals < "$K")
+(D="$(mktemp -d)"; trap 'rm -rf "$D"' EXIT
+  build/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_keys --account thermals -x "$D/key" \
+    && gh secret set SPARKLE_ED_PRIVATE_KEY -R radkode/thermals < "$D/key")
 ```
 
 The release script refuses to publish when `CURRENT_PROJECT_VERSION` isn't above the last tag's, or when the zip's signature doesn't verify against the app's `SUPublicEDKey` (checked with Homebrew's `openssl@3`; the system LibreSSL can't verify Ed25519). It re-signs Sparkle's nested code (XPC services, Autoupdate, Updater.app, the framework) inside out with the Developer ID before signing the app, because notarization rejects the ad-hoc signatures Xcode leaves on them.
