@@ -16,11 +16,13 @@ struct PopoverView: View {
     var pinnedBoard: BoardKind?
     /// Pins the temperature unit for snapshots.
     var pinnedUnit: TemperatureUnit?
+    var previewLoginError = false
 
     @AppStorage("board") private var storedBoard = BoardKind.heat
     @AppStorage("menuBarItem") private var menuBarItem = MenuBarItem.temperature
     @AppStorage("temperatureUnit") private var temperatureUnit = TemperatureUnit.system
     @State private var launchAtLogin = LaunchAtLogin.off
+    @State private var loginError = false
 
     private var board: BoardKind { pinnedBoard ?? storedBoard }
 
@@ -62,7 +64,21 @@ struct PopoverView: View {
             HStack {
                 ColumnLabel("LAUNCH AT LOGIN")
                 Spacer()
-                FlapTabs(selection: Binding(get: { launchAtLogin }, set: { launchAtLogin = LaunchAtLogin.set($0) }), noun: "launch at login")
+                FlapTabs(selection: Binding(get: { launchAtLogin }, set: {
+                    let change = LaunchAtLogin.set($0)
+                    launchAtLogin = change.state
+                    loginError = change.failed
+                }), noun: "launch at login")
+            }
+            if loginError || previewLoginError {
+                HStack(spacing: 5) {
+                    Lamp(lit: true, color: Board.amber)
+                    ColumnLabel("LOGIN ITEM CHANGE FAILED")
+                    Spacer()
+                    FlapButton(title: "SETTINGS", accessibilityName: "Open Login Items in System Settings") {
+                        LaunchAtLogin.openSettings()
+                    }
+                }
             }
             if let version = updater?.available {
                 HStack {

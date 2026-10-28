@@ -193,7 +193,7 @@ A near-black and steel board where all chroma belongs to heat: steel blue for co
 
 ## Layout
 
-A single vertical column inside a 400pt-wide popover with a 14pt frame and 14pt between sections: flap tabs (HEAT, CPU, RAM; Cmd-1 to Cmd-3), the selected board, MENU BAR tabs (TEMP, LOAD, BOTH), TEMPERATURE tabs (°C, °F), UPDATE EVERY tabs (3 S, 6 S, 10 S), LAUNCH AT LOGIN tabs (ON, OFF), a NEW VERSION row only while an update waits, then a footer with UPDATED clock left and Quit right.
+A single vertical column inside a 400pt-wide popover with a 14pt frame and 14pt between sections: flap tabs (HEAT, CPU, RAM; Cmd-1 to Cmd-3), the selected board, MENU BAR tabs (TEMP, LOAD, BOTH), TEMPERATURE tabs (°C, °F), UPDATE EVERY tabs (3 S, 6 S, 10 S), LAUNCH AT LOGIN tabs (ON, OFF), a failure row only when macOS refuses a login-item change, a NEW VERSION row only while an update waits, then a footer with UPDATED clock left and Quit right.
 
 Each board opens with a header (hero flap strip left under its label, two right-aligned stats stacked 9pt apart on the right), then the lamp meter, then board panels. Board panels pad 8pt; rows stack 3pt apart; columns sit 6pt apart at widths computed from cell counts (lamp 6pt, name 18 cells on HEAT or 17 on CPU processes, value 3 or 4 cells, STATUS 4 cells), so headers align with rows exactly. The CPU board splits cores into PERFORMANCE and EFFICIENCY platforms side by side, 12pt apart. The RAM board's hero is MEMORY USED (app + wired + compressed) with SWAP and PRESSURE stats, then a MEMORY breakdown panel (APP, WIRED, COMPRESSED, CACHED, FREE in fixed order, each with a share bar and GB), then YOUR APPS ranked by footprint.
 
@@ -246,6 +246,9 @@ A QUIT flap strip with a separate key segment (command symbol and Q on a flap-to
 
 ### New Version Row
 Shown only while Sparkle holds a found update: NEW VERSION label left, like the settings rows, then at right the version in a flap strip behind a lit amber lamp (a selected tab's treatment) and an INSTALL flap button 10pt after it. The flap button is a plain flap strip that hovers amber like Quit. INSTALL brings up Sparkle's own window to download, verify and relaunch.
+
+### Login Item Failure Row
+Shown directly under LAUNCH AT LOGIN when macOS rejects a register or unregister request. An amber lamp and a steel-light board label say LOGIN ITEM CHANGE FAILED, with a SETTINGS flap button that opens Login Items in System Settings. A successful retry clears the row. The underlying system error is logged.
 
 ### Website (thermals.dev)
 `site/index.html` carries the board world to the web: a sticky menu bar strip with a SAMPLE reading, THERMALS in giant flap cells, the offer and the brew command, then the three boards as numbered platforms (amber PLATFORM n signs) running on sample readings, then a ticket machine with install steps and requirements. Boards are 1:1 ports at the app's 372px board width (the 400pt popover less its 14pt frame), scaled down to fit narrow platforms; platforms sit side by side on wide screens and scroll-snap on phones, where HEAT / CPU / RAM flap tabs appear. A HOLD / RUN flap pauses the readings; they also stop offscreen and start held under Reduce Motion. Every flap strip is aria-hidden; each board carries its own label.
