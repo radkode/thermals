@@ -35,3 +35,5 @@ Desktop normal, high-RAM/normal-pressure and critical-pressure states, all three
 ## Delivery
 
 Pushes to `main` that change `site/` deploy through Vercel. This parity work is authorized for that delivery path. Verify the deployed commit and production HTML, then repeat production browser smoke checks before closing #30. No native release/version change is needed.
+
+Published on 2026-10-28 as `97244634476ea37877793b5be9396d78a3304a4d`. [Vercel deployment AMF14qgsYvGbC1cXM9YQYK3do3ts](https://vercel.com/jacekradkos-projects/thermals/AMF14qgsYvGbC1cXM9YQYK3do3ts) completed successfully. [thermals.dev](https://thermals.dev/) served byte-identical HTML (SHA-256 `6c592e023b07b095b313b1b557d801c2e93b32e933f5adf182508d9b9d424d70`). Both browser checks passed against production, including all eight widths and all 41 semantic states, with no browser errors. The production desktop capture was also visually checked.
