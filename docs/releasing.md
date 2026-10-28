@@ -45,7 +45,7 @@ The workflow's secrets live on `radkode/thermals`; the originals belong in the p
 
 ## In-app updates (Sparkle)
 
-The app reads `https://github.com/radkode/homebrew-thermals/releases/latest/download/appcast.xml` (`SUFeedURL` in `project.yml`) and only installs a zip whose EdDSA signature matches `SUPublicEDKey`. That signature comes from the private key in the login keychain under the Sparkle account `thermals`, and in CI from the `SPARKLE_ED_PRIVATE_KEY` secret. Back the key up in the private credential store, because losing it means shipped copies can't be updated in-app. To set or rotate the secret from the keychain (resolve packages first so `build/SourcePackages` exists; `generate_keys -x` refuses a path that already exists, so it writes into a fresh directory):
+The app reads `https://github.com/radkode/homebrew-thermals/releases/latest/download/appcast.xml` (`SUFeedURL` in `project.yml`) and only installs a zip whose EdDSA signature matches `SUPublicEDKey`. That signature comes from the private key in the login keychain under the Sparkle account `thermals`, and in CI from the `SPARKLE_ED_PRIVATE_KEY` secret. Keep its backup and recovery instructions in the private credential store (`generate_keys --account thermals -f <file>` restores it to a keychain). Losing it means shipped copies can't be updated in-app. To set or rotate the secret from the keychain (resolve packages first so `build/SourcePackages` exists; `generate_keys -x` refuses a path that already exists, so it writes into a fresh directory):
 
 ```bash
 (D="$(mktemp -d)"; trap 'rm -rf "$D"' EXIT
