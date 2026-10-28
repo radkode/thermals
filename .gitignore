@@ -6,3 +6,4 @@ DerivedData/
 .impeccable/*
 !.impeccable/design.json
 .vercel/
+.env*
