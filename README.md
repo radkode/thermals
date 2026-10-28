@@ -38,7 +38,7 @@ PEAK TODAY, at the bottom of HEAT's LAST 3 MIN panel, is the hottest CPU die rea
 
 ## Boards
 
-The 400pt-wide popover has three boards, switched with HEAT / CPU / RAM or Cmd-1/2/3. Each board uses its natural height, bounded only by the current screen's visible height minus 32pt. Ordinary readings stay fully visible whenever they fit. Only overflow scrolls; tabs, available updates and the footer stay reachable. CPU puts attribution before per-core detail. Settings (Cmd-comma) replaces readings, and Back or Escape returns. Closing the panel stops expensive process/footprint sampling.
+The 400pt-wide popover has three boards, switched with HEAT / CPU / RAM or Cmd-1/2/3. Each board uses its natural height, bounded only by the current screen's visible height minus 32pt. Ordinary readings stay fully visible whenever they fit. Only overflow scrolls; tabs, available updates and the footer stay reachable. CPU puts attribution before per-core detail. Settings (Cmd-comma) replaces readings, and Back or Escape returns. Its heading shows the running app’s version and build, read from `Bundle.main` rather than the update feed. Closing the panel stops expensive process/footprint sampling.
 
 The CPU headline is percent of the whole machine; process rows use percent of one core and may exceed 100%. RAM states used and installed GB. Short notes explain OS pressure, estimated process remainder, memory categories and app footprint limits. Names truncate with an ellipsis and preserve full hover/accessibility text. Numeric overflow uses hashes instead of clipping magnitude; fan values fit all five supported RPM digits.
 

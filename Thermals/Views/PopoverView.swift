@@ -109,8 +109,16 @@ struct PopoverView: View {
     }
 
     private var settings: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            ColumnLabel("SETTINGS")
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Unknown"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "Unknown"
+        return VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                ColumnLabel("SETTINGS")
+                Spacer()
+                ColumnLabel("v\(version) (\(build))")
+                    .accessibilityLabel("Thermals version \(version), build \(build)")
+                    .help("The version and build of Thermals currently running.")
+            }
             HStack {
                 ColumnLabel("MENU BAR")
                 Spacer()
