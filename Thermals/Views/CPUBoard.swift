@@ -14,12 +14,10 @@ struct CPUBoard: View {
                 .help("Whole-system load: 100% means all cores are fully occupied. Load is utilization, not heat.")
             LampMeter(
                 readings: monitor.loadHistory,
-                scale: .load,
-                level: HeatLevel.init(loadPercent:),
+                scale: .percentage,
                 unit: "%",
                 accessibilityName: "Whole-system CPU load",
-                state: monitor.cpuState,
-                utilization: true
+                state: monitor.cpuState
             )
             ProcessBoard(processes: monitor.processes, hiddenLoad: monitor.hiddenLoad, state: monitor.processState)
             if !monitor.coreLoads.isEmpty { CoreBoard(cores: monitor.coreLoads) }

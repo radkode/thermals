@@ -46,6 +46,7 @@ struct PopoverView: View {
             }
             .frame(width: Board.popoverWidth)
             .frame(maxHeight: height)
+            .fixedSize(horizontal: false, vertical: true)
             .background(Board.steelFrame)
             .environment(\.colorScheme, .dark)
             .environment(\.temperatureUnit, pinnedUnit ?? temperatureUnit)

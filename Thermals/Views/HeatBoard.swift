@@ -19,7 +19,6 @@ struct HeatBoard: View {
             LampMeter(
                 readings: monitor.history,
                 scale: .temperature,
-                level: HeatLevel.init(celsius:),
                 unit: "°",
                 accessibilityName: "CPU temperature",
                 state: monitor.temperatureState,

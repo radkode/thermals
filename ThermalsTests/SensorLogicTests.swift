@@ -296,23 +296,27 @@ struct HeatLevelTests {
 }
 
 struct MeterScaleTests {
-    @Test func fitsRowsToTheWindowRange() {
-        let floors = MeterScale.temperature.floors(for: [40, 52, 60])
-        #expect(floors.count == 8)
-        #expect(floors.first == 40)
-        #expect(abs(floors.last! - 60) < 1e-9)
+    @Test func percentageBinsHaveStableCapacity() {
+        let scale = MeterScale.percentage
+        #expect(scale.bounds == 0...100)
+        for (value, count) in [(0.0, 0), (0.01, 1), (12.5, 1), (12.5001, 2), (50, 4), (100, 8), (120, 8)] {
+            #expect((0..<MeterScale.rows).filter { scale.isLit(value, row: $0) }.count == count)
+        }
     }
 
-    @Test func narrowRangeWidensToMinimumSpanAroundTheMiddle() {
-        let floors = MeterScale.temperature.floors(for: [45, 47])
-        #expect(floors.first == 41)
-        #expect(abs(floors.last! - 51) < 1e-9)
+    @Test func percentageColorsUseOneLinearRamp() {
+        let positions = (0..<MeterScale.rows).map { MeterScale.percentage.level(row: $0).utilization.position }
+        #expect(positions == (1...8).map { Double($0) / 8 * 0.55 })
+        #expect(positions.last == 0.55)
     }
 
-    @Test func staysInsideBounds() {
-        let floors = MeterScale.load.floors(for: [0, 5])
-        #expect(floors.first == 0)
-        #expect(abs(floors.last! - 20) < 1e-9)
+    @Test func temperatureHasFixedPhysicalBounds() {
+        let scale = MeterScale.temperature
+        #expect(scale.bounds == 20...110)
+        for (value, count) in [(20.0, 0), (20.01, 1), (65, 4), (110, 8)] {
+            #expect((0..<MeterScale.rows).filter { scale.isLit(value, row: $0) }.count == count)
+        }
+        #expect(scale.level(row: 7).position == 1)
     }
 }
 

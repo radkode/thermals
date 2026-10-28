@@ -9,6 +9,42 @@ import Testing
 struct PopoverSnapshotTests {
     nonisolated static let directory = ProcessInfo.processInfo.environment["SNAPSHOT_DIR"]
 
+    @Test func panelRejectsExcessHeightProposals() throws {
+        for board in BoardKind.allCases {
+            for settings in [false, true] {
+                let view = PopoverView(monitor: PreviewMonitors.hot(), pinnedBoard: board, previewSettings: settings, previewHeight: 736)
+                    .environment(\.snapshotRendering, true)
+                let renderer = ImageRenderer(content: view)
+                let natural = try #require(renderer.cgImage)
+                renderer.proposedSize = ProposedViewSize(width: 400, height: 1200)
+                let expanded = try #require(renderer.cgImage)
+                #expect(expanded.height == natural.height, "Host proposals must not stretch \(board), settings \(settings)")
+                #expect(expanded.dataProvider?.data == natural.dataProvider?.data)
+            }
+        }
+        let overflow = PopoverView(monitor: PreviewMonitors.largeMachine(), pinnedBoard: .cpu, previewHeight: 520)
+            .environment(\.snapshotRendering, true)
+        let renderer = ImageRenderer(content: overflow)
+        renderer.proposedSize = ProposedViewSize(width: 400, height: 1200)
+        #expect(try #require(renderer.cgImage).height == 520)
+    }
+
+    @Test func historyOutlierDoesNotRecolorEarlierColumns() throws {
+        let now = PreviewMonitors.referenceDate
+        let readings = [TimedValue(date: now.addingTimeInterval(-174), value: 50), TimedValue(date: now.addingTimeInterval(-168), value: 50)]
+        for scale in [MeterScale.percentage, .temperature] {
+            func plot(_ values: [TimedValue]) throws -> CGImage {
+                let renderer = ImageRenderer(content: LampMeter(readings: values, scale: scale, unit: "%", accessibilityName: "Test")
+                    .frame(width: 372).environment(\.readingDate, now))
+                let image = try #require(renderer.cgImage)
+                return try #require(image.cropping(to: CGRect(x: 40, y: image.height - 54, width: 150, height: 46)))
+            }
+            let baseline = try plot(readings)
+            let outlier = try plot(readings + [TimedValue(date: now, value: 100)])
+            #expect(baseline.dataProvider?.data == outlier.dataProvider?.data, "A later outlier must not change the earlier bars")
+        }
+    }
+
     @Test func ordinaryBoardsFitWithoutOverflow() throws {
         for board in BoardKind.allCases {
             let monitor = PreviewMonitors.hot()
@@ -74,6 +110,27 @@ struct PopoverSnapshotTests {
         try await Task.sleep(for: .milliseconds(100))
         #expect(host.fittingSize.height < 520, "Settings must relinquish the preceding overflow height")
         #expect(scrollViews(in: host).filter { !$0.isHiddenOrHasHiddenAncestor }.isEmpty)
+    }
+
+    @Test func nativeWindowShrinksWithoutManualSizing() async throws {
+        let controller = NSHostingController(rootView: PopoverView(monitor: PreviewMonitors.largeMachine(), pinnedBoard: .cpu, previewHeight: 736))
+        controller.sizingOptions = [.minSize, .maxSize, .preferredContentSize]
+        let window = NSWindow(contentViewController: controller)
+        window.isReleasedWhenClosed = false
+        defer { window.close() }
+        window.setContentSize(NSSize(width: 400, height: 1200))
+        window.orderFront(nil)
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(controller.view.frame.height == 736)
+        for board in BoardKind.allCases {
+            controller.rootView = PopoverView(monitor: PreviewMonitors.hot(), pinnedBoard: board, previewHeight: 736)
+            try await Task.sleep(for: .milliseconds(100))
+            #expect(controller.view.frame.height < 736, "\(board) must release the previous overflow height")
+            #expect(scrollViews(in: controller.view).filter { !$0.isHiddenOrHasHiddenAncestor }.isEmpty)
+        }
+        controller.rootView = PopoverView(monitor: PreviewMonitors.hot(), pinnedBoard: .heat, previewSettings: true, previewHeight: 736)
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(controller.view.frame.height < 520, "Settings must shrink through native sizing constraints")
     }
 
     private func scrollViews(in view: NSView) -> [NSScrollView] {

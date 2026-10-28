@@ -199,37 +199,33 @@ struct BoardStat: View {
     }
 }
 
-/// Row scale for a lamp meter: fitted to the window's readings, never narrower than `minimumSpan`, kept inside `bounds`.
-struct MeterScale {
-    let rows: Int
-    let minimumSpan: Double
-    let bounds: ClosedRange<Double>
+/// Fixed bins keep a reading at the same height and color as the history window changes.
+enum MeterScale {
+    case temperature, percentage
 
-    static let temperature = MeterScale(rows: 8, minimumSpan: 10, bounds: 20...110)
-    static let load = MeterScale(rows: 8, minimumSpan: 20, bounds: 0...100)
-    static let memory = MeterScale(rows: 8, minimumSpan: 10, bounds: 0...100)
+    static let rows = 8
+    var bounds: ClosedRange<Double> { self == .temperature ? 20...110 : 0...100 }
+    private var step: Double { (bounds.upperBound - bounds.lowerBound) / Double(Self.rows) }
 
-    /// Evenly spaced row floors, lowest first; the bottom row sits at the window's low and the top at its high.
-    func floors(for values: [Double]) -> [Double] {
-        let low = values.min() ?? bounds.lowerBound
-        let high = values.max() ?? bounds.upperBound
-        let span = min(max(high - low, minimumSpan), bounds.upperBound - bounds.lowerBound)
-        let start = min(max((low + high) / 2 - span / 2, bounds.lowerBound), bounds.upperBound - span)
-        let fitted = high - low >= minimumSpan ? low : start
-        return (0..<rows).map { fitted + span * Double($0) / Double(max(rows - 1, 1)) }
+    func isLit(_ value: Double, row: Int) -> Bool {
+        value > bounds.lowerBound + Double(row) * step
+    }
+
+    func level(row: Int) -> HeatLevel {
+        self == .percentage
+            ? HeatLevel(position: Double(row + 1) / Double(Self.rows))
+            : HeatLevel(celsius: bounds.lowerBound + Double(row + 1) * step)
     }
 }
 
-/// Three minutes of readings as a bank of lamps: columns are time, rows a scale fitted to the window, each lens tinted from the heat gradient at its row's value.
+/// Three minutes of readings, newest right, on a fixed eight-row scale.
 struct LampMeter: View {
     @Environment(\.readingDate) private var now
     let readings: [TimedValue]
     let scale: MeterScale
-    let level: (Double) -> HeatLevel
     let unit: String
     let accessibilityName: String
     var state: ReadingState = .loading
-    var utilization = false
     /// Converts a reading for the range readout only; rows and colors use the reading as measured.
     var display: (Double) -> Double = { $0 }
 
@@ -254,7 +250,17 @@ struct LampMeter: View {
                     }
                 }
                 ZStack {
-                    lamps
+                    HStack(spacing: 6) {
+                        VStack(alignment: .trailing) {
+                            Text(axisLabel(scale.bounds.upperBound))
+                            Spacer(minLength: 0)
+                            Text(axisLabel(scale.bounds.lowerBound))
+                        }
+                        .font(Board.labelFont(11))
+                        .foregroundStyle(Board.steelLight)
+                        .monospacedDigit()
+                        lamps
+                    }
                     if values.count < 2 {
                         Text(state == .loading ? "COLLECTING READINGS" : values.isEmpty ? "NO RECENT READINGS" : "WAITING FOR NEXT READING")
                             .font(Board.labelFont(11))
@@ -268,29 +274,29 @@ struct LampMeter: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(accessibilityName) over the last three minutes. \(Self.trend(recent)). Observed minimum and maximum \(range ?? "unavailable"). Newest readings on the right; gaps mean no recent measurement.")
-        .help("Observed minimum and maximum are shown above. The chart scale adapts to the readings; gaps indicate missing measurements.")
+        .accessibilityLabel("\(accessibilityName) over the last three minutes. \(Self.trend(recent)). Observed minimum and maximum \(range ?? "unavailable"). Fixed scale \(axisRange), bottom to top. Newest readings on the right; gaps mean no recent measurement.")
+        .help("Fixed scale \(axisRange), bottom to top. MIN/MAX shows observed extrema; gaps indicate missing measurements.")
     }
 
     private var lamps: some View {
         let columns = Self.columnPeaks(recent, now: now)
-        let rows = scale.floors(for: values).map { (floor: $0, level: level($0)) }
+        let levels = (0..<MeterScale.rows).map { scale.level(row: $0) }
         return Canvas { context, size in
             let gap: CGFloat = 1.5
             let cellWidth = (size.width - gap * CGFloat(Self.columns - 1)) / CGFloat(Self.columns)
-            let cellHeight = (size.height - gap * CGFloat(rows.count - 1)) / CGFloat(rows.count)
+            let cellHeight = (size.height - gap * CGFloat(levels.count - 1)) / CGFloat(levels.count)
             for column in 0..<Self.columns {
                 let peak = columns[column]
-                for (index, row) in rows.enumerated() {
-                    let lit = peak.map { $0 >= row.floor - 1e-9 } ?? false
+                for (index, level) in levels.enumerated() {
+                    let lit = peak.map { scale.isLit($0, row: index) } ?? false
                     let rect = CGRect(
                         x: CGFloat(column) * (cellWidth + gap),
                         y: size.height - CGFloat(index + 1) * cellHeight - CGFloat(index) * gap,
                         width: cellWidth,
                         height: cellHeight
                     )
-                    let color = utilization ? Board.usage(row.level) : Board.heat(row.level)
-                    let lens = lit ? color : (!utilization && row.level.band >= .hot ? color.opacity(0.16) : Board.lens)
+                    let color = scale == .percentage ? Board.usage(level) : Board.heat(level)
+                    let lens = lit ? color : (scale == .temperature && level.band >= .hot ? color.opacity(0.16) : Board.lens)
                     context.fill(Path(roundedRect: rect, cornerRadius: 1), with: .color(lens))
                 }
             }
@@ -322,6 +328,9 @@ struct LampMeter: View {
         if abs(change) < 1 { return "Steady across the sampled period" }
         return change > 0 ? "Rising across the sampled period" : "Falling across the sampled period"
     }
+
+    private func axisLabel(_ value: Double) -> String { "\(Int(display(value).rounded()))\(unit)" }
+    private var axisRange: String { "\(Int(display(scale.bounds.lowerBound).rounded()))–\(axisLabel(scale.bounds.upperBound))" }
 
     private var range: String? {
         guard let low = values.min(), let high = values.max() else { return nil }

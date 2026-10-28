@@ -41,14 +41,32 @@ async page => {
         labels: [...document.querySelectorAll('.meter-head')].map(el => el.textContent),
         cpuOrder: [...board('cpu').children].map(el => el.textContent),
         capacity: board('ram').querySelector('.board-note').textContent,
+        axes: [...document.querySelectorAll('.meter-axis')].map(el => [...el.children].map(child => child.textContent)),
+        palettes: ['heat', 'cpu', 'ram'].map(id => {
+          const lenses = [...board(id).querySelectorAll('.meter i')];
+          return Array.from({length: 8}, (_, row) => [...new Set(lenses.slice(row * 30, (row + 1) * 30)
+            .map(lens => lens.style.background).filter(ink => ink !== 'rgb(30, 31, 35)' && !ink.includes('color-mix'))) ]);
+        }),
         clipped, aligned,
       };
     });
     assert(!state.clipped, `Clipped board columns at step ${step}`);
     assert(state.aligned, 'Numeric and status headers must align with their rows');
+    assert(JSON.stringify(state.axes) === JSON.stringify([['110°', '20°'], ['100%', '0%'], ['100%', '0%']]), 'Axis bounds must stay fixed and visible');
+    for (let row = 0; row < 8; row++) {
+      const cpu = state.palettes[1][row], ram = state.palettes[2][row];
+      assert(cpu.length <= 1 && ram.length <= 1, 'A row must not change color across columns');
+      if (cpu.length && ram.length) assert(cpu[0] === ram[0], 'CPU/RAM use the same percentage colors');
+      if (states.length) {
+        for (let board = 0; board < 3; board++) {
+          const before = states[0].palettes[board][row][0], after = state.palettes[board][row][0];
+          if (before && after) assert(before === after, 'New readings must not move the gradient');
+        }
+      }
+    }
     assert(state.cpuOrder.findIndex(s => s.startsWith('TOP PROCESSES')) < state.cpuOrder.findIndex(s => s.startsWith('PERFORMANCE')), 'Attribution must precede core inventory');
     assert(state.labels.filter(s => s.includes('LAST 3 MIN · NOW →MIN/MAX')).length === 3, 'All histories name observed MIN/MAX and newest-right direction');
-    assert(state.summaries.every(s => /Sample:/.test(s) && /Rising|Falling|Steady/.test(s) && /scale adapts/.test(s)), 'Accessible sample summaries must include trend and scale');
+    assert(state.summaries.every(s => /Sample:/.test(s) && /Rising|Falling|Steady/.test(s) && /Fixed scale/.test(s)), 'Accessible sample summaries must include trend and scale');
     assert(/of 18\.0 GB used/.test(state.capacity), 'Installed RAM capacity must remain visible');
     for (const [name, value, status] of state.sensors) {
       if (!name.text.startsWith('CPU DIE')) {

@@ -14,12 +14,10 @@ struct RAMBoard: View {
             }
             LampMeter(
                 readings: monitor.memoryHistory,
-                scale: .memory,
-                level: HeatLevel.init(memoryPercent:),
+                scale: .percentage,
                 unit: "%",
                 accessibilityName: "Memory used",
-                state: monitor.memoryState,
-                utilization: true
+                state: monitor.memoryState
             )
             BreakdownBoard(memory: monitor.memory)
             AppMemoryBoard(apps: monitor.appMemory, total: monitor.memory?.total, state: monitor.appMemoryState)

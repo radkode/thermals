@@ -177,6 +177,9 @@ button, .button { font: inherit; color: inherit; cursor: pointer; border: 0; bac
 .meter-head { display: flex; justify-content: space-between; margin-bottom: 3px; }
 .meter-head .range { font-size: 12px; letter-spacing: 1.2px; font-variant-numeric: tabular-nums; }
 .meter { display: grid; grid-template-columns: repeat(30, 1fr); grid-template-rows: repeat(8, 1fr); gap: 1.5px; height: 46px; }
+.meter-plot { display: flex; gap: 6px; }
+.meter-plot .meter { flex: 1; min-width: 0; }
+.meter-axis { display: flex; flex-direction: column; justify-content: space-between; text-align: right; font-size: 11px; line-height: 1; font-variant-numeric: tabular-nums; color: var(--steel-light); }
 .meter i, .bar i { border-radius: 1px; background: var(--lens); }
 .bar { display: grid; grid-template-columns: repeat(8, 1fr); gap: 1.5px; height: 10px; flex: 1; }
 .cols { display: flex; align-items: center; gap: 6px; }
@@ -403,14 +406,23 @@ footer a:hover { color: var(--amber); }
     return lit ? usage(t) : t >= HOT ? `color-mix(in srgb, ${usage(t)} 16%, transparent)` : LENS;
   };
 
-  // LAST 3 MIN meter: 30 time columns by 8 rows fitted to the window, each lens tinted by its row's value.
-  function meter(levelOf, minSpan, unit, utilization = false) {
+  // Fixed bins keep equal readings at the same height and color across history windows.
+  function meter(temperature = false) {
+    const low = temperature ? 20 : 0, high = temperature ? 110 : 100, unit = temperature ? "°" : "%";
+    const step = (high - low) / 8;
+    const inks = [...Array(8)].map((_, row) => {
+      const t = temperature ? level.celsius(low + (row + 1) * step) : (row + 1) / 8;
+      const ink = temperature ? heat(t) : usage(t);
+      return [ink, temperature && t >= HOT ? `color-mix(in srgb, ${ink} 16%, transparent)` : LENS];
+    });
     const grid = div("meter");
     for (let r = 0; r < 8; r++) for (let c = 0; c < 30; c++) grid.append(document.createElement("i"));
     const range = document.createElement("span");
     range.className = "range";
-    const el = div("panel", div("meter-head", label("LAST 3 MIN · NOW →"), range), grid);
-    el.title = "Observed minimum and maximum. The chart scale adapts; newest readings are on the right.";
+    const axis = div("meter-axis");
+    for (const value of [high, low]) { const text = document.createElement("span"); text.textContent = `${value}${unit}`; axis.append(text); }
+    const el = div("panel", div("meter-head", label("LAST 3 MIN · NOW →"), range), div("meter-plot", axis, grid));
+    el.title = `Fixed scale ${low}–${high}${unit}, bottom to top. MIN/MAX shows observed extrema; newest readings are on the right.`;
     const history = [];
     return {
       el,
@@ -420,21 +432,15 @@ footer a:hover { color: var(--amber); }
       },
       describe() {
         const change = history.at(-1) - history[0];
-        return `${Math.abs(change) < 1 ? "Steady" : change > 0 ? "Rising" : "Falling"} over the last three sample minutes. Observed minimum ${Math.round(Math.min(...history))}${unit}, maximum ${Math.round(Math.max(...history))}${unit}. Newest readings on the right; scale adapts.`;
+        return `${Math.abs(change) < 1 ? "Steady" : change > 0 ? "Rising" : "Falling"} over the last three sample minutes. Observed minimum ${Math.round(Math.min(...history))}${unit}, maximum ${Math.round(Math.max(...history))}${unit}. Fixed scale ${low}–${high}${unit}, bottom to top. Newest readings on the right.`;
       },
       render() {
         const lo = Math.min(...history), hi = Math.max(...history);
-        const span = Math.max(hi - lo, minSpan), start = hi - lo >= minSpan ? lo : (lo + hi) / 2 - span / 2;
-        const rows = [...Array(8)].map((_, i) => start + span * i / 7);
         range.textContent = `MIN/MAX ${Math.round(lo)}–${Math.round(hi)}${unit}`;
         const cols = Array(30 - history.length).fill(null).concat(history);
-        const inks = rows.map(value => {
-          const t = levelOf(value), ink = utilization ? usage(t) : heat(t);
-          return [ink, !utilization && t >= HOT ? `color-mix(in srgb, ${ink} 16%, transparent)` : LENS];
-        });
         [...grid.children].forEach((lens, k) => {
           const row = 7 - Math.floor(k / 30), value = cols[k % 30];
-          const lit = value != null && value >= rows[row] - 1e-9;
+          const lit = value != null && value > low + row * step;
           lens.style.background = inks[row][lit ? 0 : 1];
         });
       },
@@ -487,7 +493,7 @@ footer a:hover { color: var(--amber); }
   // HEAT
   const heatBoard = document.getElementById("board-heat");
   const heatHead = header("CPU DIE", 4, [["POWER", 4], ["LOAD", 4], ["PRESSURE", 8]], true);
-  const heatMeter = meter(level.celsius, 10, "°");
+  const heatMeter = meter(true);
   const fanRows = [1, 2].map((id) => {
     const l = lamp(), name = strip(5), bar = lensBar(), rpm = strip(5, "row", "right");
     name.set(`FAN ${id}`, STEEL);
@@ -504,7 +510,7 @@ footer a:hover { color: var(--amber); }
   // CPU
   const cpuBoard = document.getElementById("board-cpu");
   const cpuHead = header("CPU LOAD", 4, [["CPU DIE", 4], ["PRESSURE", 8]]);
-  const cpuMeter = meter(level.load, 20, "%", true);
+  const cpuMeter = meter();
   const cores = ["P", "E"].map((kind) => [1, 2, 3, 4].map((n) => {
     const l = lamp(), name = strip(2), bar = lensBar(), value = strip(3, "row", "right");
     name.set(`${kind}${n}`, STEEL);
@@ -523,7 +529,7 @@ footer a:hover { color: var(--amber); }
   // RAM
   const ramBoard = document.getElementById("board-ram");
   const ramHead = header("MEMORY USED", 4, [["SWAP", 5], ["PRESSURE", 8]]);
-  const ramMeter = meter(level.memory, 10, "%", true);
+  const ramMeter = meter();
   const capacity = note("");
   const parts = ["APP", "WIRED", "COMPRESSED", "CACHED", "FREE"].map((name, i) => {
     const l = lamp(), n = strip(10), bar = lensBar(), value = strip(4, "row", "right");
