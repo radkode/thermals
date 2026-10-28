@@ -35,7 +35,7 @@
   --steel-light: #A7AAAF;
   --letter-white: #F2F2F2;
   --amber: #FFB000;
-  --burn-red: #E5383B;
+  --burn-red: #FF7073;
   --gutter: 16px;
   /* The app popover is 400pt with a 14pt frame, so its boards are 372 wide. */
   --board: 372px;
@@ -160,7 +160,7 @@ button, .button { font: inherit; color: inherit; cursor: pointer; border: 0; bac
   overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: var(--gutter); scrollbar-width: none;
 }
 .track::-webkit-scrollbar { display: none; }
-.platform { flex: none; scroll-snap-align: center; width: min(var(--board), calc(100vw - 2 * var(--gutter))); }
+.platform { position: relative; flex: none; scroll-snap-align: center; width: min(var(--board), calc(100vw - 2 * var(--gutter))); }
 .platform-sign { display: flex; justify-content: space-between; align-items: baseline; padding: 0 2px 8px; border-bottom: 1px solid rgba(91, 94, 99, 0.45); margin-bottom: 12px; }
 .platform-sign .number { font-weight: 600; font-size: 13px; letter-spacing: 1.6px; color: var(--amber); }
 .sample-note { max-width: 1320px; margin: 10px auto 0; padding: 0 var(--gutter); }
@@ -180,6 +180,9 @@ button, .button { font: inherit; color: inherit; cursor: pointer; border: 0; bac
 .meter i, .bar i { border-radius: 1px; background: var(--lens); }
 .bar { display: grid; grid-template-columns: repeat(8, 1fr); gap: 1.5px; height: 10px; flex: 1; }
 .cols { display: flex; align-items: center; gap: 6px; }
+.departures .cols > :nth-child(2) { flex: 1; min-width: 0; }
+.departures .cols > :not(:nth-child(2)) { flex: none; }
+.board-note { margin: 0; font-size: 14px; line-height: 1.25; color: var(--steel-light); }
 .platforms-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
 /* Ticket machine */
@@ -239,20 +242,26 @@ footer a:hover { color: var(--amber); }
       </div>
     </div>
     <div class="track" id="track">
-      <article class="platform" id="platform-heat" aria-label="Platform 1, the HEAT board: CPU die temperature, fans and every sensor">
-        <div class="platform-sign"><span class="number">PLATFORM 1</span><span class="label">How hot, and which sensors</span></div>
+      <article class="platform" id="platform-heat" aria-labelledby="heat-name" aria-describedby="heat-description heat-summary">
+        <div class="platform-sign"><span class="number" id="heat-name">PLATFORM 1 · HEAT</span><span class="label">How hot, and which sensors</span></div>
+        <p class="visually-hidden" id="heat-description">CPU die temperature, fans and sensors. Only CPU die sensors use temperature reference bands; these are not hardware safety limits. Thermal pressure is macOS's separate assessment.</p>
+        <p class="visually-hidden" id="heat-summary"></p>
         <div class="board-scale"><div class="board" id="board-heat" aria-hidden="true"></div></div>
       </article>
-      <article class="platform" id="platform-cpu" aria-label="Platform 2, the CPU board: load, cores and the processes causing it">
-        <div class="platform-sign"><span class="number">PLATFORM 2</span><span class="label">Who is making it hot</span></div>
+      <article class="platform" id="platform-cpu" aria-labelledby="cpu-name" aria-describedby="cpu-description cpu-summary">
+        <div class="platform-sign"><span class="number" id="cpu-name">PLATFORM 2 · CPU</span><span class="label">What is using the CPU</span></div>
+        <p class="visually-hidden" id="cpu-description">Whole-system load: 100% means all cores. Per-process CPU: 100% means one core, so multithreaded apps can exceed 100%. LOW, MOD and HIGH describe utilization, not heat. The top five processes are smoothed. Unmeasured work is estimated from all sampled processes, so the rows do not add up to the headline.</p>
+        <p class="visually-hidden" id="cpu-summary"></p>
         <div class="board-scale"><div class="board" id="board-cpu" aria-hidden="true"></div></div>
       </article>
-      <article class="platform" id="platform-ram" aria-label="Platform 3, the RAM board: memory used, pressure and the apps holding it">
-        <div class="platform-sign"><span class="number">PLATFORM 3</span><span class="label">Where the memory went</span></div>
+      <article class="platform" id="platform-ram" aria-labelledby="ram-name" aria-describedby="ram-description ram-summary">
+        <div class="platform-sign"><span class="number" id="ram-name">PLATFORM 3 · RAM</span><span class="label">Where the memory went</span></div>
+        <p class="visually-hidden" id="ram-description">Used and installed memory, OS pressure and app footprints. Usage alone is not memory strain. App, wired and compressed count as used; cached memory is reclaimable and free memory is unused. App shares describe installed RAM, not heat; app footprints do not add up to total memory used.</p>
+        <p class="visually-hidden" id="ram-summary"></p>
         <div class="board-scale"><div class="board" id="board-ram" aria-hidden="true"></div></div>
       </article>
     </div>
-    <p class="label sample-note">Sample readings, heating up and cooling down, played back at four times speed. The app reads your own Mac's sensors.</p>
+    <p class="label sample-note">Simulated readings at four times speed. Pressure is a separate OS assessment, not a temperature or usage threshold. The app reads your own Mac.</p>
   </section>
 
   <section class="ticket" aria-labelledby="ticket-title">
@@ -271,7 +280,7 @@ footer a:hover { color: var(--amber); }
         </li>
         <li>
           <span class="step-strip" data-text="2"></span>
-          <p>Open Thermals. It lives in the menu bar, with no Dock icon. <span>Choose the temperature, the load or both for the menu bar, and °C or °F.</span></p>
+          <p>Open Thermals. It lives in the menu bar, with no Dock icon. <span>Open Settings (⌘,) to choose the menu bar reading, °C or °F, sampling interval, heat alerts and launch at login.</span></p>
         </li>
         <li>
           <span class="step-strip" data-text="3"></span>
@@ -300,7 +309,7 @@ footer a:hover { color: var(--amber); }
 
   // The app's one heat gradient (Board.heat, dark stops) and HeatLevel band edges.
   const WARM = 1 / 3, HOT = 2 / 3, BURN = 0.85;
-  const STOPS = [[0, [0x6F, 0x9C, 0xC8]], [WARM, [0xDC, 0xE6, 0xEE]], [0.55, [0xFF, 0xE3, 0xA3]], [HOT, [0xFF, 0xB0, 0x00]], [BURN, [0xF2, 0x5A, 0x2D]], [1, [0xE5, 0x38, 0x3B]]];
+  const STOPS = [[0, [0x6F, 0x9C, 0xC8]], [WARM, [0xDC, 0xE6, 0xEE]], [0.55, [0xFF, 0xE3, 0xA3]], [HOT, [0xFF, 0xB0, 0x00]], [BURN, [0xFF, 0x83, 0x55]], [1, [0xFF, 0x70, 0x73]]];
   const heat = (t) => {
     const i = STOPS.findIndex(([p]) => p >= t);
     if (i <= 0) return rgb(STOPS[i === 0 ? 0 : STOPS.length - 1][1]);
@@ -323,7 +332,9 @@ footer a:hover { color: var(--amber); }
     app: (p) => interpolate(p, [[0, 0], [10, WARM], [25, HOT], [40, BURN], [60, 1]]),
   };
   const band = (t) => t < WARM ? "COOL" : t < HOT ? "WARM" : t < BURN ? "HOT" : "BURN";
-  const STEEL = "#A7AAAF", WHITE = "#F2F2F2", AMBER = "#FFB000", RED = "#E5383B", STEEL_MID = "#5B5E63", LENS = "#1E1F23";
+  const usage = (t) => heat(t * 0.55);
+  const usageTitle = (t) => t < WARM ? "LOW" : t < HOT ? "MOD" : "HIGH";
+  const STEEL = "#A7AAAF", WHITE = "#F2F2F2", AMBER = "#FFB000", RED = "#FF7073", STEEL_MID = "#5B5E63", LENS = "#1E1F23";
 
   // A housed strip of split-flap cells that flips cell by cell when its text changes.
   function strip(cells, size = "row", align = "left") {
@@ -339,8 +350,10 @@ footer a:hover { color: var(--amber); }
       chars.push(" ");
     }
     const set = (text, ink) => {
-      const clipped = String(text).toUpperCase().slice(0, cells);
+      const full = String(text).toUpperCase();
+      const clipped = full.length <= cells ? full : align === "right" ? "#".repeat(cells) : full.slice(0, cells - 1) + "…";
       const padded = align === "right" ? clipped.padStart(cells) : clipped.padEnd(cells);
+      if (el.title !== full) el.title = full;
       if (ink) el.style.setProperty("--ink", ink);
       [...padded].forEach((ch, i) => {
         if (ch === chars[i]) return;
@@ -375,6 +388,7 @@ footer a:hover { color: var(--amber); }
   const lamp = () => { const l = document.createElement("span"); l.className = "lamp"; return l; };
   const setLamp = (l, lit, color) => { l.classList.toggle("lit", lit); l.style.setProperty("--lamp", color); };
   const label = (text) => { const l = document.createElement("span"); l.className = "label"; l.textContent = text; return l; };
+  const note = (text, help = "") => { const p = document.createElement("p"); p.className = "board-note"; p.textContent = text; if (help) p.title = help; return p; };
   const div = (cls, ...children) => { const d = document.createElement("div"); d.className = cls; d.append(...children); return d; };
   const width = (cells) => cells * 11.5 + (cells + 1) * 1.5;
 
@@ -384,18 +398,19 @@ footer a:hover { color: var(--amber); }
     const floors = [1, 12.5, 25, 37.5, 50, 62.5, 75, 87.5];
     return { el, set(percent, tint) { [...el.children].forEach((lens, i) => { lens.style.background = tint(floors[i], i < floors.filter((f) => percent >= f).length); }); } };
   }
-  const heatLens = (floor, lit) => {
+  const usageLens = (floor, lit) => {
     const t = level.load(floor);
-    return lit ? heat(t) : t >= HOT ? `color-mix(in srgb, ${heat(t)} 16%, transparent)` : LENS;
+    return lit ? usage(t) : t >= HOT ? `color-mix(in srgb, ${usage(t)} 16%, transparent)` : LENS;
   };
 
   // LAST 3 MIN meter: 30 time columns by 8 rows fitted to the window, each lens tinted by its row's value.
-  function meter(levelOf, minSpan, unit) {
+  function meter(levelOf, minSpan, unit, utilization = false) {
     const grid = div("meter");
     for (let r = 0; r < 8; r++) for (let c = 0; c < 30; c++) grid.append(document.createElement("i"));
     const range = document.createElement("span");
     range.className = "range";
-    const el = div("panel", div("meter-head", label("LAST 3 MIN"), range), grid);
+    const el = div("panel", div("meter-head", label("LAST 3 MIN · NOW →"), range), grid);
+    el.title = "Observed minimum and maximum. The chart scale adapts; newest readings are on the right.";
     const history = [];
     return {
       el,
@@ -403,15 +418,19 @@ footer a:hover { color: var(--amber); }
         history.push(value);
         if (history.length > 30) history.shift();
       },
+      describe() {
+        const change = history.at(-1) - history[0];
+        return `${Math.abs(change) < 1 ? "Steady" : change > 0 ? "Rising" : "Falling"} over the last three sample minutes. Observed minimum ${Math.round(Math.min(...history))}${unit}, maximum ${Math.round(Math.max(...history))}${unit}. Newest readings on the right; scale adapts.`;
+      },
       render() {
         const lo = Math.min(...history), hi = Math.max(...history);
         const span = Math.max(hi - lo, minSpan), start = hi - lo >= minSpan ? lo : (lo + hi) / 2 - span / 2;
         const rows = [...Array(8)].map((_, i) => start + span * i / 7);
-        range.textContent = `${Math.round(lo)}–${Math.round(hi)}${unit}`;
+        range.textContent = `MIN/MAX ${Math.round(lo)}–${Math.round(hi)}${unit}`;
         const cols = Array(30 - history.length).fill(null).concat(history);
         const inks = rows.map(value => {
-          const t = levelOf(value), ink = heat(t);
-          return [ink, t >= HOT ? `color-mix(in srgb, ${ink} 16%, transparent)` : LENS];
+          const t = levelOf(value), ink = utilization ? usage(t) : heat(t);
+          return [ink, !utilization && t >= HOT ? `color-mix(in srgb, ${ink} 16%, transparent)` : LENS];
         });
         [...grid.children].forEach((lens, k) => {
           const row = 7 - Math.floor(k / 30), value = cols[k % 30];
@@ -434,26 +453,27 @@ footer a:hover { color: var(--amber); }
   }
 
   // Departure rows: lamp, name, value and STATUS at fixed widths so the header lines up.
-  function departures(title, valueLabel, nameCells, valueCells, count, status = true) {
+  function departures(title, valueLabel, nameCells, valueCells, count, statusLabel = "STATUS") {
     const head = div("cols");
     const spacer = document.createElement("span"); spacer.style.width = "6px";
     const h1 = label(title); h1.style.width = `${width(nameCells)}px`;
     const h2 = label(valueLabel); h2.style.width = `${width(valueCells)}px`; h2.style.textAlign = "right";
     head.append(spacer, h1, h2);
-    if (status) head.append(label("STATUS"));
+    const h3 = label(statusLabel); h3.style.width = `${width(4)}px`;
+    head.append(h3);
     const rows = [...Array(count)].map(() => {
-      const l = lamp(), name = strip(nameCells), value = strip(valueCells, "row", "right"), st = status ? strip(4) : null;
-      return { el: div("cols", l, name.el, value.el, ...(st ? [st.el] : [])), lamp: l, name, value, status: st };
+      const l = lamp(), name = strip(nameCells), value = strip(valueCells, "row", "right"), st = strip(4);
+      return { el: div("cols", l, name.el, value.el, st.el), lamp: l, name, value, status: st };
     });
-    return { el: div("panel", head, ...rows.map((r) => r.el)), rows };
+    return { el: div("panel departures", head, ...rows.map((r) => r.el)), rows };
   }
 
-  function setRow(row, name, value, t) {
-    const ink = t == null ? STEEL : heat(t);
+  function setRow(row, name, value, t, utilization = false) {
+    const ink = t == null ? STEEL : utilization ? usage(t) : heat(t);
     setLamp(row.lamp, t != null && t >= HOT, ink);
     row.name.set(name, t != null && t >= BURN ? ink : STEEL);
     row.value.set(value, ink);
-    row.status?.set(t == null ? "" : band(t), ink);
+    row.status.set(t == null ? "" : utilization ? usageTitle(t) : band(t), ink);
   }
 
   // Sample readings: each tick is one 6 s meter slice, played every 1.5 s (four times speed), so 30 columns are three sample minutes.
@@ -469,21 +489,22 @@ footer a:hover { color: var(--amber); }
   const heatHead = header("CPU DIE", 4, [["POWER", 4], ["LOAD", 4], ["PRESSURE", 8]], true);
   const heatMeter = meter(level.celsius, 10, "°");
   const fanRows = [1, 2].map((id) => {
-    const l = lamp(), name = strip(5), bar = lensBar(), rpm = strip(4, "row", "right");
+    const l = lamp(), name = strip(5), bar = lensBar(), rpm = strip(5, "row", "right");
     name.set(`FAN ${id}`, STEEL);
     return { l, name, bar, rpm, el: div("cols", l, name.el, bar.el, rpm.el) };
   });
   const fanHead = div("meter-head", label("FANS"), label("RPM"));
   fanHead.firstChild.style.marginLeft = "11px";
   const fans = div("panel", fanHead, ...fanRows.map((f) => f.el));
-  const sensors = departures("SENSOR", "°C", 18, 3, 6);
-  heatBoard.append(heatHead.el, heatMeter.el, fans, sensors.el);
+  const sensors = departures("SENSOR", "°C", 16, 3, 6);
+  sensors.el.append(note("CPU bands are reference ranges.", "Bands apply only to CPU die sensors, not hardware safety limits."));
+  heatBoard.append(heatHead.el, note("Pressure: macOS assessment."), heatMeter.el, fans, sensors.el);
   const sensorNames = ["BATTERY", "CPU DIE 1", "CPU DIE 2", "CPU DIE 3", "PMU DEV 1", "SSD"];
 
   // CPU
   const cpuBoard = document.getElementById("board-cpu");
   const cpuHead = header("CPU LOAD", 4, [["CPU DIE", 4], ["PRESSURE", 8]]);
-  const cpuMeter = meter(level.load, 20, "%");
+  const cpuMeter = meter(level.load, 20, "%", true);
   const cores = ["P", "E"].map((kind) => [1, 2, 3, 4].map((n) => {
     const l = lamp(), name = strip(2), bar = lensBar(), value = strip(3, "row", "right");
     name.set(`${kind}${n}`, STEEL);
@@ -493,26 +514,27 @@ footer a:hover { color: var(--amber); }
     div("", label("PERFORMANCE"), ...cores[0].map((c) => c.el)),
     div("", label("EFFICIENCY"), ...cores[1].map((c) => c.el))));
   corePanel.querySelectorAll(".platforms-pair > div").forEach((d) => { d.style.display = "flex"; d.style.flexDirection = "column"; d.style.gap = "3px"; });
-  const procs = departures("PROCESSES", "%CPU", 17, 4, 5);
-  const kernel = { l: lamp(), name: strip(17), value: strip(4, "row", "right") };
-  kernel.name.set("KERNEL + OTHERS", STEEL);
-  const kernelRow = div("cols", kernel.l, kernel.name.el, kernel.value.el);
-  kernelRow.style.marginTop = "6px";
-  procs.el.append(kernelRow);
-  cpuBoard.append(cpuHead.el, cpuMeter.el, corePanel, procs.el);
+  const procs = departures("TOP PROCESSES", "%CPU", 15, 4, 6, "LOAD");
+  const unmeasured = procs.rows[5];
+  unmeasured.el.style.marginTop = "6px";
+  procs.el.append(note("100% = one core. Rows are not additive.", "Multithreaded apps can exceed 100%. The top five are smoothed; estimated unmeasured work uses all sampled processes."));
+  cpuBoard.append(cpuHead.el, note("Total: 100% = all cores."), cpuMeter.el, procs.el, corePanel);
 
   // RAM
   const ramBoard = document.getElementById("board-ram");
   const ramHead = header("MEMORY USED", 4, [["SWAP", 5], ["PRESSURE", 8]]);
-  const ramMeter = meter(level.memory, 10, "%");
+  const ramMeter = meter(level.memory, 10, "%", true);
+  const capacity = note("");
   const parts = ["APP", "WIRED", "COMPRESSED", "CACHED", "FREE"].map((name, i) => {
     const l = lamp(), n = strip(10), bar = lensBar(), value = strip(4, "row", "right");
     n.set(name, STEEL);
     return { used: i < 3, l, n, bar, value, el: div("cols", l, n.el, bar.el, value.el) };
   });
-  const breakdown = div("panel", div("meter-head", label("MEMORY"), label("GB")), ...parts.map((p) => p.el));
-  const apps = departures("YOUR APPS", "GB", 17, 4, 4);
-  ramBoard.append(ramHead.el, ramMeter.el, breakdown, apps.el);
+  const breakdown = div("panel", div("meter-head", label("MEMORY"), label("SHARE"), label("GB")), ...parts.map((p) => p.el),
+    note("Used = app + wired + compressed.", "Cached files can be reclaimed; free memory is unused."));
+  const apps = departures("TOP APPS", "GB", 15, 4, 4, "SHARE");
+  apps.el.append(note("Share of installed RAM, by footprint.", "App footprints do not add up to total memory used. Share is not a heat warning."));
+  ramBoard.append(ramHead.el, capacity, ramMeter.el, breakdown, apps.el);
 
   // Menu bar and hero
   const menubar = document.getElementById("menubar-reading");
@@ -531,7 +553,9 @@ footer a:hover { color: var(--amber); }
     const { x, wobble } = sample();
     const die = 44 + 50 * x + wobble(0);
     const load = Math.min(100, 8 + 88 * x + wobble(1) * 2);
-    const pressure = die > 90 ? ["SERIOUS", AMBER] : die > 80 ? ["FAIR", WHITE] : ["NOMINAL", STEEL];
+    const cycle = ((phase % 40) + 40) % 40;
+    const pressure = cycle >= 28 && cycle <= 31 ? ["CRITICAL", RED] : cycle >= 24 && cycle <= 27 ? ["SERIOUS", AMBER] : cycle >= 16 && cycle <= 23 ? ["FAIR", WHITE] : ["NOMINAL", STEEL];
+    const temperatureLevel = Math.max(level.celsius(Math.round(die)), pressure[0] === "CRITICAL" ? BURN : pressure[0] === "SERIOUS" ? HOT : 0);
     const used = 58 + 34 * x + wobble(2) * 0.4;
     if (record) {
       heatMeter.push(die);
@@ -539,61 +563,65 @@ footer a:hover { color: var(--amber); }
       ramMeter.push(used);
     }
 
-    menuTemp.textContent = `${Math.round(die)}°`; menuTemp.style.color = heat(level.celsius(Math.round(die)));
-    menuLoad.textContent = `${Math.round(load)}%`; menuLoad.style.color = heat(level.load(Math.round(load)));
+    menuTemp.textContent = `${pressure[0] === "SERIOUS" || pressure[0] === "CRITICAL" ? "! " : ""}${Math.round(die)}°`; menuTemp.style.color = heat(temperatureLevel);
+    menuLoad.textContent = `${Math.round(load)}%`; menuLoad.style.color = usage(level.load(Math.round(load)));
 
     // HEAT
     if (all || visibleBoards.has(heatBoard)) {
-      heatHead.hero.set(`${Math.round(die)}°`, heat(level.celsius(Math.round(die))));
+      heatHead.hero.set(`${Math.round(die)}°`, heat(temperatureLevel));
       heatHead.stats[0].set(`${Math.round(8 + 44 * x + wobble(3))}W`, WHITE);
-      heatHead.stats[1].set(`${Math.round(load)}%`, heat(level.load(Math.round(load))));
+      heatHead.stats[1].set(`${Math.round(load)}%`, usage(level.load(Math.round(load))));
       heatHead.stats[2].set(pressure[0], pressure[1]);
       heatMeter.render();
       fanRows.forEach((f, i) => {
         const share = Math.max(0, Math.min(1, (x - 0.35) / 0.6)) * (0.95 - i * 0.06);
         const t = level.load(share * 100);
-        f.bar.set(share * 100, heatLens);
-        f.rpm.set(share === 0 ? "0" : String(Math.round(1350 + (5350 - 1350) * share)), heat(t));
-        setLamp(f.l, t >= HOT, heat(t));
-        f.name.set(`FAN ${i + 1}`, t >= BURN ? heat(t) : STEEL);
+        f.bar.set(share * 100, usageLens);
+        f.rpm.set(share === 0 ? "0" : String(Math.round(1350 + (5350 - 1350) * share)), usage(t));
+        setLamp(f.l, t >= HOT, usage(t));
+        f.name.set(`FAN ${i + 1}`, t >= BURN ? usage(t) : STEEL);
       });
       const offsets = [-14, 0, -2, -4, -8, -11];
       sensors.rows.forEach((row, i) => {
         const c = Math.round(die + offsets[i] * (0.6 + x * 0.5));
-        setRow(row, sensorNames[i], String(c), level.celsius(c));
+        setRow(row, sensorNames[i], String(c), sensorNames[i].startsWith("CPU DIE") ? level.celsius(c) : null);
       });
+      document.getElementById("heat-summary").textContent = `Sample: CPU die ${Math.round(die)} degrees Celsius, thermal pressure ${pressure[0].toLowerCase()}. ${heatMeter.describe()}`;
     }
 
     // CPU
     if (all || visibleBoards.has(cpuBoard)) {
-      cpuHead.hero.set(`${Math.round(load)}%`, heat(level.load(Math.round(load))));
-      cpuHead.stats[0].set(`${Math.round(die)}°`, heat(level.celsius(Math.round(die))));
+      cpuHead.hero.set(`${Math.round(load)}%`, usage(level.load(Math.round(load))));
+      cpuHead.stats[0].set(`${Math.round(die)}°`, heat(temperatureLevel));
       cpuHead.stats[1].set(pressure[0], pressure[1]);
       cpuMeter.render();
       cores.forEach((group, g) => group.forEach((core, i) => {
-        const p = Math.max(0, Math.min(100, Math.round(load * (g === 0 ? 1.08 - i * 0.07 : 0.55 - i * 0.06) + wobble(i + g) * 2)));
+        const p = Math.round(load + (3.5 - (g * 4 + i)) / 3.5 * Math.min(load, 100 - load) * 0.35);
         const t = level.load(p);
-        core.bar.set(p, heatLens);
-        core.value.set(String(p), heat(t));
-        setLamp(core.l, t >= HOT, heat(t));
-        core.name.set(`${g === 0 ? "P" : "E"}${i + 1}`, t >= BURN ? heat(t) : STEEL);
+        core.bar.set(p, usageLens);
+        core.value.set(String(p), usage(t));
+        setLamp(core.l, t >= HOT, usage(t));
+        core.name.set(`${g === 0 ? "P" : "E"}${i + 1}`, t >= BURN ? usage(t) : STEEL);
       }));
       const procLoads = [["XCODE", 3.1], ["SWIFT-FRONTEND", 2.3], ["WINDOWSERVER", 0.4], ["SAFARI", 0.5], ["MUSIC", 0.12]]
-        .map(([name, k]) => [name, Math.round(load * k)]).sort((a, b) => b[1] - a[1]);
-      procs.rows.forEach((row, i) => setRow(row, procLoads[i][0], String(procLoads[i][1]), level.load(procLoads[i][1])));
-      kernel.value.set(String(Math.round(load * 0.9 + 6)), STEEL);
+        .map(([name, k]) => [name, load * k]).sort((a, b) => b[1] - a[1]);
+      procLoads.forEach(([name, value], i) => setRow(procs.rows[i], name, String(Math.round(value)), level.load(Math.round(value)), true));
+      const remainder = Math.max(0, load * 8 - procLoads.reduce((sum, [, value]) => sum + value, 0) - load * 0.18);
+      setRow(unmeasured, "UNMEASURED EST", String(Math.round(remainder)), null);
+      document.getElementById("cpu-summary").textContent = `Sample: whole-system load ${Math.round(load)} percent across eight cores. Top process ${procLoads[0][0]}, ${Math.round(procLoads[0][1])} percent of one core. Thermal pressure ${pressure[0].toLowerCase()}. ${cpuMeter.describe()}`;
     }
 
     // RAM
     if (all || visibleBoards.has(ramBoard)) {
-      const memPressure = used > 90 ? ["WARN", AMBER] : ["NORMAL", STEEL];
-      const memLevel = Math.max(level.memory(Math.round(used)), memPressure[0] === "WARN" ? HOT : 0);
+      const memPressure = cycle >= 30 && cycle <= 32 ? ["CRITICAL", RED] : cycle >= 27 && cycle <= 29 ? ["WARN", AMBER] : ["NORMAL", STEEL];
+      const memLevel = Math.max(level.memory(Math.round(used)) * 0.55, memPressure[0] === "CRITICAL" ? BURN : memPressure[0] === "WARN" ? HOT : 0);
       ramHead.hero.set(`${Math.round(used)}%`, heat(memLevel));
       const swap = Math.max(0, (used - 82) * 0.4);
       ramHead.stats[0].set(`${swap.toFixed(1)}G`, swap > 0 ? WHITE : STEEL);
       ramHead.stats[1].set(memPressure[0], memPressure[1]);
       ramMeter.render();
       const total = 18, usedGB = total * used / 100;
+      capacity.textContent = `${usedGB.toFixed(1)} of ${total.toFixed(1)} GB used.`;
       const gb = [usedGB * 0.62, usedGB * 0.22, usedGB * 0.16, (total - usedGB) * 0.75, (total - usedGB) * 0.25];
       const exact = gb.map((v) => v / total * 8), lit = exact.map(Math.floor);
       exact.map((v, i) => [v - lit[i], i]).sort((a, b) => b[0] - a[0]).slice(0, Math.round(exact.reduce((a, b) => a + b)) - lit.reduce((a, b) => a + b)).forEach(([, i]) => lit[i]++);
@@ -605,8 +633,9 @@ footer a:hover { color: var(--amber); }
       const appGB = [["XCODE", 0.26], ["SAFARI", 0.17], ["SIMULATOR", 0.12], ["MUSIC", 0.04]];
       apps.rows.forEach((row, i) => {
         const g = usedGB * appGB[i][1];
-        setRow(row, appGB[i][0], g.toFixed(1), level.app(Math.round(g / total * 100)));
+        setRow(row, appGB[i][0], g.toFixed(1), level.app(Math.round(g / total * 100)), true);
       });
+      document.getElementById("ram-summary").textContent = `Sample: ${usedGB.toFixed(1)} of ${total} gigabytes used, ${Math.round(used)} percent. OS memory pressure ${memPressure[0].toLowerCase()}. ${ramMeter.describe()}`;
     }
   }
 
