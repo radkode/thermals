@@ -94,6 +94,8 @@ TEST_RUNNER_PERF_OUTPUT="$PWD/build/performance-recheck" \
 
 A successful selected run must report two tests, not zero. Use the suite name as above; a method filter without its Swift Testing identifier can silently select nothing. `TEST_RUNNER_PERF_ATTACH=1` adds a 15-second pause after writing the PID. Keep instrumented runs separate from timing baselines. The 2026-10-29 SwiftUI Instruments capture failed to finalize, while `sample <pid> 10 1 -file <path>` produced usable native stacks. Neither stack occupancy nor synchronous window construction is an FPS measure. The native animation test observes the current system Reduce Motion preference without changing it.
 
+Select `-only-testing:ThermalsTests/MenuBarImageCacheTests` with the same `TEST_RUNNER_PERF_OUTPUT` environment to measure unchanged menu updates. It reports three tests and writes `menu-cache.json`: 1,000 cached controller updates versus 1,000 fresh rasters of a prepared identical label, including assignment to the status button. Process CPU includes all threads. This isolates the menu path and does not measure whole-app idle CPU, allocation rates or battery impact.
+
 The main-actor progress probe uses the real hardware collector or utility footprint scan while a five-millisecond main-actor heartbeat runs:
 
 ```sh

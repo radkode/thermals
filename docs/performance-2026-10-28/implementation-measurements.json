@@ -1,7 +1,7 @@
 {
   "date": "2026-10-29",
   "render_before_source": "277fdd5",
-  "render_after_source": "Board.swift and RenderingPerformanceTests.swift in the rendering optimization commit",
+  "render_after_source": "5ef374b",
   "notes": [
     "Release -O, ENABLE_TESTABILITY=YES, arm64, macOS 27.0.1. Ten samples per board.",
     "Native timing measures synchronous construction, layout and display submission, not first presented frame or FPS.",
@@ -1348,5 +1348,20 @@
     "cpu: 5637 changed pixels of 1169600, maximum channel delta 18",
     "ram: 5884 changed pixels of 1152000, maximum channel delta 18",
     "cpu48: 5113 changed pixels of 1177600, maximum channel delta 18"
-  ]
+  ],
+  "menu_cache": {
+    "sha256": "2ddcbbd36d7400bbcb04dc6939344fa24aea62861b5e838a1ab95b898bb2fd41",
+    "data": {
+      "cached_update": {
+        "cpu_ms": 9.243000000000052,
+        "wall_ms": 5.424333
+      },
+      "fresh_raster": {
+        "cpu_ms": 655.318,
+        "wall_ms": 481.131667
+      },
+      "iterations": 1000
+    },
+    "scope": "1000 full cached updates versus fresh prepared-label rasters and assignments; not whole-app idle CPU or allocation rates"
+  }
 }
