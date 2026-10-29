@@ -157,3 +157,12 @@ Vercel's project API reports `gitForkProtection: true` for the website. [Vercel 
 Current credential-related filename matches are generic setup placeholders. Before publication, the owner chose to remove internal operational details from history while retaining author identity and useful development history. No actual private key or token was identified. The original repository remains private; the sanitized history is prepared for a fresh repository to avoid exposing cached historical copies.
 
 The final transition also needs an exception to the owner's reporting-before-publication gate: [GitHub only permits private vulnerability reporting on public repositories](https://docs.github.com/en/code-security/how-tos/report-and-fix-vulnerabilities/configure-vulnerability-reporting/configure-for-a-repository). The proposed sequence is to make the prepared repository public, immediately enable and verify reporting plus public secret scanning/push protection, and restore private visibility if those controls cannot be enabled. Restoring private visibility cannot recall any copies made during the transition. Approval of this sequence is still pending.
+
+
+## Sanitized publication history
+
+The owner selected a fresh repository for publication and retained the original repository privately. Internal operational details were removed from historical release documentation and the assessment before import. Author identity, timestamps, commit topology and application contents are preserved. Rewritten commits have new IDs; their old commit signatures cannot validate the rewritten objects. Historical CI links and commit IDs in earlier reports refer to the private pre-publication record.
+
+The import carries existing release versions and tags as source-history references. It does not rebuild or replace shipped binaries or change the update feed. Current source and packaging checks include the distribution notices; the already shipped 0.5.0 binary predates that fix, tracked in #74. Imported issues retain their issue numbers and record their original authors and timestamps; historical Actions logs and caches remain in the private repository.
+
+Publication requires the fresh repository's private reporting and public security controls, release credentials, contribution checks and website connection to be verified. Until that cutover is complete, the original repository remains the active private release source. No new application release is part of the history cleanup.
