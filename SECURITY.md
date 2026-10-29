@@ -4,7 +4,7 @@
 
 Use [GitHub private vulnerability reporting](https://github.com/radkode/thermals/security/advisories/new). Include the affected version, macOS version, reproduction steps and impact. Do not include signing keys, access tokens or unrelated personal data.
 
-Do not report vulnerabilities in public issues or pull requests. If the private reporting form is unavailable, do not post exploit details publicly. Public launch is blocked until the maintainer enables and verifies GitHub private vulnerability reporting. There is no alternate email reporting channel.
+Do not report vulnerabilities in public issues or pull requests. If the private reporting form is unavailable, do not post exploit details publicly. There is no alternate email reporting channel.
 
 ## Supported versions
 

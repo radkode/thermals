@@ -1,4 +1,4 @@
-# Release: bump MARKETING_VERSION in project.yml and push to main. When that version has no v<version>
+# Release: merge a version-bump PR for project.yml. When that version has no v<version>
 # tag yet, this builds, signs with the Developer ID, notarizes, staples, uploads Thermals-<version>.zip
 # as a release in the public tap radkode/homebrew-thermals, updates Casks/thermals.rb there, and tags
 # v<version> here (scripts/release.sh --ci). Pushes that don't change the version are a no-op.

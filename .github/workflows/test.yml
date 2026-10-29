@@ -2,9 +2,8 @@ name: Native tests
 
 on:
   push:
-    paths: [Thermals/**, ThermalsTests/**, project.yml, LICENSE, scripts/**, .github/workflows/**]
-  pull_request:
-    paths: [Thermals/**, ThermalsTests/**, project.yml, LICENSE, scripts/**, .github/workflows/**]
+    branches: [main]
+  pull_request: {}
   workflow_dispatch: {}
 
 permissions:

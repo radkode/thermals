@@ -4,7 +4,7 @@ Thermals ships as a Homebrew cask from the public tap [`radkode/homebrew-thermal
 
 ## Cutting a release
 
-1. Bump `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `project.yml`, commit, and push to `main`. Sparkle offers an update only when the build number goes up.
+1. Bump `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `project.yml` in a pull request. Merge only after the required native and secret-scan checks pass on the current base and review conversations are resolved. Sparkle offers an update only when the build number goes up.
 2. `.github/workflows/release.yml` runs on main pushes that touch `project.yml`. Its `check` job skips versions that already have a `v<version>` tag. For an untagged version, secret-free preflight tests and license checks must pass before the `release` job can access signing credentials. That job runs `scripts/release.sh --ci` on a `macos-26` runner: Release build, Developer ID signing with hardened runtime, notarization and stapling, then the zip and appcast are signed for Sparkle, both go up as a release in the tap, `Casks/thermals.rb` is rewritten there, and `v<version>` is tagged here.
 3. Verify:
    - `gh run list -R radkode/thermals --workflow release.yml --limit 3`
@@ -40,7 +40,7 @@ The workflow's secrets live in the `release` environment, which accepts deployme
 
 The setup helper sets the first seven secrets. Set the Sparkle key separately using the procedure below. Check expiry and least privilege in the private inventory before every release. Do not put private keys, token values, private inventory locations or recovery details in issues, logs or repository files.
 
-Automatic releases from `main` are an explicit maintainer choice. The environment restricts branches but has no required reviewer, so anyone who can change `main` can change the job that receives signing and publishing secrets. Restrict main write access and treat account security as the current release approval boundary. The ordinary native-test and secret-scan workflows receive no release secrets and use read-only token permissions. Pinned inputs do not protect against a compromised main writer. Public repositories can add environment reviewers, but changing the accepted automatic-release boundary requires an explicit decision; see [#9](https://github.com/radkode/thermals/issues/9).
+Automatic releases from `main` are an explicit maintainer choice. The environment restricts branches but has no required reviewer, so a merged workflow change can change the job that receives signing and publishing secrets. Main requires PRs and passing CI with no bypass actors, but CI does not establish that a workflow change is trustworthy. Review release changes carefully and retain strict account and repository administration access. The ordinary native-test and secret-scan workflows receive no release secrets and use read-only token permissions. Pinned inputs do not protect against a compromised main writer. Public repositories can add environment reviewers, but changing the accepted automatic-release boundary requires an explicit decision; see [#9](https://github.com/radkode/thermals/issues/9).
 
 ## Gotchas we hit setting this up
 
