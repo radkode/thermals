@@ -1,5 +1,7 @@
 # Open-source readiness, 2026-10-29
 
+The assessment below records the original baseline. See the [implementation checkpoint](#implementation-checkpoint) for subsequent owner decisions and preparation work.
+
 ## Decision
 
 Thermals is a plausible small open-source project, but it is not ready for an immediate public contributor launch. The required work is licensing, distribution notices, a deliberate disclosure decision and contributor infrastructure. This assessment found no reason to rewrite the app or wait for every product improvement.
@@ -121,3 +123,22 @@ gitleaks git --log-opts='--all --full-history' --ignore-gitleaks-allow \
 Inspect scanner exit status and classify each match; do not silently suppress the public-key match or describe exit 1 as a clean scanner run. Re-query GitHub counts and pagination before reusing the public-surface results. The current evidence does not cover future commits/comments, deleted logs, unreferenced local objects, inaccessible content, or release archives beyond the inspected installed/local bundles. An unavailable organization `.github` repository returned 404; the repository community profile was used to verify the effective missing files instead.
 
 The required generic Workflow tool was not exposed in this host. Direct inspection was used; this limitation is already tracked in [ai-toolkit #9](https://github.com/jacekradko/ai-toolkit/issues/9). The investigation did not delegate agent work.
+
+## Implementation checkpoint
+
+The owner requested readiness work in an isolated worktree and selected MIT licensing, acceptance of outside pull requests, and GitHub-only private vulnerability reporting. Publication must wait for that reporting channel. Work started from `f00bf01` in `.worktrees/open-source-readiness` on `jacek/open-source-readiness`; the original checkout's concurrent performance work is excluded. The maintainer's automatic-main release boundary remains unchanged.
+
+Prepared in this branch:
+
+- #73: MIT license, copyright Jacek Radko, with public README links.
+- #74: complete Sparkle 2.10.0 notices plus the project license bundled as resources. `check-licenses.sh` verifies project, Sparkle and Barlow notices byte-for-byte against their source files. The built Debug bundle passes.
+- #75: current release documentation uses a generic credential inventory and no longer states that the source must stay private. The previous operational inventory is preserved in the ignored, private `build/open-source-readiness/private-release-runbook-before.md`. Git history, old issues/comments and the earlier audit remain unchanged; historical disclosure is still an owner decision before publication.
+- #76: contributor build/test, fork identity, installation, local-data privacy and outside-PR instructions, with explicit ad-hoc Release limitations. Debug was built and launched by the native test host from this clean worktree, but not from a fresh macOS account.
+- #65/#77: native test and credential-free packaging workflow for affected pushes/PRs; pinned/checksummed Gitleaks on all pushes/PRs; read-only tokens and no release secrets. Release signing now depends on passing secret-free preflight tests and license checks, without adding manual approval. The exact historical public-key false positive is isolated in `.gitleaksignore`; a generated fake-token negative check still fails. Dependabot covers Actions references; Sparkle/XcodeGen/Gitleaks update responsibilities are explicit in CONTRIBUTING.md.
+- #78: the dry run exits after archive/cask packaging, before any appcast/signature generation. Three control-flow tests prove success without credentials, rejection of missing notices, and independence from an incomplete production-key environment. Production signature verification is retained.
+
+Live GitHub changes were read back: default workflow permissions are now `read`, workflow approval of PR reviews is disabled, dependency alerts are enabled and automated security fixes report enabled/not paused. No branch rules, release environment approval controls, visibility or release version changed. Attempting to enable private vulnerability reporting returned HTTP 404 while the repository is private. GitHub documents the feature for public repositories, so an owner-approved transition sequence is still needed; this work does not silently relax the owner's reporting gate. Native secret scanning/push protection must also be verified at that transition; paid private Secret Protection was not enabled.
+
+Verification so far: XcodeGen 2.46.0 generation, Debug build/resource comparison, Actionlint 1.7.12, shell syntax checks, three dry-run isolation tests and reachable-history scanning passed. The first full native run executed 158 tests and failed five assertions in one existing popover integration test. The isolated three-test shortcut suite subsequently passed without code changes. The original failure is retained in [#79](https://github.com/radkode/thermals/issues/79); an empty method-selector run is excluded from evidence. No assertions were weakened or tests skipped. Hosted CI and a real release dry-run package remain to be verified on this branch.
+
+The CI failure investigation loaded Impeccable's native guidance. Its existing unsupported macOS metadata issue (#15) still applies; no app UI was edited. A sidecar freshness warning based on the clean worktree's file times did not establish a new visual defect and was not used to expand scope.

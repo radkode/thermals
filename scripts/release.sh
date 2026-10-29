@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Builds, signs, notarizes and publishes Thermals to the Homebrew tap. Version comes from project.yml.
 # Usage: scripts/release.sh [--dry-run | --ci]
-#   --dry-run  ad-hoc sign, skip notarization, tagging and publishing; still builds the zip and the cask.
+#   --dry-run  ad-hoc sign, skip notarization, tagging and publishing; builds the zip and cask without update-signing keys.
 #   --ci       run from the release workflow on a main commit: publishes, then tags v<version> on HEAD.
 # Env: DEVELOPER_ID (signing identity, default: first "Developer ID Application" in the keychain),
 #      NOTARY_KEY_PATH + NOTARY_KEY_ID + NOTARY_KEY_ISSUER (App Store Connect API key), else
@@ -32,15 +32,14 @@ ZIP="$OUT/Thermals-$VERSION.zip"
 APPCAST="$OUT/appcast.xml"
 SPARKLE_BIN=build/release/derived/SourcePackages/artifacts/sparkle/Sparkle/bin
 
-if [[ -n "${NOTARY_KEY_PATH:-}" ]]; then
-  NOTARY_AUTH=(--key "$NOTARY_KEY_PATH" --key-id "${NOTARY_KEY_ID:?}" --issuer "${NOTARY_KEY_ISSUER:?}")
-else
-  NOTARY_AUTH=(--keychain-profile "$NOTARY_PROFILE")
-fi
-
 if $DRY_RUN; then
   IDENTITY="-"
 else
+  if [[ -n "${NOTARY_KEY_PATH:-}" ]]; then
+    NOTARY_AUTH=(--key "$NOTARY_KEY_PATH" --key-id "${NOTARY_KEY_ID:?}" --issuer "${NOTARY_KEY_ISSUER:?}")
+  else
+    NOTARY_AUTH=(--keychain-profile "$NOTARY_PROFILE")
+  fi
   [[ -z "$(git status --porcelain)" ]] || { echo "Working tree is not clean" >&2; exit 1; }
   $CI_MODE || [[ "$(git rev-parse --abbrev-ref HEAD)" == "main" ]] || { echo "Release from main" >&2; exit 1; }
   if git rev-parse "$TAG" >/dev/null 2>&1; then echo "$TAG already exists; bump MARKETING_VERSION" >&2; exit 1; fi
@@ -63,6 +62,7 @@ xcodebuild -project Thermals.xcodeproj -scheme Thermals -configuration Release -
   -derivedDataPath build/release/derived CODE_SIGN_IDENTITY="-" build >"$OUT/build.log" 2>&1 \
   || { tail -30 "$OUT/build.log" >&2; exit 1; }
 ditto build/release/derived/Build/Products/Release/Thermals.app "$APP"
+scripts/check-licenses.sh "$APP"
 
 echo "==> Signing with: $IDENTITY"
 sign() {
@@ -91,6 +91,37 @@ if ! $DRY_RUN; then
   rm "$ZIP" && ditto -c -k --keepParent "$APP" "$ZIP"
 fi
 SHA="$(shasum -a 256 "$ZIP" | cut -d' ' -f1)"
+
+CASK="$OUT/thermals.rb"
+cat >"$CASK" <<CASK
+cask "thermals" do
+  version "$VERSION"
+  sha256 "$SHA"
+
+  url "https://github.com/$TAP_REPO/releases/download/v#{version}/Thermals-#{version}.zip"
+  name "Thermals"
+  desc "Menu bar temperature, CPU and memory monitor"
+  homepage "https://github.com/$TAP_REPO"
+
+  depends_on arch: :arm64
+  depends_on macos: :sonoma
+
+  auto_updates true
+
+  app "Thermals.app"
+
+  uninstall quit: "com.radkode.thermals"
+
+  zap trash: "~/Library/Preferences/com.radkode.thermals.plist"
+end
+CASK
+ruby -c "$CASK" >/dev/null
+echo "==> Built $ZIP ($SHA)"
+
+if $DRY_RUN; then
+  echo "==> Dry run: skipped notarization, tag, release and cask publish. Cask: $CASK. No appcast or update signatures were generated."
+  exit 0
+fi
 
 # The app's Sparkle reads this feed from the latest tap release and checks the zip against SUPublicEDKey.
 if [[ -n "${SPARKLE_ED_PRIVATE_KEY:-}" ]]; then
@@ -129,37 +160,6 @@ sed -n 's/.*sparkle:edSignature="\([^"]*\)".*/\1/p' "$APPCAST" | base64 -D >"$KE
 "$OPENSSL" pkeyutl -verify -pubin -inkey "$KEYS/public.der" -keyform DER -rawin -in "$ZIP" -sigfile "$KEYS/signature" >/dev/null \
   || { rm -rf "$KEYS"; echo "The update signature doesn't match SUPublicEDKey; check SPARKLE_ED_PRIVATE_KEY" >&2; exit 1; }
 rm -rf "$KEYS"
-
-CASK="$OUT/thermals.rb"
-cat >"$CASK" <<CASK
-cask "thermals" do
-  version "$VERSION"
-  sha256 "$SHA"
-
-  url "https://github.com/$TAP_REPO/releases/download/v#{version}/Thermals-#{version}.zip"
-  name "Thermals"
-  desc "Menu bar temperature, CPU and memory monitor"
-  homepage "https://github.com/$TAP_REPO"
-
-  depends_on arch: :arm64
-  depends_on macos: :sonoma
-
-  auto_updates true
-
-  app "Thermals.app"
-
-  uninstall quit: "com.radkode.thermals"
-
-  zap trash: "~/Library/Preferences/com.radkode.thermals.plist"
-end
-CASK
-ruby -c "$CASK" >/dev/null
-echo "==> Built $ZIP ($SHA)"
-
-if $DRY_RUN; then
-  echo "==> Dry run: skipped notarization, tag, release and cask publish. Cask: $CASK, appcast: $APPCAST"
-  exit 0
-fi
 
 echo "==> Publishing $TAG to $TAP_REPO"
 gh release create "$TAG" "$ZIP" "$APPCAST" -R "$TAP_REPO" --title "Thermals $VERSION" --notes "Signed and notarized Thermals $VERSION for Apple Silicon, macOS 14 or later."

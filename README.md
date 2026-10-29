@@ -4,6 +4,16 @@ A macOS menu bar app that shows how hot your Mac is running. The menu bar shows 
 
 Requires Apple Silicon and macOS 14 or later. Intel Macs are not supported yet.
 
+## Install
+
+```sh
+brew install --cask radkode/thermals/thermals
+```
+
+Official builds are signed and notarized. [Downloads](https://github.com/radkode/homebrew-thermals/releases/latest) are hosted in the Homebrew tap. Update through the app or with `brew upgrade --cask thermals`.
+
+Thermals is [MIT licensed](./LICENSE); Sparkle and Barlow retain their [third-party licenses](./THIRD_PARTY_NOTICES.md). Outside pull requests are welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md) for tools, verification, fork configuration and support expectations, and [SECURITY.md](./SECURITY.md) for private vulnerability reporting.
+
 ## Build and run
 
 ```bash
@@ -14,6 +24,12 @@ xcodebuild -project Thermals.xcodeproj -scheme Thermals -destination 'platform=m
 ```
 
 The Xcode project is generated and not committed; edit `project.yml`, then rerun `xcodegen generate`.
+
+Debug development does not require release credentials. The reference local toolchain is Xcode 27.1 with XcodeGen 2.46.0; the minimum build Xcode version is not yet established. See the contributor guide for the distinction between Debug development and Release packaging.
+
+## Privacy
+
+Readings and process attribution are collected locally. Peaks, heat episodes and work-session summaries are saved in local preferences; peak and episode records can include sampled process names. Session receipts omit process names and reach the clipboard only when COPY is requested. Thermals has no application telemetry or account service. Release builds contact the public Sparkle update feed and download server to check for and install updates; Debug builds do not check for updates. Avoid sharing diagnostic screenshots or logs that contain unrelated personal information.
 
 ## How readings work
 
@@ -84,12 +100,12 @@ The [website performance investigation](./docs/website-performance.md) explains 
 
 ## Releasing
 
-Thermals ships as a Homebrew cask from the public tap `radkode/homebrew-thermals`, which hosts the signed release zips so this repo can stay private.
+Thermals ships as a Homebrew cask from the public tap `radkode/homebrew-thermals`, which hosts the signed release zips and the stable Sparkle update feed.
 
-**To release:** bump `MARKETING_VERSION` in `project.yml` and push to `main`. The Release workflow (`.github/workflows/release.yml`) notices a version with no `v<version>` tag, then on a macOS runner builds Release, signs with the Developer ID and hardened runtime, notarizes and staples, uploads `Thermals-<version>.zip` as a release in the tap, writes `Casks/thermals.rb` there, and tags `v<version>` here. Pushes that don't change the version do nothing. It can also be started by hand from the Actions tab.
+**To release:** bump `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `project.yml` and push to `main`. The Release workflow (`.github/workflows/release.yml`) notices a version with no `v<version>` tag, requires secret-free preflight tests and license checks, then on a macOS runner builds Release, signs with the Developer ID and hardened runtime, notarizes and staples, uploads `Thermals-<version>.zip` as a release in the tap, writes `Casks/thermals.rb` there, and tags `v<version>` here. Pushes that don't change the version do not publish. It can also be started by hand from the Actions tab.
 
 **In-app updates:** the app embeds Sparkle (`Thermals/Updater.swift`). It checks daily against `appcast.xml` on the tap's latest release; the release script signs both the appcast and zip with an EdDSA key. A found update shows as a NEW VERSION row on the board plus one notification per version; INSTALL hands off to Sparkle's window. Debug builds never check. Bump `CURRENT_PROJECT_VERSION` with every release: Sparkle compares build numbers, so a release with an unchanged build number is never offered.
 
 **One-time setup:** the workflow needs the secrets listed at its top. `scripts/set-release-secrets.sh <DeveloperID.p12> <AuthKey_KEYID.p8>` sets all of them, prompting for the `.p12` password, the App Store Connect Issuer ID and a fine-grained token with Contents read and write on the tap.
 
-`scripts/release.sh --dry-run` builds, ad-hoc signs and writes the cask to `build/release/<version>/` without notarizing or publishing. Without flags, on a Mac with a Developer ID identity and a `thermals-notary` notarytool profile, the script releases locally the same way.
+`scripts/release.sh --dry-run` builds, ad-hoc signs and writes the archive and cask to `build/release/<version>/` without production keys, appcast generation, notarization or publication. This checks packaging only; the known ad-hoc Release launch limitation is described in [CONTRIBUTING.md](./CONTRIBUTING.md). Without flags, on a Mac with the required release credentials, the script publishes a production release and must not be used for local verification.

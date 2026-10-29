@@ -1,0 +1,42 @@
+name: Native tests
+
+on:
+  push:
+    paths: [Thermals/**, ThermalsTests/**, project.yml, LICENSE, scripts/**, .github/workflows/**]
+  pull_request:
+    paths: [Thermals/**, ThermalsTests/**, project.yml, LICENSE, scripts/**, .github/workflows/**]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Install XcodeGen 2.46.0
+        run: |
+          curl --fail --location --silent --show-error \
+            https://github.com/yonaskolb/XcodeGen/releases/download/2.46.0/xcodegen.zip \
+            --output "$RUNNER_TEMP/xcodegen.zip"
+          echo "4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806  $RUNNER_TEMP/xcodegen.zip" | shasum -a 256 --check
+          ditto -x -k "$RUNNER_TEMP/xcodegen.zip" "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/xcodegen/bin" >> "$GITHUB_PATH"
+      - name: Test without release credentials
+        run: |
+          xcodebuild -version
+          xcodegen generate
+          xcodebuild -project Thermals.xcodeproj -scheme Thermals -destination 'platform=macOS' -derivedDataPath build test
+          scripts/check-licenses.sh build/Build/Products/Debug/Thermals.app
+      - name: Check release dry-run isolation
+        run: python3 scripts/test-release-dry-run.py
+      - name: Package without production signing keys
+        run: scripts/release.sh --dry-run
