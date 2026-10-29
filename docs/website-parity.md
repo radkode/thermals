@@ -49,6 +49,10 @@ The native release is [0.5.0, build 11](https://github.com/radkode/homebrew-ther
 
 The [#70 alignment follow-up](https://github.com/radkode/thermals/issues/70) gives the sample heading, HOLD control and all explanatory notes the same content edges as the three-board group. `--platforms-width` combines three 372px boards and two 24px gaps; supporting containers add the existing 16px gutters. Narrow layouts retain their gutters and horizontal board navigation. Geometry checks cover 320, 390, 720, 820, 1180, 1200, 1440 and 1995px; desktop and 320px captures are under `.impeccable/site-alignment/`.
 
+### Open-source notice
+
+After the public launch, the hero requirements line, a Ticket Machine **Source** fact and the footer link the MIT-licensed repository, and the Source fact points security reports to GitHub private vulnerability reporting. The facts grid uses a 240px minimum so its four facts read as two rows. `check-site-features.js` asserts both links. Release 0.5.1 added only distribution notices, so the sample heading still names 0.5.0, where those features shipped.
+
 ## Earlier released baseline
 
 Owner-authorized continuation of [#30](https://github.com/radkode/thermals/issues/30), after the website performance work landed as `5c6a369`. The initial reference was 0.4.1/build 7 (`c127241`); [#34](https://github.com/radkode/thermals/issues/34) carries the fixed-scale history contract into 0.4.2/build 8 and the website together. The owner-approved 0.4.3 refinement gives percentage histories the full palette for magnitude. Preserve the station/platform design and the [performance constraints](./website-performance.md).
