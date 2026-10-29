@@ -97,3 +97,7 @@ Verification: the final native build/test run passed all 152 tests in 38 suites,
 A single ps scan took 0.03s wall/0.02s CPU, an observation rather than a sustained performance benchmark. The live power reader and pmset agree on battery operation; AC and charging variants are fixture-tested. Native computer-use still times out (existing ai-toolkit #8), so physical-key, focus/VoiceOver and plug/unplug walkthroughs remain unverified. No independent Workflow run is claimed because the required tool is unavailable (existing DD-8744).
 
 Separate follow-ups: sensor-test actor warning [#60](https://github.com/radkode/thermals/issues/60), website parity for the new features [#64](https://github.com/radkode/thermals/issues/64), and automatic source-only push tests [#65](https://github.com/radkode/thermals/issues/65). The pre-existing `.playwright-cli/` directory remains unrelated. Other exploratory candidates remain unselected. A public release and website deployment are separate owner-selected steps.
+
+## Release follow-through
+
+The owner subsequently authorized publication. All five selected features shipped in [Thermals 0.5.0/build 11](https://github.com/radkode/homebrew-thermals/releases/tag/v0.5.0), from `2c0e209`, alongside the temperature trend and performance improvements. The [performance report release checkpoint](./macos-performance-2026-10-28.md#release-checkpoint) records CI, signing, update-feed and installed-app verification. The website notice now describes these as released features while retaining its sample-data disclosure.
