@@ -14,9 +14,9 @@ struct SessionReceiptView: View {
                     Spacer(minLength: 0)
                     if let session = monitor.sessions.current {
                         ColumnLabel(Format.duration(session.duration))
-                        FlapButton(title: "STOP", accessibilityName: "Stop recording this session", action: monitor.stopSession)
+                        FlapButton(title: "STOP", accessibilityName: "Stop recording this session") { Task { await monitor.stopSession() } }
                     } else {
-                        FlapButton(title: "START", accessibilityName: "Start a thermal session for a build or render", action: monitor.startSession)
+                        FlapButton(title: "START", accessibilityName: "Start a thermal session for a build or render") { Task { await monitor.startSession() } }
                     }
                 }
                 if let receipt = monitor.sessions.last, monitor.sessions.current == nil {

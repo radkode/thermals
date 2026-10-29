@@ -58,7 +58,7 @@ struct ReadingNotice: View {
     let state: ReadingState
     let source: String
     var empty = false
-    var retry: (() -> Void)?
+    var retry: (() async -> Void)?
     @Environment(\.readingDate) private var now
     @Environment(\.sampleInterval) private var interval
 
@@ -67,7 +67,7 @@ struct ReadingNotice: View {
             VStack(alignment: .leading, spacing: 6) {
                 BoardNote(message)
                 if let retry, state != .loading {
-                    FlapButton(title: "RETRY", accessibilityName: "Retry \(source) reading", action: retry)
+                    FlapButton(title: "RETRY", accessibilityName: "Retry \(source) reading") { Task { await retry() } }
                 }
             }
         }

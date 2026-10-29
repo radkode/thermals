@@ -64,7 +64,7 @@ final class Monitor {
     var rate = SampleRate.six {
         didSet {
             guard rate != oldValue else { return }
-            UserDefaults.standard.set(rate.rawValue, forKey: Self.rateKey)
+            defaults.set(rate.rawValue, forKey: Self.rateKey)
             if timer != nil { schedule() }
         }
     }
@@ -95,10 +95,10 @@ final class Monitor {
         }
     }
 
-    @ObservationIgnored private let reader = HIDTemperatureReader()
-    @ObservationIgnored private let smc = SMCReader()
-    @ObservationIgnored private let gpuReader = GPUPowerReader()
-    @ObservationIgnored private var gpuMeter = GPUPowerMeter()
+    @ObservationIgnored private var defaults = UserDefaults.standard
+    @ObservationIgnored private var collect: (@Sendable () async -> SensorSample)?
+    @ObservationIgnored private var refreshTask: Task<Void, Never>?
+    @ObservationIgnored private var stoppingSession = false
     /// Live monitors only; previews keep a fixed peak and never sample or persist.
     @ObservationIgnored private var tracksPeak = false
     @ObservationIgnored private var peakSampledAt: Date?
@@ -106,7 +106,7 @@ final class Monitor {
     @ObservationIgnored private let activitySampler = ActivitySampler()
     @ObservationIgnored private var activityTask: Task<Void, Never>?
     @ObservationIgnored private var activityRequestedAt: Date?
-    @ObservationIgnored private let coreNames = CoreLayout.names(for: CoreLayout.read())
+    @ObservationIgnored private var coreNames: [(logicalID: Int, name: String, cluster: CoreCluster?)] = []
     @ObservationIgnored private let processSampler = ProcessSampler()
     @ObservationIgnored private var previousTicks: [CPUTicks]?
     /// Live monitors only; previews and snapshots never notify.
@@ -142,7 +142,8 @@ final class Monitor {
         sampledAt: Date? = nil,
         processState: ReadingState? = nil,
         appMemoryState: ReadingState? = nil,
-        fanState: ReadingState? = nil
+        fanState: ReadingState? = nil,
+        collect: (@Sendable () async -> SensorSample)? = nil
     ) {
         self.sensors = TemperatureSensors.byName(sensors)
         self.cpuTemperature = TemperatureSensors.cpuTemperature(from: self.sensors)
@@ -171,60 +172,77 @@ final class Monitor {
         self.fanState = fanState ?? .available(now)
         self.processState = processState ?? .available(now)
         self.appMemoryState = appMemoryState ?? .available(now)
+        self.collect = collect
     }
 
-    init() {
-        rate = UserDefaults.standard.string(forKey: Self.rateKey).flatMap(SampleRate.init(rawValue:)) ?? .six
+    init(defaults: UserDefaults = .standard, collect: (@Sendable () async -> SensorSample)? = nil) {
+        self.defaults = defaults
+        let collector = SensorCollector()
+        self.collect = collect ?? { await collector.sample() }
+        rate = defaults.string(forKey: Self.rateKey).flatMap(SampleRate.init(rawValue:)) ?? .six
         heatAlerts = HeatAlerts(activitySampler: activitySampler)
         tracksPeak = true
-        if let data = UserDefaults.standard.data(forKey: ThermalSessions.storageKey),
+        if let data = defaults.data(forKey: ThermalSessions.storageKey),
            var saved = try? JSONDecoder().decode(ThermalSessions.self, from: data) {
             saved.finish(interrupted: true)
             sessions = saved
             saveSessions()
         }
-        if let data = UserDefaults.standard.data(forKey: HeatEpisodeRecorder.storageKey),
+        if let data = defaults.data(forKey: HeatEpisodeRecorder.storageKey),
            var saved = try? JSONDecoder().decode(HeatEpisodeRecorder.self, from: data) {
             saved.finish(interrupted: true)
             episodes = saved
         }
-        dailyPeak = UserDefaults.standard.data(forKey: DailyPeak.storageKey).flatMap { try? JSONDecoder().decode(DailyPeak.self, from: $0) }
-        refresh()
+        dailyPeak = defaults.data(forKey: DailyPeak.storageKey).flatMap { try? JSONDecoder().decode(DailyPeak.self, from: $0) }
         schedule()
-        #if DEBUG
-        // Checks notification permission and delivery without heating the Mac.
-        if CommandLine.arguments.contains("-heatAlertTest") { heatAlerts?.send(celsius: cpuTemperature, thermalState: thermalState) }
-        #endif
-        // Load needs two samples; take the second one quickly instead of a full interval later.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
-            MainActor.assumeIsolated { self?.refresh() }
+        Task { [weak self] in
+            await self?.refresh()
+            #if DEBUG
+            if CommandLine.arguments.contains("-heatAlertTest"), let self {
+                heatAlerts?.send(celsius: cpuTemperature, thermalState: thermalState)
+            }
+            #endif
+            try? await Task.sleep(for: .seconds(1))
+            await self?.refresh()
         }
     }
 
     private func schedule() {
         timer?.invalidate()
         let timer = Timer(timeInterval: rate.seconds, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.refresh() }
+            Task { @MainActor [weak self] in await self?.refresh() }
         }
         RunLoop.main.add(timer, forMode: .common)
         self.timer = timer
     }
 
-    func refresh() {
-        let now = Date.now
-        sensors = TemperatureSensors.byName(TemperatureSensors.usable(reader?.read() ?? []))
+    func refresh() async {
+        if let refreshTask { await refreshTask.value; return }
+        guard let collect else { return }
+        let task = Task { [weak self] in
+            let sample = await collect()
+            self?.apply(sample)
+            self?.refreshTask = nil
+        }
+        refreshTask = task
+        await task.value
+    }
+
+    private func apply(_ sample: SensorSample) {
+        let now = sample.date
+        sensors = sample.sensors
         cpuTemperature = TemperatureSensors.cpuTemperature(from: sensors)
         temperatureState = cpuTemperature == nil ? .unavailable : .available(now)
-        thermalState = ProcessInfo.processInfo.thermalState
-        memory = MemoryStats.read()
+        thermalState = sample.thermalState
+        memory = sample.memory
         memoryState = memory == nil ? .failed : .available(now)
         heatAlerts?.observe(celsius: cpuTemperature, thermalState: thermalState)
-        let fanReadings = smc?.fans()
+        let fanReadings = sample.fans
         fans = fanReadings ?? []
         fanState = fanReadings == nil ? .unavailable : .available(now)
-        systemPower = smc?.systemPower()
-        powerSource = PowerSourceReading.read()
-        gpuPower = gpuReader?.sample().flatMap { gpuMeter.watts($0) }
+        systemPower = sample.systemPower
+        powerSource = sample.powerSource
+        gpuPower = sample.gpuPower
         if tracksPeak {
             if sessions.current != nil {
                 sessions.observe(at: now, celsius: cpuTemperature, pressure: thermalState, watts: systemPower)
@@ -233,9 +251,10 @@ final class Monitor {
             let previous = episodes
             episodes.observe(at: now, celsius: cpuTemperature, pressure: thermalState,
                              systemWatts: systemPower, gpuWatts: gpuPower, activity: heatActivity)
-            if episodes != previous, let data = try? JSONEncoder().encode(episodes) { UserDefaults.standard.set(data, forKey: HeatEpisodeRecorder.storageKey) }
+            if episodes != previous, let data = try? JSONEncoder().encode(episodes) { defaults.set(data, forKey: HeatEpisodeRecorder.storageKey) }
         }
-        updateCPU(ticks: CPULoad.sample(), at: now)
+        coreNames = CoreLayout.names(for: sample.cores)
+        updateCPU(ticks: sample.ticks, at: now)
         if let cpuTemperature { history.append(TimedValue(date: now, value: cpuTemperature)) }
         if tracksPeak, let cpuTemperature { trackPeak(cpuTemperature, at: now) }
         if let memory { memoryHistory.append(TimedValue(date: now, value: memory.usedPercent)) }
@@ -266,7 +285,7 @@ final class Monitor {
 
     private func setPeak(_ peak: DailyPeak) {
         dailyPeak = peak
-        if let data = try? JSONEncoder().encode(peak) { UserDefaults.standard.set(data, forKey: DailyPeak.storageKey) }
+        if let data = try? JSONEncoder().encode(peak) { defaults.set(data, forKey: DailyPeak.storageKey) }
     }
 
     private func sampleHeatActivity(at now: Date) {
@@ -280,21 +299,25 @@ final class Monitor {
         }
     }
 
-    func startSession() {
+    func startSession() async {
+        await refreshTask?.value
         guard tracksPeak, sessions.current == nil else { return }
         sessions.start(at: .now)
-        refresh()
+        await refresh()
     }
 
-    func stopSession() {
-        guard tracksPeak, sessions.current != nil else { return }
-        refresh()
+    func stopSession() async {
+        guard tracksPeak, sessions.current != nil, !stoppingSession else { return }
+        stoppingSession = true
+        defer { stoppingSession = false }
+        await refreshTask?.value
+        await refresh()
         sessions.finish()
         saveSessions()
     }
 
     private func saveSessions() {
-        if let data = try? JSONEncoder().encode(sessions) { UserDefaults.standard.set(data, forKey: ThermalSessions.storageKey) }
+        if let data = try? JSONEncoder().encode(sessions) { defaults.set(data, forKey: ThermalSessions.storageKey) }
     }
 
     func updateCPU(ticks: [CPUTicks]?, at now: Date) {
