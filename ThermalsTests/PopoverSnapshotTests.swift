@@ -183,6 +183,7 @@ struct PopoverSnapshotTests {
         let states: [(String, Monitor, BoardKind)] = [
             ("cool", PreviewMonitors.cool(), .heat),
             ("hot", PreviewMonitors.hot(), .heat),
+            ("recorded-heat", PreviewMonitors.recordedHeat(), .heat),
             ("no-sensors", PreviewMonitors.noSensors(), .heat),
             ("cpu-cool", PreviewMonitors.cool(), .cpu),
             ("cpu-hot", PreviewMonitors.hot(), .cpu),

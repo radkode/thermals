@@ -233,9 +233,15 @@ On HEAT the panel ends with a PEAK TODAY departure row: the label, then the 24-h
 ### Lens Bar
 Eight horizontal lenses represent each core's utilization with the restricted usage ramp. In the memory breakdown, each lens is one eighth of installed RAM, apportioned by largest remainder so the bars never exceed the whole. Used parts are steel light; cached and free are steel mid. A note defines the categories.
 
-### Fan Panel
+### Live Activity
 
 HEAT replaces the pressure explanation line with a compact TOP CPU row: 12 name cells, five percentage cells and the existing CPU action. Full names and the one-core denominator are available in help; stale activity is withheld. CPU DIE includes RISING, COOLING or STEADY when enough fresh history exists. Pressure's definition remains on its help text.
+
+### Heat Episodes
+
+HEAT NOW or LAST HEAT follows history with start time, observed duration and peak temperature. Its disclosure shows retained episode details and explains pressure coverage and interrupted readings. When episodes exist, ALL SENSORS becomes a disclosure below fans so the explanation stays compact.
+
+### Fan Panel
 On HEAT, fans sit between history and sensors when present. SMC order is stable; five-cell RPM values support 0...20,000. Lenses and ink show relative fan speed with utilization colors. Unreadable speeds show --; unavailable fan access has recovery guidance, while a successful zero-fan reading is simply omitted.
 
 ### Board Panel

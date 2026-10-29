@@ -1,6 +1,11 @@
 import SwiftUI
 
 enum Format {
+    static func duration(_ seconds: TimeInterval) -> String {
+        let seconds = max(0, Int(seconds))
+        return seconds < 60 ? "\(seconds)s" : "\(seconds / 60)m \(seconds % 60)s"
+    }
+
     static func degrees(_ celsius: Double, unit: TemperatureUnit = .celsius) -> String {
         "\(Int(unit.value(celsius).rounded()))°"
     }

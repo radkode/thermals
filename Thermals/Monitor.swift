@@ -48,6 +48,7 @@ final class Monitor {
     private(set) var gpuPower: Double?
     private(set) var dailyPeak: DailyPeak?
     private(set) var heatActivity: HeatActivity?
+    private(set) var episodes = HeatEpisodeRecorder()
     var samplesHeatActivity = false {
         didSet { if samplesHeatActivity && timer != nil { sampleHeatActivity(at: .now) } }
     }
@@ -133,6 +134,7 @@ final class Monitor {
         gpuPower: Double? = nil,
         dailyPeak: DailyPeak? = nil,
         heatActivity: HeatActivity? = nil,
+        episodes: HeatEpisodeRecorder = HeatEpisodeRecorder(),
         sampledAt: Date? = nil,
         processState: ReadingState? = nil,
         appMemoryState: ReadingState? = nil,
@@ -155,6 +157,7 @@ final class Monitor {
         self.gpuPower = gpuPower
         self.dailyPeak = dailyPeak
         self.heatActivity = heatActivity
+        self.episodes = episodes
         let now = sampledAt ?? history.last?.date ?? loadHistory.last?.date ?? memoryHistory.last?.date ?? Date.now
         temperatureState = cpuTemperature == nil ? .unavailable : .available(now)
         cpuState = cpuLoad == nil ? .unavailable : .available(now)
@@ -168,6 +171,11 @@ final class Monitor {
         rate = UserDefaults.standard.string(forKey: Self.rateKey).flatMap(SampleRate.init(rawValue:)) ?? .six
         heatAlerts = HeatAlerts(activitySampler: activitySampler)
         tracksPeak = true
+        if let data = UserDefaults.standard.data(forKey: HeatEpisodeRecorder.storageKey),
+           var saved = try? JSONDecoder().decode(HeatEpisodeRecorder.self, from: data) {
+            saved.finish(interrupted: true)
+            episodes = saved
+        }
         dailyPeak = UserDefaults.standard.data(forKey: DailyPeak.storageKey).flatMap { try? JSONDecoder().decode(DailyPeak.self, from: $0) }
         refresh()
         schedule()
@@ -204,6 +212,12 @@ final class Monitor {
         fanState = fanReadings == nil ? .unavailable : .available(now)
         systemPower = smc?.systemPower()
         gpuPower = gpuReader?.sample().flatMap { gpuMeter.watts($0) }
+        if tracksPeak {
+            let previous = episodes
+            episodes.observe(at: now, celsius: cpuTemperature, pressure: thermalState,
+                             systemWatts: systemPower, gpuWatts: gpuPower, activity: heatActivity)
+            if episodes != previous, let data = try? JSONEncoder().encode(episodes) { UserDefaults.standard.set(data, forKey: HeatEpisodeRecorder.storageKey) }
+        }
         updateCPU(ticks: CPULoad.sample(), at: now)
         if let cpuTemperature { history.append(TimedValue(date: now, value: cpuTemperature)) }
         if tracksPeak, let cpuTemperature { trackPeak(cpuTemperature, at: now) }

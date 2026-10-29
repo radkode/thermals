@@ -20,6 +20,19 @@ enum PreviewMonitors {
         Monitor(sensors: [], cpuLoad: nil, thermalState: .nominal, history: [], sampledAt: referenceDate, processState: .failed, appMemoryState: .failed, fanState: .unavailable)
     }
 
+    static func recordedHeat() -> Monitor {
+        let source = hot()
+        var episodes = HeatEpisodeRecorder()
+        for seconds in stride(from: -120.0, through: 0, by: 10) {
+            episodes.observe(at: referenceDate.addingTimeInterval(seconds), celsius: 93, pressure: .serious,
+                             systemWatts: 56, gpuWatts: 22,
+                             activity: HeatActivity(process: ProcessLoad(name: "Xcode", percent: 340), date: referenceDate.addingTimeInterval(seconds)))
+        }
+        return Monitor(sensors: source.sensors, cpuLoad: source.cpuLoad, thermalState: .serious,
+                       history: source.history, fans: source.fans, systemPower: 56, gpuPower: 22,
+                       dailyPeak: source.dailyPeak, heatActivity: source.heatActivity, episodes: episodes, sampledAt: referenceDate)
+    }
+
     static func lowTemperatureCritical() -> Monitor { make(peak: 45, load: 0.2, state: .critical, memoryUsed: 0.93, pressure: .normal) }
 
     static func missingTemperatureCritical() -> Monitor {

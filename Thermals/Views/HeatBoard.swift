@@ -21,9 +21,15 @@ struct HeatBoard: View {
                 display: unit.value,
                 footer: todaysPeak.map { (AnyView(peakRow($0)), peakDescription($0)) }
             )
+            HeatEpisodeRow(recorder: monitor.episodes)
             if !monitor.fans.isEmpty { FanBoard(fans: monitor.fans) }
             ReadingNotice(state: monitor.fanState, source: "Fan readings", retry: monitor.refresh)
-            SensorBoard(sensors: monitor.sensors)
+            if monitor.episodes.current != nil || !monitor.episodes.recent.isEmpty {
+                DisclosureGroup {
+                    SensorBoard(sensors: monitor.sensors)
+                } label: { ColumnLabel("ALL SENSORS") }
+                .tint(Board.steelLight)
+            } else { SensorBoard(sensors: monitor.sensors) }
         }
     }
 

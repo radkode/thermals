@@ -33,7 +33,7 @@ Glanced at during ordinary work: builds, video calls, gaming, heavy browser sess
 - Intel Macs (SMC) are not supported yet.
 - Built since launch: friendly sensor names, °C / °F, fan speeds (from the SMC; fanless Macs show no fan panel), launch at login, whole-system and GPU power draw (SMC `PSTR`, IOReport `GPU Energy`), today's peak with the busiest process then, heat alerts (a notification naming the busiest process).
 - Undecided: GPU temperature and utilization, CPU power (blocked: macOS 27 freezes the IOReport CPU counters for unprivileged apps).
-- Built after 0.4.4: menu-bar trend and a live TOP CPU explanation on HEAT with bounded shared attribution sampling.
+- Built after 0.4.4: menu-bar trend, a live TOP CPU explanation with bounded shared attribution sampling, and local heat/pressure episode records.
 
 ## Brand Commitments
 
