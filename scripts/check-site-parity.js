@@ -9,6 +9,7 @@ async page => {
   await page.goto(url);
   await page.evaluate(() => document.fonts.ready);
   await page.locator('#track').scrollIntoViewIfNeeded();
+  await page.locator('#all-sensors summary').click();
   await page.waitForTimeout(200);
   await page.locator('#hold').click();
 
@@ -33,7 +34,7 @@ async page => {
       });
       return {
         heat: hero('heat'), cpu: hero('cpu'), ram: hero('ram'),
-        thermal: stats('heat')[2], cpuThermal: stats('cpu')[1], cpuDie: stats('cpu')[0], memory: stats('ram')[1],
+        thermal: stats('heat')[3], gpu: stats('heat')[2], power: stats('heat')[0], cpuThermal: stats('cpu')[1], cpuDie: stats('cpu')[0], memory: stats('ram')[1],
         sensors: rows('heat'), processes: rows('cpu'), apps: rows('ram'),
         cores: [...board('cpu').querySelectorAll('.platforms-pair .cols')].map(el => Number(strips(el)[1].text)),
         menu: document.getElementById('menubar-reading').textContent,
@@ -86,6 +87,7 @@ async page => {
     const accounted = measured.reduce((sum, row) => sum + Number(row[1].text), 0) + Number(estimate[1].text);
     assert(accounted <= (total + 0.5) * 8 + 3 && accounted >= (total - 0.5) * 7, 'Process sample must respect eight-core capacity and leave room for unlisted work');
     assert(state.thermal.text === state.cpuThermal.text && state.heat.ink === state.cpuDie.ink, 'Thermal warnings must agree across boards');
+    for (const power of [state.power, state.gpu]) assert(power.ink === (power.text === '--' ? '#A7AAAF' : '#F2F2F2'), 'Power must stay neutral, with missing readings distinct');
     if (['SERIOUS', 'CRITICAL'].includes(state.thermal.text)) assert(state.menu.startsWith('! '), 'Menu warning must remain explicit');
     if (state.thermal.text === 'CRITICAL' && parseInt(state.heat.text) < 90) assert(state.heat.ink === 'rgb(255,131,85)', 'Critical OS pressure must raise lower-temperature ink');
     if (state.memory.text === 'NORMAL' && parseInt(state.ram.text) >= 90) {
@@ -100,6 +102,7 @@ async page => {
   assert([1, 2].every(board => states.some(s => s.palettes[board][0].includes('rgb(255, 112, 115)'))), 'Exercise the red endpoint on both percentage histories');
   assert(states.some(s => s.thermal.text === 'CRITICAL' && parseInt(s.heat.text) < 75), 'Exercise low-temperature critical OS pressure');
   assert(states.some(s => s.memory.text === 'WARN') && states.some(s => s.memory.text === 'CRITICAL'), 'Exercise both memory warning states');
+  assert(states.some(s => s.gpu.text === '--') && states.some(s => s.power.text === '--'), 'Exercise unavailable GPU and system power');
   assert(errors.length === 0, `Browser errors: ${errors.join(', ')}`);
   return {samples: states.length, semanticParity: 'passed', coherentCPU: 'passed', mixedPressureStates: 'passed', accessibleDescriptions: 'passed', unclippedColumns: 'passed', browserErrors: errors};
 }

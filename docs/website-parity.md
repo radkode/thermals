@@ -1,4 +1,41 @@
-# Website parity with Thermals 0.4.3
+# Website parity with Thermals
+
+## Selected continuation: current app features
+
+The owner selected website parity work after the five native features landed in `3bb435c`. This continuation covers #64 and the existing #36 (GPU watts), #38 (daily peak) and #41 (menu trend). Preserve the station/platform composition, responsive picker, fixed histories, reduced-motion behavior and visible-only rendering. Add current HEAT context, expandable episodes and sensors, and explicit sample session START/STOP/COPY. Native global-shortcut behavior is explained, not registered by the webpage. The public download is still 0.4.4, so unreleased behavior is identified as a next-release preview.
+
+Acceptance: all three boards remain readable from 320 through 1440px; sample controls work with keyboard and pointer; receipts identify synthetic data, whole-system energy and measured coverage; no names are copied; GPU unavailable states are honest; peak and trend follow the native semantics. Run the existing functional and parity browser checks plus focused new-feature checks, inspect desktop/mobile renders, and update this contract. Scope excludes native code, release-version changes and the unrelated in-progress performance probe. Canonical checkout began at `29ca66d`; the modified `docs/performance-2026-10-28/ViewBench.swift` and pre-existing `.playwright-cli/` are not part of this work. This Codex session coordinates delivery on main through the repository's website deployment path.
+
+Implementation, local verification and independent design/documentation review are complete; deployment verification remains. Artifacts: `.impeccable/site-next/`, with reviewed captures under `.impeccable/review/site-next/`. Concurrent native performance edits are outside this change and must not be staged with it.
+
+### New feature contracts
+
+| Native source | Website behavior |
+| --- | --- |
+| `HeatBoard.swift` | POWER/LOAD and GPU/PRESSURE use the same two-column grid. Watts stay neutral; unavailable system/GPU values show `--`. TOP CPU uses one-core percent, links to the CPU platform and transfers keyboard focus. Charging and adapter capability are separate from measured draw. |
+| `DailyPeak.swift` | PEAK TODAY retains the first time a displayed whole degree was reached, resets on sample midnight, and includes illustrative top activity without claiming causation. |
+| `TemperatureTrend.swift` | The last 60 sample seconds use least-squares slope, a 30-second minimum span and a 5°C/min dead zone. RISING/COOLING/STEADY is on HEAT; only rising/falling adds a menu arrow. |
+| `HeatEpisode.swift` | Episodes start at 85°C or serious/critical pressure and finish after 30 sample seconds below 75°C without serious pressure. The disclosure retains up to eight completed episodes, with peak temperature/power and pressure intervals whose endpoints are both pressured. |
+| `ThermalSession.swift` | Explicit sample START/STOP retains the latest receipt in page memory only. HOLD, offscreen suspension and hidden-tab suspension freeze sample time. Missing power excludes both adjacent intervals from Wh and coverage. Receipt text identifies synthetic data and whole-system energy, includes °C, and omits process names. COPY is explicit; clipboard denial selects the receipt and explains manual recovery. |
+| `GlobalShortcut.swift` | Copy explains the upcoming native Control + Option + T opener and T/H/OFF choices. The site does not capture global shortcuts or simulate native settings permissions. |
+
+Native `<details>` provide episodes, receipts and sensors. Flap cells remain decorative; buttons and disclosure summaries are keyboard accessible, with actual 44px targets after narrow-board scaling. Board-size observation keeps expanded content in normal page flow without inner scrolling. The sample clock advances six seconds per 1.5-second tick; initial histories and episode/peak records are seeded numerically, without repeated DOM renders. CPU/RAM offscreen rendering remains suspended.
+
+Local checks passed: the existing eight-width functional check, 41-state semantic parity check and new 41-state feature check. The latter validates trends, daily peak retention, episode transitions, sample timing, pressure intervals, Wh/coverage, clipboard success/failure, focus, mobile expansion and reload reset. A first HOLD assertion confused CSS-uppercase display text with the unchanged `0s` model text; the assertion now reads the duration label directly. A functional run after a mocked clock had no font resource entries; the unchanged check passed in a fresh real-time browser session. Run the real-time check in its own session, before clock-based checks:
+
+```sh
+playwright-cli -s=thermals-site-real open http://127.0.0.1:8766/ --browser=chrome
+playwright-cli -s=thermals-site-real run-code "$(cat scripts/check-site.js)"
+playwright-cli -s=thermals-site-clock open http://127.0.0.1:8766/ --browser=chrome
+playwright-cli -s=thermals-site-clock run-code "$(cat scripts/check-site-parity.js)"
+playwright-cli -s=thermals-site-clock run-code "$(cat scripts/check-site-features.js)"
+```
+
+Impeccable's independent full review found one material correction: use an authored SVG for the menu trend rather than a font-fallback arrow. The correction inherits temperature ink and preserves accessible direction text; the reviewer scored it resolved and returned `ship` on that fix. All seven recaptures were valid. The documentation review confirmed this is an ordinary extension with no new token system. The detector ran once; its new long all-caps note was changed to mixed case. Remaining findings concern the inherited hero leading, clamp padding and design-metadata mismatches, not a new design direction. Review records: `finish-review.md` and `documentation-review.md` in the artifact directory. The unavailable required Workflow tool remains the existing harness finding DD-8744; no Workflow run is claimed.
+
+When the native features are publicly released, update the preview label and 0.4.4 download explanation together with the release statement assertion in `check-site-features.js`. Do not advertise these as already available in 0.4.4. Physical-device and Safari verification remain separate from the Chrome evidence.
+
+## Earlier released baseline
 
 Owner-authorized continuation of [#30](https://github.com/radkode/thermals/issues/30), after the website performance work landed as `5c6a369`. The initial reference was 0.4.1/build 7 (`c127241`); [#34](https://github.com/radkode/thermals/issues/34) carries the fixed-scale history contract into 0.4.2/build 8 and the website together. The owner-approved 0.4.3 refinement gives percentage histories the full palette for magnitude. Preserve the station/platform design and the [performance constraints](./website-performance.md).
 
@@ -13,7 +50,7 @@ Owner-authorized continuation of [#30](https://github.com/radkode/thermals/issue
 | `BoardComponents.swift` | Histories label observed MIN/MAX and newest-right direction. Visible bounds, help and accessible summaries explain fixed scales and rising/falling/steady trends. HEAT spans 20–110°C; CPU/RAM span 0–100% with identical full-palette colors. Eight equal bins light on crossing their lower boundary, so zero/50%/100% fill zero/four/eight rows. |
 | `FlapText.fitted` | Long names use an ellipsis with full hover text. Numeric overflow uses hashes instead of silently dropping digits. Column headings align with numeric and status cells. |
 
-The native GPU power stat added in `a1868d3` is the remaining header difference, tracked separately in [#36](https://github.com/radkode/thermals/issues/36).
+The GPU power header gap from `a1868d3` was tracked in [#36](https://github.com/radkode/thermals/issues/36) and is included in the continuation above.
 
 The website remains an illustrative demo, not a simulated settings application or a sensor reader. Sample row counts can differ from a visitor's Mac. Readings advance at four times speed; every 1.5 seconds represents one six-second history slice. Synthetic OS-pressure states use their own sequence, so a complete cycle includes high RAM with normal pressure and critical pressure at a lower CPU temperature. Labels explicitly identify these as simulated readings.
 

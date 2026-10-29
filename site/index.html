@@ -68,6 +68,9 @@ a { color: inherit; }
 .menubar .name { font-weight: 600; letter-spacing: 1.6px; font-size: 13px; color: var(--steel-light); }
 .menubar-right { display: flex; align-items: center; gap: 8px; }
 .menubar .reading { font-weight: 600; font-variant-numeric: tabular-nums; display: flex; gap: 8px; transition: color 0.6s; }
+.menu-temperature { display: inline-flex; align-items: center; gap: 2px; }
+.menu-trend { width: 8px; height: 10px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.menu-trend[hidden] { display: none; }
 
 .label { font-size: 11px; letter-spacing: 1.6px; color: var(--steel-light); text-transform: uppercase; font-weight: 500; }
 
@@ -170,7 +173,7 @@ button, .button { font: inherit; color: inherit; cursor: pointer; border: 0; bac
 .board-scale { overflow: hidden; }
 .board-header { display: flex; justify-content: space-between; align-items: flex-start; }
 .board-header .stats { display: flex; flex-direction: column; align-items: flex-end; gap: 9px; }
-.stat-pair { display: flex; align-items: flex-start; gap: 12px; }
+.board-header .stats.paired { display: grid; grid-template-columns: auto auto; gap: 9px 12px; }
 .stat { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
 .hero-stat { display: flex; flex-direction: column; gap: 5px; }
 .panel { background: var(--flap-black); border-radius: 5px; border: 1px solid rgba(91, 94, 99, 0.45); padding: 8px; display: flex; flex-direction: column; gap: 3px; }
@@ -187,6 +190,26 @@ button, .button { font: inherit; color: inherit; cursor: pointer; border: 0; bac
 .departures .cols > :not(:nth-child(2)) { flex: none; }
 .board-note { margin: 0; font-size: 14px; line-height: 1.25; color: var(--steel-light); }
 .platforms-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.board-line { display: flex; align-items: center; gap: 6px; }
+.board-line > :first-child { margin-right: auto; }
+#heat-activity > :first-child { margin-right: 0; }
+#heat-activity > .strip:first-of-type { margin-right: auto; }
+.board-action { display: inline-flex; align-items: center; justify-content: center; min-height: calc(44px / var(--board-scale, 1)); flex: none; }
+.board-action:hover .strip, .board-action:focus-visible .strip { color: var(--amber); }
+.board-action:hover .cell, .board-action:focus-visible .cell { --ink: var(--amber); }
+.board details > summary { display: flex; align-items: center; gap: 6px; cursor: pointer; min-height: calc(44px / var(--board-scale, 1)); list-style: none; }
+.board details > summary::-webkit-details-marker { display: none; }
+.board details > summary::before { content: ""; width: 6px; height: 6px; border: solid var(--steel-light); border-width: 0 2px 2px 0; transform: rotate(-45deg); margin: 0 4px 0 2px; flex: none; }
+.board details[open] > summary::before { transform: rotate(45deg); }
+.board details > summary > .label { margin-right: auto; }
+.board details > .board-note { margin-top: 6px; }
+.episode-copy, .session-receipt { white-space: pre-line; overflow-wrap: anywhere; }
+.session-panel { gap: 6px; }
+.session-panel [hidden], .board details[hidden] { display: none; }
+.session-copy-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.preview-note { max-width: 1320px; margin: 12px auto 0; padding: 0 var(--gutter); font-size: 16px; line-height: 1.4; color: var(--steel-light); }
+.preview-note strong { color: var(--letter-white); font-weight: 600; }
+::selection { background: var(--amber); color: var(--flap-black); }
 
 /* Ticket machine */
 .ticket { max-width: 1320px; margin: 0 auto; padding: 32px var(--gutter) 72px; }
@@ -234,7 +257,7 @@ footer a:hover { color: var(--amber); }
 
   <section class="platforms" aria-labelledby="platforms-title">
     <div class="platform-head">
-      <h2 id="platforms-title" class="label" style="margin:0">Departures from the menu bar &middot; sample readings</h2>
+      <h2 id="platforms-title" class="label" style="margin:0">Departures from the menu bar &middot; next-release preview</h2>
       <div class="head-controls">
       <button class="hold" type="button" id="hold" aria-pressed="false"><span class="lamp" aria-hidden="true"></span><span id="hold-strip"></span><span class="visually-hidden">Hold sample readings</span></button>
       <div class="tabs" id="tabs" role="group" aria-label="Boards">
@@ -244,14 +267,15 @@ footer a:hover { color: var(--amber); }
       </div>
       </div>
     </div>
+    <p class="preview-note" id="preview-note"><strong>Try what’s next.</strong> This sample previews new heat context, episode history and session receipts. The download above is the current 0.4.4 release.</p>
     <div class="track" id="track">
       <article class="platform" id="platform-heat" aria-labelledby="heat-name" aria-describedby="heat-description heat-summary">
-        <div class="platform-sign"><span class="number" id="heat-name">PLATFORM 1 · HEAT</span><span class="label">How hot, and which sensors</span></div>
-        <p class="visually-hidden" id="heat-description">CPU die temperature, fans and sensors. Only CPU die sensors use temperature reference bands; these are not hardware safety limits. Thermal pressure is macOS's separate assessment.</p>
+        <div class="platform-sign"><span class="number" id="heat-name">PLATFORM 1 · HEAT</span><span class="label">What explains the heat</span></div>
+        <p class="visually-hidden" id="heat-description">Sample CPU temperature, power, top CPU activity, charging, episodes and session receipts. Process percentages are of one core and do not prove heat causation. Only CPU die sensors use temperature reference bands; these are not hardware safety limits. Thermal pressure is macOS's separate assessment.</p>
         <p class="visually-hidden" id="heat-summary"></p>
-        <div class="board-scale"><div class="board" id="board-heat" aria-hidden="true"></div></div>
+        <div class="board-scale"><div class="board" id="board-heat"></div></div>
       </article>
-      <article class="platform" id="platform-cpu" aria-labelledby="cpu-name" aria-describedby="cpu-description cpu-summary">
+      <article class="platform" id="platform-cpu" tabindex="-1" aria-labelledby="cpu-name" aria-describedby="cpu-description cpu-summary">
         <div class="platform-sign"><span class="number" id="cpu-name">PLATFORM 2 · CPU</span><span class="label">What is using the CPU</span></div>
         <p class="visually-hidden" id="cpu-description">Whole-system load: 100% means all cores. Per-process CPU: 100% means one core, so multithreaded apps can exceed 100%. LOW, MOD and HIGH describe utilization, not heat. The top five processes are smoothed. Unmeasured work is estimated from all sampled processes, so the rows do not add up to the headline.</p>
         <p class="visually-hidden" id="cpu-summary"></p>
@@ -264,7 +288,8 @@ footer a:hover { color: var(--amber); }
         <div class="board-scale"><div class="board" id="board-ram" aria-hidden="true"></div></div>
       </article>
     </div>
-    <p class="label sample-note">Simulated readings at four times speed. Pressure is a separate OS assessment, not a temperature or usage threshold. The app reads your own Mac.</p>
+    <p class="preview-note sample-note">Simulated readings at four times speed. HOLD pauses the sample clock, including recordings. Nothing here reads your Mac or saves a session after reload.</p>
+    <p class="preview-note">In the next app version, Control + Option + T opens the board from any app. Settings offers T, H or OFF. This webpage does not register a global shortcut. Pressure remains a separate OS assessment, not a temperature threshold.</p>
   </section>
 
   <section class="ticket" aria-labelledby="ticket-title">
@@ -430,6 +455,14 @@ footer a:hover { color: var(--amber); }
         history.push(value);
         if (history.length > 30) history.shift();
       },
+      trend() {
+        const recent = history.slice(-11);
+        if (recent.length < 6) return null;
+        const meanTime = (recent.length - 1) / 2, meanValue = recent.reduce((a, b) => a + b, 0) / recent.length;
+        const variance = recent.reduce((sum, _, i) => sum + (i - meanTime) ** 2, 0);
+        const slope = recent.reduce((sum, value, i) => sum + (i - meanTime) * (value - meanValue), 0) / variance * 10;
+        return slope >= 5 ? "RISING" : slope <= -5 ? "COOLING" : "STEADY";
+      },
       describe() {
         const change = history.at(-1) - history[0];
         return `${Math.abs(change) < 1 ? "Steady" : change > 0 ? "Rising" : "Falling"} over the last three sample minutes. Observed minimum ${Math.round(Math.min(...history))}${unit}, maximum ${Math.round(Math.max(...history))}${unit}. Fixed scale ${low}–${high}${unit}, bottom to top. Color shows magnitude; OS pressure is reported separately. Newest readings on the right.`;
@@ -451,11 +484,11 @@ footer a:hover { color: var(--amber); }
     const hero = strip(heroCells, "hero", "right");
     const statStrips = stats.map(([name, cells]) => ({ name, strip: strip(cells, "row", "right") }));
     const statEls = statStrips.map((s) => div("stat", label(s.name), s.strip.el));
-    const statRows = pairFirst ? [div("stat-pair", ...statEls.slice(0, 2)), ...statEls.slice(2)] : statEls;
+    const heading = label(heroLabel);
     const el = div("board-header",
-      div("hero-stat", label(heroLabel), hero.el),
-      div("stats", ...statRows));
-    return { el, hero, stats: statStrips.map((s) => s.strip) };
+      div("hero-stat", heading, hero.el),
+      div(pairFirst ? "stats paired" : "stats", ...statEls));
+    return { el, heading, hero, stats: statStrips.map((s) => s.strip) };
   }
 
   // Departure rows: lamp, name, value and STATUS at fixed widths so the header lines up.
@@ -487,13 +520,149 @@ footer a:hover { color: var(--amber); }
   const sample = () => {
     const x = (Math.sin(phase / 40 * Math.PI * 2 - Math.PI / 2) + 1) / 2;
     const wobble = (k) => Math.sin(phase * 1.7 + k) * 1.5;
-    return { x, wobble };
+    const cycle = ((phase % 40) + 40) % 40;
+    const pressure = cycle >= 28 && cycle <= 31 ? ["CRITICAL", RED] : cycle >= 24 && cycle <= 27 ? ["SERIOUS", AMBER] : cycle >= 16 && cycle <= 23 ? ["FAIR", WHITE] : ["NOMINAL", STEEL];
+    return { x, wobble, cycle, pressure, seconds: (phase + 18) * 6,
+      die: 44 + 50 * x + wobble(0), load: Math.min(100, 8 + 88 * x + wobble(1) * 2),
+      watts: cycle === 5 ? null : 8 + 44 * x + wobble(3), gpu: cycle === 4 || cycle === 5 ? null : 1.5 + 21 * x,
+      source: cycle < 20 ? "CHARGING" : cycle < 30 ? "ON BATTERY" : "PLUGGED IN" };
   };
+  const clock = seconds => `${String((14 + Math.floor(seconds / 3600)) % 24).padStart(2, "0")}:${String(Math.floor(seconds / 60) % 60).padStart(2, "0")}`;
+  const duration = seconds => seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+  const pressured = reading => ["SERIOUS", "CRITICAL"].includes(reading.pressure[0]);
+  let peak, currentEpisode, currentSession, lastSession, currentSample;
+  const recentEpisodes = [];
+
+  function recordHeat(reading) {
+    if (!peak || Math.floor((reading.seconds + 50400) / 86400) !== Math.floor((peak.seconds + 50400) / 86400)
+      || Math.round(reading.die) > Math.round(peak.die)) peak = { die: reading.die, seconds: reading.seconds, process: "XCODE" };
+    if (!currentEpisode && (reading.die >= 85 || pressured(reading))) {
+      currentEpisode = { start: reading.seconds, end: reading.seconds, peak: reading.die, pressure: 0, previousPressure: false, recovered: null, watts: null, gpu: null };
+    }
+    if (currentEpisode) {
+      const episode = currentEpisode;
+      if (pressured(reading) && episode.previousPressure) episode.pressure += reading.seconds - episode.end;
+      episode.end = reading.seconds;
+      episode.peak = Math.max(episode.peak, reading.die);
+      if (reading.watts != null) episode.watts = Math.max(episode.watts ?? 0, reading.watts);
+      if (reading.gpu != null) episode.gpu = Math.max(episode.gpu ?? 0, reading.gpu);
+      episode.previousPressure = pressured(reading);
+      episode.recovered = reading.die < 75 && !pressured(reading) ? episode.recovered ?? reading.seconds : null;
+      if (episode.recovered != null && reading.seconds - episode.recovered >= 30) {
+        recentEpisodes.unshift(episode);
+        recentEpisodes.splice(8);
+        currentEpisode = null;
+      }
+    }
+    if (currentSession) {
+      const session = currentSession, elapsed = reading.seconds - session.last.seconds;
+      session.peak = Math.max(session.peak, reading.die);
+      session.observed += elapsed;
+      if (pressured(reading) && pressured(session.last)) session.pressure += elapsed;
+      if (reading.watts != null && session.last.watts != null) {
+        session.energy += (reading.watts + session.last.watts) / 2 * elapsed / 3600;
+        session.powerSeconds += elapsed;
+      }
+      session.last = reading;
+    }
+  }
+
+  function receipt(session) {
+    return `THERMALS · SAMPLE SESSION RECEIPT\nSimulated data, not readings from your Mac.\nSample clock: ${clock(session.start)}\nDuration: ${duration(session.last.seconds - session.start)}\nObserved: ${duration(session.observed)}\nPeak CPU: ${Math.round(session.peak)}°C\nSerious/critical pressure: ${duration(session.pressure)} observed\nWhole-system energy: ${session.powerSeconds ? session.energy.toFixed(2) + " Wh" : "unavailable"} over ${duration(session.powerSeconds)} of sample power\n${session.powerSeconds < session.observed ? "Missing power intervals excluded.\n" : ""}Energy represents all work on the sample Mac, not one build. Pressure time counts intervals serious/critical at both ends. No process names included.`;
+  }
+
+  function action(title, name, run) {
+    const button = document.createElement("button"), text = strip(title.length);
+    button.type = "button";
+    button.className = "board-action";
+    button.setAttribute("aria-label", name);
+    text.set(title);
+    button.append(text.el);
+    button.addEventListener("click", run);
+    return { el: button, text };
+  }
+
+  function disclosure(title, id) {
+    const el = document.createElement("details"), summary = document.createElement("summary"), heading = label(title);
+    el.id = id;
+    summary.append(heading);
+    el.append(summary);
+    return { el, summary, heading };
+  }
 
   // HEAT
   const heatBoard = document.getElementById("board-heat");
-  const heatHead = header("CPU DIE", 4, [["POWER", 4], ["LOAD", 4], ["PRESSURE", 8]], true);
+  const heatHead = header("CPU DIE", 4, [["POWER", 4], ["LOAD", 4], ["GPU", 4], ["PRESSURE", 8]], true);
+  heatHead.el.setAttribute("aria-hidden", "true");
   const heatMeter = meter(true);
+  heatMeter.el.setAttribute("aria-hidden", "true");
+  const peakTime = strip(5), peakName = strip(10), peakValue = strip(4, "row", "right");
+  const peakRow = div("board-line", label("PEAK TODAY"), peakTime.el, peakName.el, peakValue.el);
+  peakRow.id = "peak-today";
+  heatMeter.el.append(peakRow);
+  const activityName = strip(12), activityValue = strip(5, "row", "right");
+  const inspectCPU = action("CPU", "Inspect sample CPU activity", () => {
+    document.querySelector('.tab[data-board="cpu"]').click();
+    document.getElementById("platform-cpu").focus({preventScroll: true});
+  });
+  const activity = div("board-line", label("TOP CPU"), activityName.el, activityValue.el, inspectCPU.el);
+  activity.id = "heat-activity";
+  activity.title = "Percent of one CPU core. Top activity does not prove the source of all heat.";
+  const powerSource = label(""), adapter = label("");
+  const powerContext = div("board-line", powerSource, adapter);
+  powerContext.id = "power-context";
+  powerContext.title = "Adapter watts are capability, not current draw. Charging can contribute heat.";
+  const episodes = disclosure("LAST HEAT", "heat-episodes");
+  const episodeTime = strip(5), episodeDuration = strip(4, "row", "right"), episodePeak = strip(4, "row", "right");
+  episodes.summary.append(episodeTime.el, episodeDuration.el, episodePeak.el);
+  const episodeCopy = note("");
+  episodeCopy.classList.add("episode-copy");
+  episodes.el.append(episodeCopy, note("Starts at 85°C or serious/critical pressure. Ends after 30 sample seconds below 75°C without serious pressure. Pressure time counts intervals serious/critical at both ends. Activity is not proof of heat causation."));
+  const sessionLabel = label("WORK SESSION"), sessionDuration = label("");
+  const startSession = action("START", "Start a sample work session", () => {
+    currentSession = { start: currentSample.seconds, last: currentSample, peak: currentSample.die, observed: 0, pressure: 0, energy: 0, powerSeconds: 0 };
+    sessionCopyStatus.textContent = "Copies sample measurements only, without process names.";
+    renderSession();
+    stopSession.el.focus({preventScroll: true});
+  });
+  const stopSession = action("STOP", "Stop the sample work session", () => {
+    lastSession = currentSession;
+    currentSession = null;
+    lastReceipt.el.open = true;
+    renderSession();
+    lastReceipt.summary.focus({preventScroll: true});
+  });
+  const lastReceipt = disclosure("LAST SESSION", "last-session");
+  const receiptPeak = strip(4, "row", "right"), receiptCopy = note("");
+  receiptCopy.classList.add("session-receipt");
+  lastReceipt.summary.append(receiptPeak.el);
+  const copySession = action("COPY", "Copy the sample session receipt", async () => {
+    try {
+      await navigator.clipboard.writeText(receipt(lastSession));
+      sessionCopyStatus.textContent = "Sample receipt copied. No process names included.";
+    } catch {
+      getSelection().selectAllChildren(receiptCopy);
+      sessionCopyStatus.textContent = "Copy failed. The sample receipt is selected; copy it manually.";
+    }
+  });
+  const sessionCopyStatus = note("Copies sample measurements only, without process names.");
+  sessionCopyStatus.setAttribute("role", "status");
+  lastReceipt.el.append(receiptCopy, div("session-copy-row", sessionCopyStatus, copySession.el));
+  const sessions = div("panel session-panel", div("board-line", sessionLabel, sessionDuration, startSession.el, stopSession.el),
+    note("Sample data only. The clock pauses with HOLD."), lastReceipt.el);
+  sessions.id = "work-session";
+
+  function renderSession() {
+    sessionLabel.textContent = currentSession ? "RECORDING" : "WORK SESSION";
+    sessionDuration.textContent = currentSession ? duration(currentSession.last.seconds - currentSession.start) : "";
+    startSession.el.hidden = !!currentSession;
+    stopSession.el.hidden = !currentSession;
+    lastReceipt.el.hidden = !lastSession || !!currentSession;
+    if (lastSession) {
+      receiptPeak.set(`${Math.round(lastSession.peak)}°`);
+      receiptCopy.textContent = receipt(lastSession);
+    }
+  }
   const fanRows = [1, 2].map((id) => {
     const l = lamp(), name = strip(5), bar = lensBar(), rpm = strip(5, "row", "right");
     name.set(`FAN ${id}`, STEEL);
@@ -502,9 +671,15 @@ footer a:hover { color: var(--amber); }
   const fanHead = div("meter-head", label("FANS"), label("RPM"));
   fanHead.firstChild.style.marginLeft = "11px";
   const fans = div("panel", fanHead, ...fanRows.map((f) => f.el));
+  fans.setAttribute("aria-hidden", "true");
   const sensors = departures("SENSOR", "°C", 16, 3, 6);
   sensors.el.append(note("CPU bands are reference ranges.", "Bands apply only to CPU die sensors, not hardware safety limits."));
-  heatBoard.append(heatHead.el, note("Pressure: macOS assessment."), heatMeter.el, fans, sensors.el);
+  sensors.el.setAttribute("role", "list");
+  sensors.el.setAttribute("aria-label", "Sample temperature sensors");
+  sensors.el.firstChild.setAttribute("aria-hidden", "true");
+  const sensorDetails = disclosure("ALL SENSORS", "all-sensors");
+  sensorDetails.el.append(sensors.el);
+  heatBoard.append(heatHead.el, activity, powerContext, heatMeter.el, episodes.el, sessions, fans, sensorDetails.el);
   const sensorNames = ["BATTERY", "CPU DIE 1", "CPU DIE 2", "CPU DIE 3", "PMU DEV 1", "SSD"];
 
   // CPU
@@ -545,6 +720,15 @@ footer a:hover { color: var(--amber); }
   // Menu bar and hero
   const menubar = document.getElementById("menubar-reading");
   const menuTemp = document.createElement("span"), menuLoad = document.createElement("span");
+  const menuValue = document.createElement("span"), menuTrend = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  menuTemp.className = "menu-temperature";
+  menuTrend.classList.add("menu-trend");
+  menuTrend.setAttribute("viewBox", "0 0 10 12");
+  menuTrend.setAttribute("aria-hidden", "true");
+  const arrow = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  arrow.setAttribute("d", "M5 11V1M1 5L5 1L9 5");
+  menuTrend.append(arrow);
+  menuTemp.append(menuValue, menuTrend);
   menubar.append(menuTemp, menuLoad);
 
   const heroFlaps = strip(8, "giant");
@@ -556,29 +740,54 @@ footer a:hover { color: var(--amber); }
   });
 
   function tick(record = true, all = false) {
-    const { x, wobble } = sample();
-    const die = 44 + 50 * x + wobble(0);
-    const load = Math.min(100, 8 + 88 * x + wobble(1) * 2);
-    const cycle = ((phase % 40) + 40) % 40;
-    const pressure = cycle >= 28 && cycle <= 31 ? ["CRITICAL", RED] : cycle >= 24 && cycle <= 27 ? ["SERIOUS", AMBER] : cycle >= 16 && cycle <= 23 ? ["FAIR", WHITE] : ["NOMINAL", STEEL];
+    currentSample = sample();
+    const { x, wobble, die, load, cycle, pressure, watts, gpu, source } = currentSample;
     const temperatureLevel = Math.max(level.celsius(Math.round(die)), pressure[0] === "CRITICAL" ? BURN : pressure[0] === "SERIOUS" ? HOT : 0);
     const used = 58 + 34 * x + wobble(2) * 0.4;
     if (record) {
       heatMeter.push(die);
       cpuMeter.push(load);
       ramMeter.push(used);
+      recordHeat(currentSample);
     }
 
-    menuTemp.textContent = `${pressure[0] === "SERIOUS" || pressure[0] === "CRITICAL" ? "! " : ""}${Math.round(die)}°`; menuTemp.style.color = heat(temperatureLevel);
+    const trend = heatMeter.trend();
+    menuValue.textContent = `${pressured(currentSample) ? "! " : ""}${Math.round(die)}°`; menuTemp.style.color = heat(temperatureLevel);
+    menuTrend.toggleAttribute("hidden", trend !== "RISING" && trend !== "COOLING");
+    menuTrend.style.transform = trend === "COOLING" ? "rotate(180deg)" : "rotate(0deg)";
     menuLoad.textContent = `${Math.round(load)}%`; menuLoad.style.color = usage(level.load(Math.round(load)));
+    menubar.parentElement.setAttribute("aria-label", `Sample menu reading: ${Math.round(die)} degrees Celsius, ${trend?.toLowerCase() ?? "collecting trend"}, CPU load ${Math.round(load)} percent, thermal pressure ${pressure[0].toLowerCase()}.`);
 
     // HEAT
     if (all || visibleBoards.has(heatBoard)) {
       heatHead.hero.set(`${Math.round(die)}°`, heat(temperatureLevel));
-      heatHead.stats[0].set(`${Math.round(8 + 44 * x + wobble(3))}W`, WHITE);
+      heatHead.heading.textContent = `CPU DIE${trend ? " · " + trend : ""}`;
+      heatHead.stats[0].set(watts == null ? "--" : `${Math.round(watts)}W`, watts == null ? STEEL : WHITE);
       heatHead.stats[1].set(`${Math.round(load)}%`, usage(level.load(Math.round(load))));
-      heatHead.stats[2].set(pressure[0], pressure[1]);
+      heatHead.stats[2].set(gpu == null ? "--" : `${Math.round(gpu)}W`, gpu == null ? STEEL : WHITE);
+      heatHead.stats[3].set(pressure[0], pressure[1]);
+      activityName.set("XCODE", STEEL);
+      activityValue.set(`${Math.round(load * 3.1)}%`);
+      powerSource.textContent = source;
+      adapter.textContent = source === "ON BATTERY" ? "" : "ADAPTER 96W";
       heatMeter.render();
+      peakTime.set(clock(peak.seconds), STEEL);
+      peakName.set(peak.process, STEEL);
+      peakValue.set(`${Math.round(peak.die)}°`, heat(level.celsius(Math.round(peak.die))));
+      peakRow.title = `Sample peak today: ${Math.round(peak.die)}°C at ${clock(peak.seconds)}, ${peak.process} using the most CPU around then.`;
+      const episode = currentEpisode ?? recentEpisodes[0];
+      episodes.el.hidden = !episode;
+      if (episode) {
+        episodes.heading.textContent = currentEpisode ? "HEAT NOW" : "LAST HEAT";
+        episodeTime.set(clock(episode.start), STEEL);
+        const elapsed = episode.end - episode.start;
+        episodeDuration.set(elapsed < 60 ? `${elapsed}S` : `${Math.floor(elapsed / 60)}M`, STEEL);
+        episodePeak.set(`${Math.round(episode.peak)}°`);
+        episodes.summary.setAttribute("aria-label", `${currentEpisode ? "Current" : "Last"} sample heat episode at ${clock(episode.start)}, ${duration(elapsed)}, peak ${Math.round(episode.peak)} degrees Celsius. Inspect episodes.`);
+        episodeCopy.textContent = [currentEpisode, ...recentEpisodes].filter(Boolean).map(item =>
+          `${clock(item.start)} · ${duration(item.end - item.start)} observed · peak ${Math.round(item.peak)}°C. Serious/critical pressure: ${duration(item.pressure)}. Peak system ${item.watts == null ? "unavailable" : Math.round(item.watts) + "W"}; GPU ${item.gpu == null ? "unavailable" : Math.round(item.gpu) + "W"}. Top CPU sampled: XCODE.`).join("\n\n");
+      }
+      renderSession();
       fanRows.forEach((f, i) => {
         const share = Math.max(0, Math.min(1, (x - 0.35) / 0.6)) * (0.95 - i * 0.06);
         const t = level.load(share * 100);
@@ -591,8 +800,10 @@ footer a:hover { color: var(--amber); }
       sensors.rows.forEach((row, i) => {
         const c = Math.round(die + offsets[i] * (0.6 + x * 0.5));
         setRow(row, sensorNames[i], String(c), sensorNames[i].startsWith("CPU DIE") ? level.celsius(c) : null);
+        row.el.setAttribute("role", "listitem");
+        row.el.setAttribute("aria-label", `${sensorNames[i]}, ${c} degrees Celsius${sensorNames[i].startsWith("CPU DIE") ? ", " + band(level.celsius(c)).toLowerCase() : ""}`);
       });
-      document.getElementById("heat-summary").textContent = `Sample: CPU die ${Math.round(die)} degrees Celsius, thermal pressure ${pressure[0].toLowerCase()}. ${heatMeter.describe()}`;
+      document.getElementById("heat-summary").textContent = `Sample: CPU die ${Math.round(die)} degrees Celsius, thermal pressure ${pressure[0].toLowerCase()}. System power ${watts == null ? "unavailable" : Math.round(watts) + " watts"}; GPU power ${gpu == null ? "unavailable" : Math.round(gpu) + " watts"}. Top CPU: Xcode, ${Math.round(load * 3.1)} percent of one core. ${source.toLowerCase()}. Peak today ${Math.round(peak.die)} degrees Celsius at ${clock(peak.seconds)}, Xcode active. ${heatMeter.describe()}`;
     }
 
     // CPU
@@ -691,6 +902,7 @@ footer a:hover { color: var(--amber); }
       return {board, scale, height: board.offsetHeight * scale};
     });
     sizes.forEach(({board, scale, height}) => {
+      board.style.setProperty("--board-scale", scale);
       board.style.transform = `scale(${scale})`;
       board.parentElement.style.height = `${height}px`;
     });
@@ -698,6 +910,8 @@ footer a:hover { color: var(--amber); }
   };
   addEventListener("resize", fit);
   document.fonts?.ready.then(fit);
+  const boardSizes = new ResizeObserver(fit);
+  [heatBoard, cpuBoard, ramBoard].forEach(board => boardSizes.observe(board));
 
   const status = document.getElementById("copy-status");
   document.querySelectorAll("[data-copy]").forEach((button) => {
@@ -737,10 +951,11 @@ footer a:hover { color: var(--amber); }
 
   for (let i = 0; i < 30; i++) {
     phase = i - 30 + 12;
-    const {x, wobble} = sample();
-    heatMeter.push(44 + 50 * x + wobble(0));
-    cpuMeter.push(Math.min(100, 8 + 88 * x + wobble(1) * 2));
+    const reading = sample(), {x, wobble} = reading;
+    heatMeter.push(reading.die);
+    cpuMeter.push(reading.load);
     ramMeter.push(58 + 34 * x + wobble(2) * 0.4);
+    recordHeat(reading);
   }
   tick(false, true);
   settling = false;
