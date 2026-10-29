@@ -41,6 +41,10 @@ Delivered on 2026-10-28 from `2658cbf1506bf1cbd8661b7e6ab884b13b8e4b31`. [Vercel
 
 All three browser checks passed on production: eight responsive widths, 41 semantic sample states and 41 feature states, including native-arrow orientation/color, peak and episode behavior, session timing/energy coverage, copy success/failure, keyboard focus and mobile expansion. Offscreen CPU/RAM mutations remained zero; both WOFF2 fonts loaded once; there were no browser errors. The production desktop capture was visually confirmed. Evidence is `production-functional.txt`, `production-parity.txt`, `production-features.txt` and `production-desktop.png` in the artifact directory. No app version was changed; the site identifies the newer demo as a preview alongside the 0.4.4 download.
 
+### Board-group alignment
+
+The [#70 alignment follow-up](https://github.com/radkode/thermals/issues/70) gives the sample heading, HOLD control and all explanatory notes the same content edges as the three-board group. `--platforms-width` combines three 372px boards and two 24px gaps; supporting containers add the existing 16px gutters. Narrow layouts retain their gutters and horizontal board navigation. Geometry checks cover 320, 390, 720, 820, 1180, 1200, 1440 and 1995px; desktop and 320px captures are under `.impeccable/site-alignment/`.
+
 ## Earlier released baseline
 
 Owner-authorized continuation of [#30](https://github.com/radkode/thermals/issues/30), after the website performance work landed as `5c6a369`. The initial reference was 0.4.1/build 7 (`c127241`); [#34](https://github.com/radkode/thermals/issues/34) carries the fixed-scale history contract into 0.4.2/build 8 and the website together. The owner-approved 0.4.3 refinement gives percentage histories the full palette for magnitude. Preserve the station/platform design and the [performance constraints](./website-performance.md).
