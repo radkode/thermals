@@ -49,6 +49,7 @@ final class Monitor {
     private(set) var dailyPeak: DailyPeak?
     private(set) var heatActivity: HeatActivity?
     private(set) var episodes = HeatEpisodeRecorder()
+    private(set) var powerSource: PowerSourceReading?
     var samplesHeatActivity = false {
         didSet { if samplesHeatActivity && timer != nil { sampleHeatActivity(at: .now) } }
     }
@@ -135,6 +136,7 @@ final class Monitor {
         dailyPeak: DailyPeak? = nil,
         heatActivity: HeatActivity? = nil,
         episodes: HeatEpisodeRecorder = HeatEpisodeRecorder(),
+        powerSource: PowerSourceReading? = nil,
         sampledAt: Date? = nil,
         processState: ReadingState? = nil,
         appMemoryState: ReadingState? = nil,
@@ -158,6 +160,7 @@ final class Monitor {
         self.dailyPeak = dailyPeak
         self.heatActivity = heatActivity
         self.episodes = episodes
+        self.powerSource = powerSource
         let now = sampledAt ?? history.last?.date ?? loadHistory.last?.date ?? memoryHistory.last?.date ?? Date.now
         temperatureState = cpuTemperature == nil ? .unavailable : .available(now)
         cpuState = cpuLoad == nil ? .unavailable : .available(now)
@@ -211,6 +214,7 @@ final class Monitor {
         fans = fanReadings ?? []
         fanState = fanReadings == nil ? .unavailable : .available(now)
         systemPower = smc?.systemPower()
+        powerSource = PowerSourceReading.read()
         gpuPower = gpuReader?.sample().flatMap { gpuMeter.watts($0) }
         if tracksPeak {
             let previous = episodes

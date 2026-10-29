@@ -40,6 +40,8 @@ HEAT's TOP CPU row shows current activity, with temperature direction beside CPU
 
 HEAT NOW / LAST HEAT opens the current and eight most recent completed heat episodes (`HeatEpisodeRecorder`). An episode starts at 85°C or serious/critical OS pressure and ends after 30 seconds below 75°C without serious pressure. Gaps longer than 30 seconds, lost temperature without pressure, and relaunch interrupt the recording at its last observed sample. Pressure duration counts only intervals with serious/critical readings at both ends. Episodes persist locally with peak temperature, peak system/GPU watts and sampled top CPU activity. When episodes are present, ALL SENSORS expands the detailed inventory, keeping the summary compact.
 
+Power-source context comes from the public IOPowerSources API (`Sensors/PowerSource.swift`): ON BATTERY, CHARGING, PLUGGED IN, ON AC POWER or POWER UNKNOWN. Adapter watts describe adapter capability, not live consumption. Missing charging keys do not imply charging; desktops can report AC without a battery. Readings refresh with the existing sample timer. With power context present, detailed sensors are expandable.
+
 ## Boards
 
 The 400pt-wide popover has three boards, switched with HEAT / CPU / RAM or Cmd-1/2/3. Each board uses its natural height, bounded only by the current screen's visible height minus 32pt. Ordinary readings stay fully visible whenever they fit. Only overflow scrolls; tabs, available updates and the footer stay reachable. CPU puts attribution before per-core detail. Settings (Cmd-comma) replaces readings, and Back or Escape returns. Its heading shows the running app’s version and build, read from `Bundle.main` rather than the update feed. Closing the panel stops expensive process/footprint sampling.

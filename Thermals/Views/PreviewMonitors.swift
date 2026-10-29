@@ -30,7 +30,8 @@ enum PreviewMonitors {
         }
         return Monitor(sensors: source.sensors, cpuLoad: source.cpuLoad, thermalState: .serious,
                        history: source.history, fans: source.fans, systemPower: 56, gpuPower: 22,
-                       dailyPeak: source.dailyPeak, heatActivity: source.heatActivity, episodes: episodes, sampledAt: referenceDate)
+                       dailyPeak: source.dailyPeak, heatActivity: source.heatActivity, episodes: episodes,
+                       powerSource: PowerSourceReading(state: .charging, adapterWatts: 96), sampledAt: referenceDate)
     }
 
     static func lowTemperatureCritical() -> Monitor { make(peak: 45, load: 0.2, state: .critical, memoryUsed: 0.93, pressure: .normal) }

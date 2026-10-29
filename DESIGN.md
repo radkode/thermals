@@ -239,6 +239,8 @@ HEAT replaces the pressure explanation line with a compact TOP CPU row: 12 name 
 
 ### Heat Episodes
 
+Power-source context is one neutral label row below TOP CPU, with adapter capability at the trailing edge when available. It does not reuse heat warning colors or imply that the adapter's rated watts are current draw. With this context present, the sensor inventory is expandable.
+
 HEAT NOW or LAST HEAT follows history with start time, observed duration and peak temperature. Its disclosure shows retained episode details and explains pressure coverage and interrupted readings. When episodes exist, ALL SENSORS becomes a disclosure below fans so the explanation stays compact.
 
 ### Fan Panel

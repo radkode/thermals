@@ -12,6 +12,14 @@ struct HeatBoard: View {
             header
             ReadingNotice(state: monitor.temperatureState, source: "CPU temperature", retry: monitor.refresh)
             activityRow
+            if let source = monitor.powerSource {
+                HStack {
+                    ColumnLabel(source.state.rawValue)
+                    Spacer()
+                    if let watts = source.adapterWatts { ColumnLabel("ADAPTER \(Int(watts.rounded()))W") }
+                }
+                .help("Power source reported by macOS. Adapter watts describe the attached adapter, not current charging or system power. Charging can contribute heat.")
+            }
             LampMeter(
                 readings: monitor.history,
                 scale: .temperature,
@@ -24,7 +32,7 @@ struct HeatBoard: View {
             HeatEpisodeRow(recorder: monitor.episodes)
             if !monitor.fans.isEmpty { FanBoard(fans: monitor.fans) }
             ReadingNotice(state: monitor.fanState, source: "Fan readings", retry: monitor.refresh)
-            if monitor.episodes.current != nil || !monitor.episodes.recent.isEmpty {
+            if monitor.powerSource != nil || monitor.episodes.current != nil || !monitor.episodes.recent.isEmpty {
                 DisclosureGroup {
                     SensorBoard(sensors: monitor.sensors)
                 } label: { ColumnLabel("ALL SENSORS") }
