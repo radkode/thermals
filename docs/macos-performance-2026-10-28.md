@@ -134,4 +134,19 @@ Slice #63: RAM footprint enumeration and ranking run in a utility task, with one
 
 A 20-scan optimized real-footprint probe confirmed main-actor progress during collection; raw evidence is `build/performance-implementation/footprints.json`.
 
-Next: #66 native rendering measurements. The generic Workflow tool is unavailable; work proceeds directly.
+Slice #66: native stack sampling found SwiftUI layout/text-sizing, CoreText and `FlapCell.body` paths during construction. Resting cells now draw one complete glyph over the same two gradient surfaces, with the existing hinge, pins and dimensions. A stable outer ZStack keeps lifecycle identity while switching to the rotating halves. The flip timing and Reduce Motion guard are unchanged. An opt-in native test captures intermediate animation frames and verifies that normal motion produces more than just the initial and final glyph.
+
+Release measurements on this machine, ten constructions per fixture, compare 277fdd5 with the optimized cells. Native construction includes synchronous hosting, layout and display submission; it is not first-frame presentation time or FPS.
+
+| Board | Native median before / after, ms | Offscreen median before / after, ms |
+| --- | ---: | ---: |
+| HEAT | 148.32 / 69.74 | 34.17 / 25.62 |
+| CPU | 232.82 / 107.01 | 69.21 / 44.85 |
+| RAM | 231.68 / 111.10 | 74.68 / 44.67 |
+| CPU, 48 cores | 473.36 / 222.36 | 228.41 / 117.79 |
+
+Native medians improved 52–54% in this local comparison. The two native probe tests and ten snapshot/sizing tests passed, producing 37 board/state captures. Visual inspection preserved the board appearance. The four before/after PNG pairs have identical dimensions, with 0.31–0.51% of pixels differing and a maximum channel difference of 18/255, concentrated at cell edges. They are not byte-identical. Native captures also show the intermediate split-flap transition. Durable raw measurements and hashes are in [implementation-measurements.json](./performance-2026-10-28/implementation-measurements.json).
+
+Instruments' 40-second SwiftUI capture reached its limit but failed to finalize after more than seven minutes, emitting an AttributeGraph tree dump. Export reported `Document Missing Template Error`; the owned profiler was terminated. That trace is not usable evidence. The separate native stack sample succeeded, but overlapped trace processing, so its timings are not a quiet baseline. This limitation is recorded in [#67](https://github.com/radkode/thermals/issues/67#issuecomment-6497807327). No FPS, hitch, energy or system Reduce Motion coverage is claimed. Exact 90-degree flap rotations emitted singular-transform warnings in the baseline, tracked separately in [#71](https://github.com/radkode/thermals/issues/71).
+
+Next: #68 menu-image reuse. The generic Workflow tool is unavailable; work proceeds directly.

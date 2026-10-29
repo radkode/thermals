@@ -76,3 +76,33 @@ vmmap -summary APP_PID > build/performance-recheck/vmmap.txt
 Run the counter window before attaching the sampler. Record visibility, selected board/rate, warmup, power state and other workloads whenever observable. CPU percentage is `100 * delta(cpu_ns) / delta(uptime_ns)`, so 100% means one core. Child CPU must be reported separately. A successful capture needs all requested rows and exit status zero; a disappearing process is a failed capture. These sources do not measure app-specific watts, live frame time or prove a leak.
 
 Record stdout, stderr and producer exit status for every command. The original raw captures and hashes are indexed in [measurements.json](./measurements.json); its summaries are durable even if ignored build artifacts are removed. The commands above rebuild probes without changing application source or bypassing library validation.
+
+## Implementation probes
+
+The implementation follow-up uses current source, not the pinned analysis worktree. The native probe is opt-in and never runs during ordinary tests. It writes four board PNGs, per-construction timings, native flap animation frames and a PID for attaching a profiler. Create the output directory first. Release tests need `ENABLE_TESTABILITY=YES`; this affects the test build only. Use an existing valid local Apple Development identity so the test host and Sparkle pass library validation:
+
+```sh
+mkdir -p build/performance-recheck
+xcodegen generate
+TEST_RUNNER_PERF_OUTPUT="$PWD/build/performance-recheck" \
+  xcodebuild -project Thermals.xcodeproj -scheme Thermals -configuration Release \
+  -destination 'platform=macOS,arch=arm64' -derivedDataPath build/performance-recheck/derived \
+  -jobs 2 -parallel-testing-enabled NO -only-testing:ThermalsTests/RenderingPerformanceTests \
+  ENABLE_TESTABILITY=YES ONLY_ACTIVE_ARCH=YES \
+  CODE_SIGN_IDENTITY='<local Apple Development identity>' test
+```
+
+A successful selected run must report two tests, not zero. Use the suite name as above; a method filter without its Swift Testing identifier can silently select nothing. `TEST_RUNNER_PERF_ATTACH=1` adds a 15-second pause after writing the PID. Keep instrumented runs separate from timing baselines. The 2026-10-29 SwiftUI Instruments capture failed to finalize, while `sample <pid> 10 1 -file <path>` produced usable native stacks. Neither stack occupancy nor synchronous window construction is an FPS measure. The native animation test observes the current system Reduce Motion preference without changing it.
+
+The main-actor progress probe uses the real hardware collector or utility footprint scan while a five-millisecond main-actor heartbeat runs:
+
+```sh
+xcrun swiftc -O -swift-version 6 -parse-as-library \
+  -module-cache-path build/performance-recheck/module-cache \
+  Thermals/Sensors/*.swift docs/performance-2026-10-28/CollectorProbe.swift \
+  -o build/performance-recheck/collector-probe
+build/performance-recheck/collector-probe > build/performance-recheck/collector.json
+build/performance-recheck/collector-probe --footprints > build/performance-recheck/footprints.json
+```
+
+Check nonzero reading counts and heartbeat progress during every scan before interpreting latency. [implementation-measurements.json](implementation-measurements.json) preserves the 2026-10-29 samples and source artifact hashes. The initial analysis figures above remain separate.

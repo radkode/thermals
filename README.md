@@ -66,6 +66,8 @@ Outside history charts, CPU, fan and app-memory utilization use LOW, MOD and HIG
 
 ## Design snapshots
 
+Resting split-flap cells use one glyph over two gradient surfaces; only active flips construct the rotating halves. `RenderingPerformanceTests` is an opt-in native construction and animation probe. Its Release/signing commands and measurement limits are in [the performance probe guide](docs/performance-2026-10-28/README.md#implementation-probes).
+
 The popover can't be captured with scripted clicks, so an opt-in test renders it with synthetic readings (`Thermals/Views/PreviewMonitors.swift`):
 
 ```bash
