@@ -6,7 +6,7 @@ The owner selected website parity work after the five native features landed in 
 
 Acceptance: all three boards remain readable from 320 through 1440px; sample controls work with keyboard and pointer; receipts identify synthetic data, whole-system energy and measured coverage; no names are copied; GPU unavailable states are honest; peak and trend follow the native semantics. Run the existing functional and parity browser checks plus focused new-feature checks, inspect desktop/mobile renders, and update this contract. Scope excludes native code, release-version changes and the unrelated in-progress performance probe. Canonical checkout began at `29ca66d`; the modified `docs/performance-2026-10-28/ViewBench.swift` and pre-existing `.playwright-cli/` are not part of this work. This Codex session coordinates delivery on main through the repository's website deployment path.
 
-Implementation, local verification and independent design/documentation review are complete; deployment verification remains. Artifacts: `.impeccable/site-next/`, with reviewed captures under `.impeccable/review/site-next/`. Concurrent native performance edits are outside this change and must not be staged with it.
+Implementation, local verification, independent design/documentation review and production verification are complete. Artifacts: `.impeccable/site-next/`, with reviewed captures under `.impeccable/review/site-next/`. Concurrent native performance edits are outside this change and were not staged with it.
 
 ### New feature contracts
 
@@ -31,9 +31,15 @@ playwright-cli -s=thermals-site-clock run-code "$(cat scripts/check-site-parity.
 playwright-cli -s=thermals-site-clock run-code "$(cat scripts/check-site-features.js)"
 ```
 
-Impeccable's independent full review found one material correction: use an authored SVG for the menu trend rather than a font-fallback arrow. The correction inherits temperature ink and preserves accessible direction text; the reviewer scored it resolved and returned `ship` on that fix. All seven recaptures were valid. The documentation review confirmed this is an ordinary extension with no new token system. The detector ran once; its new long all-caps note was changed to mixed case. Remaining findings concern the inherited hero leading, clamp padding and design-metadata mismatches, not a new design direction. Review records: `finish-review.md` and `documentation-review.md` in the artifact directory. The unavailable required Workflow tool remains the existing harness finding DD-8744; no Workflow run is claimed.
+Impeccable's independent full review found one material correction: use an authored SVG for the menu trend rather than a font-fallback arrow. The correction inherits temperature ink and preserves accessible direction text; the reviewer scored it resolved and returned `ship` on that fix. All seven recaptures were valid. The documentation review confirmed this is an ordinary extension with no new token system. Inherited platform metadata is already #15; the sidecar narrative typo is separately filed as #69. The detector ran once; its new long all-caps note was changed to mixed case. Remaining findings concern the inherited hero leading, clamp padding and design-metadata mismatches, not a new design direction. Review records: `finish-review.md` and `documentation-review.md` in the artifact directory. The unavailable required Workflow tool remains the existing harness finding DD-8744; no Workflow run is claimed.
 
 When the native features are publicly released, update the preview label and 0.4.4 download explanation together with the release statement assertion in `check-site-features.js`. Do not advertise these as already available in 0.4.4. Physical-device and Safari verification remain separate from the Chrome evidence.
+
+### Production checkpoint
+
+Delivered on 2026-10-28 from `2658cbf1506bf1cbd8661b7e6ab884b13b8e4b31`. [Vercel deployment](https://thermals-kwcr1vc2y-jacekradkos-projects.vercel.app) reported READY for that exact commit and production target. [thermals.dev](https://thermals.dev/) serves byte-identical HTML, 60,342 bytes, SHA-256 `6dd30abb077a649ac6ae4dbdef09012295ea0b0e2a6e1658f5175b4c1b0919a1`.
+
+All three browser checks passed on production: eight responsive widths, 41 semantic sample states and 41 feature states, including native-arrow orientation/color, peak and episode behavior, session timing/energy coverage, copy success/failure, keyboard focus and mobile expansion. Offscreen CPU/RAM mutations remained zero; both WOFF2 fonts loaded once; there were no browser errors. The production desktop capture was visually confirmed. Evidence is `production-functional.txt`, `production-parity.txt`, `production-features.txt` and `production-desktop.png` in the artifact directory. No app version was changed; the site identifies the newer demo as a preview alongside the 0.4.4 download.
 
 ## Earlier released baseline
 
