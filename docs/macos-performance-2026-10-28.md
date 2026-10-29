@@ -130,4 +130,8 @@ Slice #62: hardware readers initialize lazily on a dedicated actor, refresh requ
 
 Local hosted tests now launch successfully with `CODE_SIGN_IDENTITY="Apple Development: JACEK ANDRZEJ RADKO (93G3HQ8H96)"`, an existing identity. No runtime protections or release signing settings were changed. This resolves the immediate verification prerequisite from #61; ad-hoc dry-run launch remains a separate issue.
 
-Next: #63 RAM attribution. The generic Workflow tool is unavailable; work proceeds directly.
+Slice #63: RAM footprint enumeration and ranking run in a utility task, with one physical scan in flight. A visibility epoch discards results from an earlier RAM visit, and reopening requests a fresh scan only after the previous one finishes. Three new tests cover coalescing across refreshes, close/reopen races, failed reads and recovery. The combined sampling, memory and real popover lifecycle run passed 16 tests in four suites.
+
+A 20-scan optimized real-footprint probe confirmed main-actor progress during collection; raw evidence is `build/performance-implementation/footprints.json`.
+
+Next: #66 native rendering measurements. The generic Workflow tool is unavailable; work proceeds directly.

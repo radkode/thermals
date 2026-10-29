@@ -88,16 +88,20 @@ final class Monitor {
     /// Footprints cost a pass over every pid, so they are read only while a view asks for them.
     var samplesAppMemory = false {
         didSet {
-            guard samplesAppMemory != oldValue, timer != nil else { return }
+            guard samplesAppMemory != oldValue, collectAppMemory != nil else { return }
+            appMemoryEpoch += 1
             appMemory = []
             appMemoryState = .loading
-            if samplesAppMemory { sampleAppMemory(at: .now) }
+            if samplesAppMemory { sampleAppMemory() }
         }
     }
 
     @ObservationIgnored private var defaults = UserDefaults.standard
     @ObservationIgnored private var collect: (@Sendable () async -> SensorSample)?
     @ObservationIgnored private var refreshTask: Task<Void, Never>?
+    @ObservationIgnored private var collectAppMemory: (@Sendable () async -> [AppMemory]?)?
+    @ObservationIgnored private var appMemoryTask: Task<Void, Never>?
+    @ObservationIgnored private var appMemoryEpoch = 0
     @ObservationIgnored private var stoppingSession = false
     /// Live monitors only; previews keep a fixed peak and never sample or persist.
     @ObservationIgnored private var tracksPeak = false
@@ -143,7 +147,8 @@ final class Monitor {
         processState: ReadingState? = nil,
         appMemoryState: ReadingState? = nil,
         fanState: ReadingState? = nil,
-        collect: (@Sendable () async -> SensorSample)? = nil
+        collect: (@Sendable () async -> SensorSample)? = nil,
+        collectAppMemory: (@Sendable () async -> [AppMemory]?)? = nil
     ) {
         self.sensors = TemperatureSensors.byName(sensors)
         self.cpuTemperature = TemperatureSensors.cpuTemperature(from: self.sensors)
@@ -173,12 +178,16 @@ final class Monitor {
         self.processState = processState ?? .available(now)
         self.appMemoryState = appMemoryState ?? .available(now)
         self.collect = collect
+        self.collectAppMemory = collectAppMemory
     }
 
     init(defaults: UserDefaults = .standard, collect: (@Sendable () async -> SensorSample)? = nil) {
         self.defaults = defaults
         let collector = SensorCollector()
         self.collect = collect ?? { await collector.sample() }
+        collectAppMemory = {
+            await Task.detached(priority: .utility) { MemoryStats.appFootprints().map(MemoryStats.ranked) }.value
+        }
         rate = defaults.string(forKey: Self.rateKey).flatMap(SampleRate.init(rawValue:)) ?? .six
         heatAlerts = HeatAlerts(activitySampler: activitySampler)
         tracksPeak = true
@@ -263,7 +272,7 @@ final class Monitor {
                                      trend: TemperatureTrend(history, now: now), visible: samplesHeatActivity) {
             sampleHeatActivity(at: now)
         }
-        if samplesAppMemory { sampleAppMemory(at: now) }
+        if samplesAppMemory { sampleAppMemory() }
         if samplesProcesses { sampleProcesses() }
     }
 
@@ -346,14 +355,21 @@ final class Monitor {
         memoryHistory.removeAll { now.timeIntervalSince($0.date) > Self.historyWindow }
     }
 
-    private func sampleAppMemory(at now: Date) {
-        guard let footprints = MemoryStats.appFootprints() else {
-            appMemory = []
-            appMemoryState = .failed
-            return
+    private func sampleAppMemory() {
+        guard appMemoryTask == nil, samplesAppMemory, let collectAppMemory else { return }
+        let epoch = appMemoryEpoch
+        appMemoryTask = Task { [weak self] in
+            let date = Date.now
+            let apps = await collectAppMemory()
+            guard let self else { return }
+            appMemoryTask = nil
+            guard epoch == appMemoryEpoch, samplesAppMemory else {
+                if samplesAppMemory { sampleAppMemory() }
+                return
+            }
+            appMemory = apps ?? []
+            appMemoryState = apps == nil ? .failed : .available(date)
         }
-        appMemory = MemoryStats.ranked(footprints)
-        appMemoryState = .available(now)
     }
 
     private func sampleProcesses() {
