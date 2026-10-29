@@ -6,6 +6,8 @@ import UserNotifications
 struct PopoverView: View {
     let monitor: Monitor
     var updater: Updater?
+    var shortcut: GlobalShortcut?
+    var closePanel: (() -> Void)?
     var pinnedBoard: BoardKind?
     var pinnedUnit: TemperatureUnit?
     var previewLoginError = false
@@ -66,6 +68,7 @@ struct PopoverView: View {
         }
         .onExitCommand {
             if showsSettings { showsSettings = false }
+            else if let closePanel { closePanel() }
             else { NSApp.keyWindow?.orderOut(nil) }
         }
     }
@@ -128,6 +131,14 @@ struct PopoverView: View {
                 ColumnLabel("TEMPERATURE")
                 Spacer()
                 FlapTabs(selection: Binding(get: { pinnedUnit ?? temperatureUnit }, set: { temperatureUnit = $0 }), noun: "temperature unit")
+            }
+            if let shortcut {
+                HStack {
+                    ColumnLabel("CTRL + OPTION")
+                    Spacer()
+                    FlapTabs(selection: Binding(get: { shortcut.selected }, set: { shortcut.set($0) }), noun: "global shortcut key")
+                }
+                BoardNote(shortcut.error ?? "The global shortcut opens or closes Thermals from any app.")
             }
             HStack {
                 ColumnLabel("UPDATE EVERY")

@@ -273,6 +273,8 @@ The [website parity contract](./docs/website-parity.md) records source mappings 
 The LAST 3 MIN lamp bank as the mark: 7 columns by 8 rows of lenses in a flap-black housing, columns climbing left to right from cool to burn, each lens tinted by its row's heat and unlit HOT and BURN lenses at 16%, on an 824pt continuous squircle (185.4pt radius) in a steel gradient on the 1024pt macOS grid. Chosen by the owner over a single flap cell with a degree sign (read as an O and blurred to a ring at 16px). Source: `AppIcon` in `ThermalsTests/AppIconTests.swift`.
 
 ### Menu Bar Reading
+
+An owned AppKit status item renders the same non-template SwiftUI label and anchors a transient dark popover. Control + Option + T toggles it; Settings offers OFF/T/H under CTRL + OPTION and explains conflicts. The board's layout, keyboard navigation and visual system remain shared with native snapshot tests.
 CPU die temperature, whole-system load, or both use Barlow Condensed at 15pt, colored for the current appearance and rendered as a non-template image. Missing readings retain an accessible description. OS pressure warnings remain visible even without temperature or in load-only mode. A rising or falling temperature carries an arrow right after the degree sign, in the temperature's own color; Barlow has no arrows, so it is the SF Symbol `arrow.up` or `arrow.down` at 10pt bold, matching the cap height. Steady shows no arrow, so the reading changes only when there is a direction to report. Menu-bar freshness uses timer delivery rather than TimelineView, which caused a status-item update loop on macOS 27 during hosted testing.
 
 ## Do's and Don'ts

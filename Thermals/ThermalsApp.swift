@@ -2,31 +2,8 @@ import SwiftUI
 
 @main
 struct ThermalsApp: App {
-    @State private var monitor = Monitor()
-    @State private var updater = Updater()
-    @AppStorage("menuBarItem") private var menuBarItem = MenuBarItem.temperature
-    @AppStorage("temperatureUnit") private var temperatureUnit = TemperatureUnit.system
-    @State private var readingDate = Date.now
-
-    var body: some Scene {
-        MenuBarExtra {
-            PopoverView(monitor: monitor, updater: updater)
-        } label: {
-            let temperatureStale = monitor.temperatureState.isStale(at: readingDate, interval: monitor.rate.seconds)
-            let loadStale = monitor.cpuState.isStale(at: readingDate, interval: monitor.rate.seconds)
-            MenuBarReading(
-                item: menuBarItem,
-                unit: temperatureUnit,
-                temperature: temperatureStale ? nil : monitor.cpuTemperature,
-                load: loadStale ? nil : monitor.cpuLoad,
-                thermalState: monitor.thermalState,
-                trend: temperatureStale ? nil : TemperatureTrend(monitor.history, now: readingDate),
-                stale: (menuBarItem != .load && temperatureStale) || (menuBarItem != .temperature && loadStale)
-            )
-            .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { readingDate = $0 }
-        }
-        .menuBarExtraStyle(.window)
-    }
+    @NSApplicationDelegateAdaptor(ThermalsDelegate.self) private var delegate
+    var body: some Scene { Settings { EmptyView() } }
 }
 
 /// The chosen reading(s), each colored from the same heat gradient as the popover.
