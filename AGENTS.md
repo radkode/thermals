@@ -10,6 +10,8 @@ The [2026-10-28 feature assessment](./docs/feature-options-2026-10-28.md) distin
 
 The [website performance investigation](./docs/website-performance.md) records rendering constraints, measurements and browser regression checks for `site/`. The [website parity contract](./docs/website-parity.md) maps sample-board semantics to the released app and documents its regression checks.
 
+The [2026-10-29 open-source readiness assessment](./docs/open-source-readiness-2026-10-29.md) records licensing, disclosure, contributor, security and release findings, scan coverage and the remaining publication decisions.
+
 - `project.yml` is the source of truth for the Xcode project. Never hand-edit or commit `Thermals.xcodeproj`; run `xcodegen generate` after changing targets, settings or file layout.
 - Run tests with `xcodebuild -project Thermals.xcodeproj -scheme Thermals -destination 'platform=macOS' -derivedDataPath build test`.
 - Sensor access uses private IOKit symbols. Keep that code inside `Thermals/Sensors/` and keep reading-selection logic as pure functions with tests in `ThermalsTests/`.
