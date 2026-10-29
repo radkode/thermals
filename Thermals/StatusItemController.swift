@@ -9,11 +9,14 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
     let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private var timer: Timer?
     private var previousApplication: NSRunningApplication?
+    private let defaults: UserDefaults
+    private var imageKey: MenuBarImageKey?
     private(set) var shortcut: GlobalShortcut?
 
-    init(monitor: Monitor, updater: Updater, registersShortcut: Bool = true) {
+    init(monitor: Monitor, updater: Updater, registersShortcut: Bool = true, defaults: UserDefaults = .standard) {
         self.monitor = monitor
         self.updater = updater
+        self.defaults = defaults
         super.init()
         if registersShortcut { shortcut = GlobalShortcut { [weak self] in self?.toggle() } }
         let host = NSHostingController(rootView: PopoverView(monitor: monitor, updater: updater, shortcut: shortcut,
@@ -73,7 +76,6 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
 
     func updateLabel(at now: Date = .now) {
         guard let button = item.button else { return }
-        let defaults = UserDefaults.standard
         let mode = MenuBarItem(rawValue: defaults.string(forKey: "menuBarItem") ?? "") ?? .temperature
         let unit = TemperatureUnit(rawValue: defaults.string(forKey: "temperatureUnit") ?? "") ?? .system
         let temperatureStale = monitor.temperatureState.isStale(at: now, interval: monitor.rate.seconds)
@@ -83,11 +85,38 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
                                    trend: temperatureStale ? nil : TemperatureTrend(monitor.history, now: now),
                                    stale: (mode != .load && temperatureStale) || (mode != .temperature && loadStale))
         let scheme: ColorScheme = button.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? .dark : .light
-        let renderer = ImageRenderer(content: label.environment(\.colorScheme, scheme))
-        renderer.scale = button.window?.backingScaleFactor ?? 2
-        if let image = renderer.nsImage { image.isTemplate = false; button.image = image }
+        let scale = button.window?.backingScaleFactor ?? 2
+        let key = MenuBarImageKey(reading: label, scheme: scheme, scale: scale, textScale: NSScreen.main?.backingScaleFactor ?? 2)
+        if imageKey != key {
+            let renderer = ImageRenderer(content: label.environment(\.colorScheme, scheme))
+            renderer.scale = scale
+            if let image = renderer.nsImage {
+                image.isTemplate = false
+                button.image = image
+                imageKey = key
+            }
+        }
         button.setAccessibilityLabel(label.accessibilityText)
         button.toolTip = label.accessibilityText
+    }
+}
+
+struct MenuBarImageKey: Equatable {
+    struct Part: Equatable {
+        let text: String
+        let level: HeatLevel
+    }
+
+    let parts: [Part]
+    let scheme: ColorScheme
+    let scale: CGFloat
+    let textScale: CGFloat
+
+    @MainActor init(reading: MenuBarReading, scheme: ColorScheme, scale: CGFloat, textScale: CGFloat) {
+        parts = reading.parts.map { Part(text: $0.0, level: $0.1) }
+        self.scheme = scheme
+        self.scale = scale
+        self.textScale = textScale
     }
 }
 

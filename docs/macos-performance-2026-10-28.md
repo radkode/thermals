@@ -134,4 +134,25 @@ Slice #63: RAM footprint enumeration and ranking run in a utility task, with one
 
 A 20-scan optimized real-footprint probe confirmed main-actor progress during collection; raw evidence is `build/performance-implementation/footprints.json`.
 
-Next: #66 native rendering measurements. The generic Workflow tool is unavailable; work proceeds directly.
+Slice #66: native stack sampling found SwiftUI layout/text-sizing, CoreText and `FlapCell.body` paths during construction. Resting cells now draw one complete glyph over the same two gradient surfaces, with the existing hinge, pins and dimensions. A stable outer ZStack keeps lifecycle identity while switching to the rotating halves. The flip timing and Reduce Motion guard are unchanged. An opt-in native test captures intermediate animation frames and verifies that normal motion produces more than just the initial and final glyph.
+
+Release measurements on this machine, ten constructions per fixture, compare 277fdd5 with the optimized cells. Native construction includes synchronous hosting, layout and display submission; it is not first-frame presentation time or FPS.
+
+| Board | Native median before / after, ms | Offscreen median before / after, ms |
+| --- | ---: | ---: |
+| HEAT | 148.32 / 69.74 | 34.17 / 25.62 |
+| CPU | 232.82 / 107.01 | 69.21 / 44.85 |
+| RAM | 231.68 / 111.10 | 74.68 / 44.67 |
+| CPU, 48 cores | 473.36 / 222.36 | 228.41 / 117.79 |
+
+Native medians improved 52–54% in this local comparison. The two native probe tests and ten snapshot/sizing tests passed, producing 37 board/state captures. Visual inspection preserved the board appearance. The four before/after PNG pairs have identical dimensions, with 0.31–0.51% of pixels differing and a maximum channel difference of 18/255, concentrated at cell edges. They are not byte-identical. Native captures also show the intermediate split-flap transition. Durable raw measurements and hashes are in [implementation-measurements.json](./performance-2026-10-28/implementation-measurements.json).
+
+Instruments' 40-second SwiftUI capture reached its limit but failed to finalize after more than seven minutes, emitting an AttributeGraph tree dump. Export reported `Document Missing Template Error`; the owned profiler was terminated. That trace is not usable evidence. The separate native stack sample succeeded, but overlapped trace processing, so its timings are not a quiet baseline. This limitation is recorded in [#67](https://github.com/radkode/thermals/issues/67#issuecomment-6497807327). No FPS, hitch, energy or system Reduce Motion coverage is claimed. Exact 90-degree flap rotations emitted singular-transform warnings in the baseline, tracked separately in [#71](https://github.com/radkode/thermals/issues/71).
+
+Slice #68: the status controller caches its successful image by the label's actual formatted parts and heat levels, effective color scheme, outer backing scale and inner text-rendering scale. Accessibility and tooltip text update independently. Rounded-value equality and source timestamp changes reuse the image; units, modes, pressure warnings, trend arrows, stale expiration and unavailable readings invalidate it when their pixels change. Tests also cover both scale inputs and appearance changes.
+
+The native item reused the same NSImage across 1,000 unchanged updates. An optimized local comparison measured 1,000 complete cached updates at 5.424 ms wall / 9.243 ms process CPU, versus 481.132 ms wall / 655.318 ms process CPU for 1,000 fresh label rasterizations and assignments. The fresh-render comparison reuses a prepared label, so it excludes the previous controller's label-preparation cost. These are synthetic menu-path costs, not app idle CPU, allocation rate or battery savings. The sample and hash are preserved in the implementation measurements.
+
+Final verification: the signed Release source passed 162 tests in 42 suites, with 39 snapshot artifacts. The opt-in native construction/animation suite passed two tests separately; the final focused cache suite passed three tests, including its opt-in benchmark. No test assertions were weakened. One earlier full run failed the existing native popover lifecycle test; the isolated suite, a full notification-diagnostic run and the final uninstrumented full suite passed. Its original cause remains unproven and is retained in [#67](https://github.com/radkode/thermals/issues/67#issuecomment-6499423705), with the failed log preserved. Temporary diagnostics were removed. The pre-existing actor-isolation warning remains tracked in #60.
+
+Delivery checkpoint: source changes for #62, #63, #66 and #68 are implemented in the authorized order. #62 and #63 are commits 24bdefb and 277fdd5; rendering is 5ef374b; menu reuse and this final evidence land together in the following commit. #66 remains open for its exportable live before/after Instruments traces and responsiveness-budget validation; no specific live board-entry budget was agreed or established by these construction timings. The broader lifecycle, system Reduce Motion and energy matrix remains #67. No version bump or release was selected. The generic Workflow tool was unavailable; work proceeded directly.

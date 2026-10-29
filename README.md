@@ -66,6 +66,8 @@ WORK SESSION starts an explicit recording before a build or render; STOP complet
 
 `StatusItemController` owns an AppKit status item and transient popover hosting the existing SwiftUI board. Control + Option + T opens or closes it globally without Accessibility permission. Settings offers OFF, T or H with Control + Option fixed; conflicts appear inline rather than silently claiming success. Escape returns from Settings, then closes the panel; explicit close restores the previously active application when Thermals still owns focus. Closing always stops board-only process/footprint sampling. `GlobalShortcutTests` exercise Carbon event delivery, conflicts, persistence and real popover visibility; the initial status-item scene needs an AppKit run-loop cycle before it can anchor a popover.
 
+The one-second menu freshness check reuses its image when rendered text, heat colors, appearance and rendering scales match. Accessibility text and tooltip still update independently, including pressure changes that leave the pixels unchanged. `MenuBarImageCacheTests` cover reuse and invalidation; setting `TEST_RUNNER_PERF_OUTPUT` also enables its CPU-cost comparison against fresh rasterization.
+
 The 400pt-wide popover has three boards, switched with HEAT / CPU / RAM or Cmd-1/2/3. Each board uses its natural height, bounded only by the current screen's visible height minus 32pt. Ordinary readings stay fully visible whenever they fit. Only overflow scrolls; tabs, available updates and the footer stay reachable. CPU puts attribution before per-core detail. Settings (Cmd-comma) replaces readings, and Back or Escape returns. Its heading shows the running app’s version and build, read from `Bundle.main` rather than the update feed. Closing the panel stops board-specific sampling; bounded HEAT activity checks can continue while hot, rising or under pressure.
 
 The CPU headline is percent of the whole machine; process rows use percent of one core and may exceed 100%. RAM states used and installed GB. Short notes explain OS pressure, estimated process remainder, memory categories and app footprint limits. Names truncate with an ellipsis and preserve full hover/accessibility text. Numeric overflow uses hashes instead of clipping magnitude; fan values fit all five supported RPM digits.
@@ -81,6 +83,8 @@ The menu bar temperature carries a trend arrow, ↑ while climbing and ↓ while
 Outside history charts, CPU, fan and app-memory utilization use LOW, MOD and HIGH and `Board.usage`, which stays within the first 55% of the palette. Load reference points remain 25/60/85%; app-share points are 10/25/40% of installed RAM. Memory-used reference points are 60/80/90%, but high usage under normal or unknown pressure stays below warning colors. Only OS WARN/CRITICAL pressure raises the RAM hero into warning colors. Critical small-text colors clear 4.5:1 against both flap leaves.
 
 ## Design snapshots
+
+Resting split-flap cells use one glyph over two gradient surfaces; only active flips construct the rotating halves. `RenderingPerformanceTests` is an opt-in native construction and animation probe. Its Release/signing commands and measurement limits are in [the performance probe guide](docs/performance-2026-10-28/README.md#implementation-probes).
 
 The popover can't be captured with scripted clicks, so an opt-in test renders it with synthetic readings (`Thermals/Views/PreviewMonitors.swift`):
 

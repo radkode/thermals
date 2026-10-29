@@ -135,20 +135,33 @@ struct FlapCell: View {
 
     var body: some View {
         let current = shown ?? character
-        VStack(spacing: 0) {
-            ZStack {
-                half(current, top: true)
-                if flipping {
-                    half(previous, top: true)
-                        .rotation3DEffect(.degrees(fallingAngle), axis: (1, 0, 0), anchor: .bottom, perspective: 0.6)
+        ZStack {
+            if flipping {
+                VStack(spacing: 0) {
+                    ZStack {
+                        half(current, top: true)
+                        half(previous, top: true)
+                            .rotation3DEffect(.degrees(fallingAngle), axis: (1, 0, 0), anchor: .bottom, perspective: 0.6)
+                    }
+                    ZStack {
+                        half(previous, top: false)
+                        half(current, top: false)
+                            .rotation3DEffect(.degrees(risingAngle), axis: (1, 0, 0), anchor: .top, perspective: 0.6)
+                    }
                 }
-            }
-            ZStack {
-                half(flipping ? previous : current, top: false)
-                if flipping {
-                    half(current, top: false)
-                        .rotation3DEffect(.degrees(risingAngle), axis: (1, 0, 0), anchor: .top, perspective: 0.6)
-                }
+                .transition(.identity)
+            } else {
+                Text(String(current))
+                    .font(Board.flapFont(size.fontSize))
+                    .foregroundStyle(ink)
+                    .frame(width: size.width, height: size.height)
+                    .background {
+                        VStack(spacing: 0) {
+                            surface(top: true)
+                            surface(top: false)
+                        }
+                    }
+                    .transition(.identity)
             }
         }
         .overlay(hinge)
@@ -181,12 +194,14 @@ struct FlapCell: View {
             .frame(width: size.width, height: size.height)
             .frame(height: size.height / 2, alignment: top ? .top : .bottom)
             .clipped()
-            .background(
-                LinearGradient(
-                    colors: top ? [Board.flapTop, Board.flapTop.opacity(0.92)] : [Board.flapBottom, Board.flapTop.opacity(0.85)],
-                    startPoint: .top, endPoint: .bottom
-                )
-            )
+            .background(surface(top: top))
+    }
+
+    private func surface(top: Bool) -> some View {
+        LinearGradient(
+            colors: top ? [Board.flapTop, Board.flapTop.opacity(0.92)] : [Board.flapBottom, Board.flapTop.opacity(0.85)],
+            startPoint: .top, endPoint: .bottom
+        )
     }
 
     private var hinge: some View {
