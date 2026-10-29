@@ -193,3 +193,5 @@ Native CI runs on every PR and main push, including documentation-only changes, 
 ## Release approval boundary
 
 The owner replaced automatic version-bump releases with an approval boundary ([#9](https://github.com/radkode/thermals/issues/9)). The `release` environment requires approval from the maintainer, keeps its exact `main` branch policy and no longer allows administrator bypass; its eight secrets are unchanged. Self-review stays allowed because there is one maintainer, so the gate separates merging from releasing but does not add a second person or protect against a compromised maintainer account. This supersedes the release-behavior statements in the earlier checkpoints; [the release guide](./releasing.md) describes the current procedure.
+
+The owner authorized 0.5.1, build 12, so a signed distribution carries the project, Sparkle and Barlow notices ([#74](https://github.com/radkode/thermals/issues/74)). It adds no application behavior beyond 0.5.0 and is the first release through the approval gate.
