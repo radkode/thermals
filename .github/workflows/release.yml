@@ -1,7 +1,7 @@
 # Release: merge a version-bump PR for project.yml. When that version has no v<version>
 # tag yet and the maintainer approves the release environment deployment, this builds, signs with the Developer ID, notarizes, staples, uploads Thermals-<version>.zip
 # as a release in the public tap radkode/homebrew-thermals, updates Casks/thermals.rb there, and tags
-# v<version> here (scripts/release.sh --ci). Pushes that don't change the version are a no-op.
+# v<version> here with a GitHub release carrying the same zip (scripts/release.sh --ci). Pushes that don't change the version are a no-op.
 #
 # Secrets (set once with scripts/set-release-secrets.sh):
 #   DEVELOPER_ID_CERT_P12_BASE64   base64 of the exported "Developer ID Application" .p12
@@ -123,6 +123,7 @@ jobs:
           NOTARY_KEY_ID: ${{ secrets.NOTARY_KEY_ID }}
           NOTARY_KEY_ISSUER: ${{ secrets.NOTARY_KEY_ISSUER }}
           GH_TOKEN: ${{ secrets.TAP_TOKEN }}
+          SOURCE_GH_TOKEN: ${{ github.token }}
           SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
         run: |
           git config user.name "github-actions[bot]"

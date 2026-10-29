@@ -5,13 +5,15 @@ Thermals ships as a Homebrew cask from the public tap [`radkode/homebrew-thermal
 ## Cutting a release
 
 1. Bump `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `project.yml` in a pull request. Merge only after the required native and secret-scan checks pass on the current base and review conversations are resolved. Sparkle offers an update only when the build number goes up.
-2. `.github/workflows/release.yml` runs on main pushes that touch `project.yml`. Its `check` job skips versions that already have a `v<version>` tag. For an untagged version, secret-free preflight tests and license checks must pass, then the `release` job waits for the maintainer to approve its `release` environment deployment before it can access signing credentials. Review the diff since the last `v*` tag, especially `.github/workflows/` and `scripts/`, before approving in the run's **Review deployments** dialog. That job runs `scripts/release.sh --ci` on a `macos-26` runner: Release build, Developer ID signing with hardened runtime, notarization and stapling, then the zip and appcast are signed for Sparkle, both go up as a release in the tap, `Casks/thermals.rb` is rewritten there, and `v<version>` is tagged here.
+2. `.github/workflows/release.yml` runs on main pushes that touch `project.yml`. Its `check` job skips versions that already have a `v<version>` tag. For an untagged version, secret-free preflight tests and license checks must pass, then the `release` job waits for the maintainer to approve its `release` environment deployment before it can access signing credentials. Review the diff since the last `v*` tag, especially `.github/workflows/` and `scripts/`, before approving in the run's **Review deployments** dialog. That job runs `scripts/release.sh --ci` on a `macos-26` runner: Release build, Developer ID signing with hardened runtime, notarization and stapling, then the zip and appcast are signed for Sparkle, both go up as a release in the tap, `Casks/thermals.rb` is rewritten there, `v<version>` is tagged here, and a GitHub release for that tag is created here with the same zip, an install line and notes generated from the PRs since the previous tag. The tap stays the download and update source: the cask and the Sparkle appcast point at its release, not this one.
 3. Verify:
    - `gh run list -R radkode/thermals --workflow release.yml --limit 3`
    - `gh release list -R radkode/homebrew-thermals`
    - `brew update && brew upgrade --cask radkode/thermals/thermals`, then `spctl --assess --type execute -vv /Applications/Thermals.app` must print `source=Notarized Developer ID`.
 
 On an already tagged version, `gh workflow run release.yml -R radkode/thermals --ref main` runs a secret-free build and test preflight on the release runner. On an untagged version, the same command requests a release approval, so check the current version and tag first.
+
+If the run fails after tagging, only the source release is missing; create it with the same `gh release create --verify-tag` command from `scripts/release.sh`, attaching the zip downloaded from the tap release.
 
 Don't:
 - hand-edit the tap's `Casks/thermals.rb`;
