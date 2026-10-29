@@ -2,11 +2,12 @@
 # Builds, signs, notarizes and publishes Thermals to the Homebrew tap. Version comes from project.yml.
 # Usage: scripts/release.sh [--dry-run | --ci]
 #   --dry-run  ad-hoc sign, skip notarization, tagging and publishing; builds the zip and cask without update-signing keys.
-#   --ci       run from the release workflow on a main commit: publishes, then tags v<version> on HEAD.
+#   --ci       run from the release workflow on a main commit: publishes, tags v<version> on HEAD and creates its GitHub release.
 # Env: DEVELOPER_ID (signing identity, default: first "Developer ID Application" in the keychain),
 #      NOTARY_KEY_PATH + NOTARY_KEY_ID + NOTARY_KEY_ISSUER (App Store Connect API key), else
 #      NOTARY_PROFILE (notarytool keychain profile, default: thermals-notary),
 #      TAP_REPO (default: radkode/homebrew-thermals); gh needs write access to it (GH_TOKEN in CI),
+#      SOURCE_REPO (default: radkode/thermals) gets the GitHub release, using SOURCE_GH_TOKEN when set,
 #      SPARKLE_ED_PRIVATE_KEY (update signing key, else the keychain's "thermals" Sparkle account).
 set -euo pipefail
 
@@ -21,6 +22,7 @@ case "${1:-}" in
 esac
 
 TAP_REPO="${TAP_REPO:-radkode/homebrew-thermals}"
+SOURCE_REPO="${SOURCE_REPO:-radkode/thermals}"
 NOTARY_PROFILE="${NOTARY_PROFILE:-thermals-notary}"
 VERSION="$(sed -n 's/^ *MARKETING_VERSION: *"\(.*\)"$/\1/p' project.yml)"
 BUILD="$(sed -n 's/^ *CURRENT_PROJECT_VERSION: *"\(.*\)"$/\1/p' project.yml)"
@@ -167,4 +169,8 @@ EXISTING_SHA="$(gh api "repos/$TAP_REPO/contents/Casks/thermals.rb" --jq .sha 2>
 gh api --method PUT "repos/$TAP_REPO/contents/Casks/thermals.rb" \
   -f message="thermals $VERSION" -f content="$(base64 <"$CASK")" ${EXISTING_SHA:+-f sha="$EXISTING_SHA"} >/dev/null
 git tag "$TAG" && git push origin "$TAG"
+NOTES="Install with \`brew install --cask radkode/thermals/thermals\`, or download the zip below. Signed and notarized for Apple Silicon, macOS 14 or later. Installed copies update from inside the app."
+source_gh() { if [[ -n "${SOURCE_GH_TOKEN:-}" ]]; then GH_TOKEN="$SOURCE_GH_TOKEN" gh "$@"; else gh "$@"; fi; }
+source_gh release create "$TAG" "$ZIP" -R "$SOURCE_REPO" --verify-tag \
+  --title "Thermals $VERSION" --notes "$NOTES" --generate-notes ${PREV_TAG:+--notes-start-tag "$PREV_TAG"}
 echo "==> Released. Install: brew install --cask ${TAP_REPO%%/*}/${TAP_REPO#*/homebrew-}/thermals"
