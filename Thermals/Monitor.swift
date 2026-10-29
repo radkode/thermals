@@ -50,6 +50,7 @@ final class Monitor {
     private(set) var heatActivity: HeatActivity?
     private(set) var episodes = HeatEpisodeRecorder()
     private(set) var powerSource: PowerSourceReading?
+    private(set) var sessions = ThermalSessions()
     var samplesHeatActivity = false {
         didSet { if samplesHeatActivity && timer != nil { sampleHeatActivity(at: .now) } }
     }
@@ -137,6 +138,7 @@ final class Monitor {
         heatActivity: HeatActivity? = nil,
         episodes: HeatEpisodeRecorder = HeatEpisodeRecorder(),
         powerSource: PowerSourceReading? = nil,
+        sessions: ThermalSessions = ThermalSessions(),
         sampledAt: Date? = nil,
         processState: ReadingState? = nil,
         appMemoryState: ReadingState? = nil,
@@ -161,6 +163,7 @@ final class Monitor {
         self.heatActivity = heatActivity
         self.episodes = episodes
         self.powerSource = powerSource
+        self.sessions = sessions
         let now = sampledAt ?? history.last?.date ?? loadHistory.last?.date ?? memoryHistory.last?.date ?? Date.now
         temperatureState = cpuTemperature == nil ? .unavailable : .available(now)
         cpuState = cpuLoad == nil ? .unavailable : .available(now)
@@ -174,6 +177,12 @@ final class Monitor {
         rate = UserDefaults.standard.string(forKey: Self.rateKey).flatMap(SampleRate.init(rawValue:)) ?? .six
         heatAlerts = HeatAlerts(activitySampler: activitySampler)
         tracksPeak = true
+        if let data = UserDefaults.standard.data(forKey: ThermalSessions.storageKey),
+           var saved = try? JSONDecoder().decode(ThermalSessions.self, from: data) {
+            saved.finish(interrupted: true)
+            sessions = saved
+            saveSessions()
+        }
         if let data = UserDefaults.standard.data(forKey: HeatEpisodeRecorder.storageKey),
            var saved = try? JSONDecoder().decode(HeatEpisodeRecorder.self, from: data) {
             saved.finish(interrupted: true)
@@ -217,6 +226,10 @@ final class Monitor {
         powerSource = PowerSourceReading.read()
         gpuPower = gpuReader?.sample().flatMap { gpuMeter.watts($0) }
         if tracksPeak {
+            if sessions.current != nil {
+                sessions.observe(at: now, celsius: cpuTemperature, pressure: thermalState, watts: systemPower)
+                saveSessions()
+            }
             let previous = episodes
             episodes.observe(at: now, celsius: cpuTemperature, pressure: thermalState,
                              systemWatts: systemPower, gpuWatts: gpuPower, activity: heatActivity)
@@ -265,6 +278,23 @@ final class Monitor {
             heatActivity = await activitySampler.sample()
             activityTask = nil
         }
+    }
+
+    func startSession() {
+        guard tracksPeak, sessions.current == nil else { return }
+        sessions.start(at: .now)
+        refresh()
+    }
+
+    func stopSession() {
+        guard tracksPeak, sessions.current != nil else { return }
+        refresh()
+        sessions.finish()
+        saveSessions()
+    }
+
+    private func saveSessions() {
+        if let data = try? JSONEncoder().encode(sessions) { UserDefaults.standard.set(data, forKey: ThermalSessions.storageKey) }
     }
 
     func updateCPU(ticks: [CPUTicks]?, at now: Date) {

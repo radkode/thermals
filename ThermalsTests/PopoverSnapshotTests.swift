@@ -82,7 +82,7 @@ struct PopoverSnapshotTests {
         let bounded = try render(monitor, board: .cpu, height: 736)
         #expect(natural.height > 736)
         #expect(bounded.height == 736)
-        let compact = try render(PreviewMonitors.hot(), board: .heat, height: 520)
+        let compact = try render(PreviewMonitors.largeMachine(), board: .cpu, height: 520)
         #expect(compact.height == 520)
     }
 
@@ -108,7 +108,7 @@ struct PopoverSnapshotTests {
             (PreviewMonitors.hot(), BoardKind.heat, 736.0, false),
             (PreviewMonitors.hot(), .cpu, 736.0, false),
             (PreviewMonitors.hot(), .ram, 736.0, false),
-            (PreviewMonitors.hot(), .heat, 520.0, true),
+            (PreviewMonitors.largeMachine(), .cpu, 520.0, true),
         ] {
             host.rootView = PopoverView(monitor: monitor, pinnedBoard: board, previewHeight: height)
             window.setContentSize(host.fittingSize)
@@ -167,7 +167,7 @@ struct PopoverSnapshotTests {
     @Test(.enabled(if: directory != nil))
     func boardsFitWithPersistentScrollbars() throws {
         let monitor = PreviewMonitors.largeMachine()
-        for (name, board) in [("heat", AnyView(HeatBoard(monitor: monitor))), ("cpu", AnyView(CPUBoard(monitor: monitor))), ("ram", AnyView(RAMBoard(monitor: PreviewMonitors.hot())))] {
+        for (name, board) in [("heat", AnyView(HeatBoard(monitor: monitor))), ("sensors", AnyView(SensorBoard(sensors: monitor.sensors))), ("cpu", AnyView(CPUBoard(monitor: monitor))), ("ram", AnyView(RAMBoard(monitor: PreviewMonitors.hot())))] {
             let renderer = ImageRenderer(content: board.environment(\.readingDate, PreviewMonitors.referenceDate))
             renderer.proposedSize = ProposedViewSize(width: 356, height: nil)
             renderer.scale = 2
@@ -180,10 +180,20 @@ struct PopoverSnapshotTests {
 
     @Test(.enabled(if: directory != nil))
     func renderStates() throws {
+        let receipt = ImageRenderer(content: SessionReceiptView(monitor: PreviewMonitors.sessionReceipt(), expanded: true)
+            .environment(\.temperatureUnit, .celsius).environment(\.colorScheme, .dark)
+            .frame(width: 372).padding(14).background(Board.steelFrame))
+        receipt.scale = 2
+        let receiptImage = try #require(receipt.cgImage)
+        #expect(receiptImage.width == 800)
+        let receiptPNG = try #require(NSBitmapImageRep(cgImage: receiptImage).representation(using: .png, properties: [:]))
+        try receiptPNG.write(to: URL(fileURLWithPath: Self.directory!).appendingPathComponent("session-expanded.png"))
         let states: [(String, Monitor, BoardKind)] = [
             ("cool", PreviewMonitors.cool(), .heat),
             ("hot", PreviewMonitors.hot(), .heat),
             ("recorded-heat", PreviewMonitors.recordedHeat(), .heat),
+            ("session-receipt", PreviewMonitors.sessionReceipt(), .heat),
+            ("session-recording", PreviewMonitors.sessionReceipt(recording: true), .heat),
             ("no-sensors", PreviewMonitors.noSensors(), .heat),
             ("cpu-cool", PreviewMonitors.cool(), .cpu),
             ("cpu-hot", PreviewMonitors.hot(), .cpu),

@@ -34,6 +34,21 @@ enum PreviewMonitors {
                        powerSource: PowerSourceReading(state: .charging, adapterWatts: 96), sampledAt: referenceDate)
     }
 
+    static func sessionReceipt(recording: Bool = false) -> Monitor {
+        let source = recordedHeat()
+        var sessions = ThermalSessions()
+        sessions.start(at: referenceDate.addingTimeInterval(-120))
+        for seconds in stride(from: -120.0, through: 0, by: 10) {
+            sessions.observe(at: referenceDate.addingTimeInterval(seconds), celsius: 93,
+                             pressure: seconds < -60 ? .serious : .nominal, watts: 45)
+        }
+        if !recording { sessions.finish() }
+        return Monitor(sensors: source.sensors, cpuLoad: source.cpuLoad, thermalState: .nominal,
+                       history: source.history, fans: source.fans, systemPower: 45, gpuPower: 10,
+                       dailyPeak: source.dailyPeak, heatActivity: source.heatActivity, episodes: source.episodes,
+                       powerSource: source.powerSource, sessions: sessions, sampledAt: referenceDate)
+    }
+
     static func lowTemperatureCritical() -> Monitor { make(peak: 45, load: 0.2, state: .critical, memoryUsed: 0.93, pressure: .normal) }
 
     static func missingTemperatureCritical() -> Monitor {

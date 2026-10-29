@@ -237,11 +237,17 @@ Eight horizontal lenses represent each core's utilization with the restricted us
 
 HEAT replaces the pressure explanation line with a compact TOP CPU row: 12 name cells, five percentage cells and the existing CPU action. Full names and the one-core denominator are available in help; stale activity is withheld. CPU DIE includes RISING, COOLING or STEADY when enough fresh history exists. Pressure's definition remains on its help text.
 
+### Power Source
+
+Power-source context is one neutral label row below TOP CPU, with adapter capability at the trailing edge when available. It does not reuse heat warning colors or imply that the adapter's rated watts are current draw.
+
 ### Heat Episodes
 
-Power-source context is one neutral label row below TOP CPU, with adapter capability at the trailing edge when available. It does not reuse heat warning colors or imply that the adapter's rated watts are current draw. With this context present, the sensor inventory is expandable.
+HEAT NOW or LAST HEAT follows history with start time, observed duration and peak temperature. Its disclosure shows retained episode details and explains pressure coverage and interrupted readings.
 
-HEAT NOW or LAST HEAT follows history with start time, observed duration and peak temperature. Its disclosure shows retained episode details and explains pressure coverage and interrupted readings. When episodes exist, ALL SENSORS becomes a disclosure below fans so the explanation stays compact.
+### Work Sessions
+
+A compact WORK SESSION panel offers START, then RECORDING with elapsed observed-endpoint duration and STOP. LAST SESSION expands a selectable plain-text receipt and explicit COPY action. Receipts state measured coverage and whole-system energy, without process names. ALL SENSORS is a disclosure below fans so history, episodes and sessions remain glanceable.
 
 ### Fan Panel
 On HEAT, fans sit between history and sensors when present. SMC order is stable; five-cell RPM values support 0...20,000. Lenses and ink show relative fan speed with utilization colors. Unreadable speeds show --; unavailable fan access has recovery guidance, while a successful zero-fan reading is simply omitted.

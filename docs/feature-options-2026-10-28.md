@@ -2,7 +2,7 @@
 
 ## Brief and scope
 
-The owner requested an assessment of 16 earlier ideas against what has shipped, plus new ideas. This is a product exploration, not an implementation commitment. Acceptance: account for every original item, distinguish shipped from built, rank remaining work, explain technical caveats, and preserve candidates in the repository tracker. No application changes, release or website deployment are included.
+The owner requested an assessment of 16 earlier ideas against what has shipped, plus new ideas. This section records the original product exploration; the later owner selection and implementation checkpoint below supersede its initial scope. Acceptance: account for every original item, distinguish shipped from built, rank remaining work, explain technical caveats, and preserve candidates in the repository tracker. No application changes, release or website deployment are included.
 
 Baseline: main at `c10068c5f5330bf4ddb998693578aa31ae153996`. The latest public release at inspection was [0.4.4](https://github.com/radkode/homebrew-thermals/releases/tag/v0.4.4), build 10. The trend commit is newer than that release. The pre-existing untracked `.playwright-cli/` directory belongs to earlier work and was left alone.
 
@@ -12,7 +12,7 @@ Make the next increment explain the heat already measured: live context on HEAT,
 
 Keep the 400pt transient board and stable rows. Prefer one useful summary to another permanent panel, and place optional detail behind an explicit action. No new fourth board is justified by this review. Preserve explicit units, freshness and unavailable states, neutral watts, and the distinction between CPU temperature bands and OS thermal pressure.
 
-## Original list
+## Original list at the assessment baseline
 
 | # | Idea | Verified state | Recommendation |
 | --- | --- | --- | --- |
@@ -60,7 +60,7 @@ The strongest differentiator is the combination of useful episode/session summar
 
 ## Candidate tracker
 
-Each issue is an unselected candidate, not approval to implement or release. Item 16 is part of the live context candidate; the flight recorder is the proposed shape of item 3.
+The five issues named in Authorized implementation are selected. All other issues remain unselected candidates, not approval to implement or release. Item 16 is part of the live context candidate; the flight recorder is the proposed shape of item 3.
 
 | Candidate | Recommendation | Rough effort | Issue |
 | --- | --- | --- | --- |
@@ -90,4 +90,10 @@ Acceptance follows each issue's recorded criteria. Use pure model tests for fres
 
 ## Completion checkpoint
 
-Implementation in progress from c10068c. #43 is dbbbcbc, #44 is 99fefec and #52 is 2015b79. Their focused model/layout tests pass, with renders inspected. A single ps scan took 0.03s wall/0.02s CPU. Power reader and pmset agree on live battery operation; other power states are fixture-tested. #47 is implemented with an owned AppKit status item/popover and OFF/T/H global shortcuts. Three integration tests pass for registration, conflicts, Carbon event delivery, real popup sizing/toggling and settings layout; 16 existing menu/layout tests also passed. The first-open fixture initially fired before the asynchronous system scene attachment; waiting for that setup cycle resolves it, with first-event assertions retained. Native computer-use still times out (existing ai-toolkit #8), so a physical-key/VoiceOver walkthrough remains unverified. Logs/renders: .impeccable/features/. #55 remains. Next action: session receipts. The pre-existing .playwright-cli directory is unrelated; sensor-test actor warning is separate #60.
+All five selected slices are implemented on main from c10068c: #43 (`dbbbcbc`), #44 (`99fefec`), #52 (`2015b79`), #47 (`b8cd9bf`, lifecycle correction `8f3b55e`), and #55 (`ThermalSession.swift`, `SessionReceiptView.swift`). The receipt keeps the active and latest completed session locally, excludes missing power and sleep gaps, reports measured coverage, and copies only on request without process names. No release-version bump or website change is included.
+
+Verification: the final native build/test run passed all 152 tests in 38 suites, using one build job at reduced priority. Focused tests also cover coalesced activity requests, freshness, episode recovery and retention, power-source interpretation, Carbon registration/conflicts, explicit session start/stop and relaunch, Wh integration and coverage gaps. The popover test caught and verified a correction for sampling on reopen: AppKit visibility now drives board sampling even when SwiftUI does not repeat onAppear. Hidden and closed sampling flags, first-open sizing, toggling and reopening are asserted. Ordinary, compact, unavailable, active-session and expanded-receipt renders were inspected. Logs and renders are in `.impeccable/features/`; final result is `final-verified.log` with exit 0 and `final-shots/`.
+
+A single ps scan took 0.03s wall/0.02s CPU, an observation rather than a sustained performance benchmark. The live power reader and pmset agree on battery operation; AC and charging variants are fixture-tested. Native computer-use still times out (existing ai-toolkit #8), so physical-key, focus/VoiceOver and plug/unplug walkthroughs remain unverified. No independent Workflow run is claimed because the required tool is unavailable (existing DD-8744).
+
+Separate follow-ups: sensor-test actor warning [#60](https://github.com/radkode/thermals/issues/60), website parity for the new features [#64](https://github.com/radkode/thermals/issues/64), and automatic source-only push tests [#65](https://github.com/radkode/thermals/issues/65). The pre-existing `.playwright-cli/` directory remains unrelated. Other exploratory candidates remain unselected. A public release and website deployment are separate owner-selected steps.
