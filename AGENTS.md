@@ -4,6 +4,8 @@ Thermals is a SwiftUI macOS menu bar app. Product truth lives in [PRODUCT.md](./
 
 The [2026-10-28 UX audit](./docs/ux-audit-2026-10-28.md) records evidence, limitations and tracked improvement proposals. Its implementation checkpoint records the owner-authorized follow-up scope.
 
+The [2026-10-28 macOS performance analysis](./docs/macos-performance-2026-10-28.md) records measured reader, rendering and process costs, pinned-source scope, profiling limits and prioritized follow-ups. Its [probe directory](./docs/performance-2026-10-28/README.md) contains reproduction commands and durable measurements.
+
 The [2026-10-28 feature assessment](./docs/feature-options-2026-10-28.md) distinguishes shipped and built ideas and records exploratory concepts. Its implementation checkpoint tracks the five owner-selected follow-ups.
 
 The [website performance investigation](./docs/website-performance.md) records rendering constraints, measurements and browser regression checks for `site/`. The [website parity contract](./docs/website-parity.md) maps sample-board semantics to the released app and documents its regression checks.

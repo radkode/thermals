@@ -1,0 +1,328 @@
+{
+  "pinned_source": "dbbbcbc2634977b785bda64342d9c0093bf08a64",
+  "initial_source": "c10068c5f5330bf4ddb998693578aa31ae153996",
+  "installed_version": "0.4.4 (10), binary/source identity not proven",
+  "reader_environment": {
+    "cores": 12,
+    "date": "2026-10-29T02:20:50Z",
+    "display_sensor_count": 20,
+    "fan_count": 2,
+    "footprint_groups": 343,
+    "gpu_available": true,
+    "os": "Version 27.0.1 (Build 26A434)",
+    "pids": 813,
+    "raw_sensor_count": 45,
+    "snapshot_pids": 820
+  },
+  "reader_results": [
+    {
+      "children_cpu_ms_per_call": 0,
+      "max_ms": 4.27575,
+      "mean_ms": 3.0165166,
+      "median_ms": 2.911667,
+      "n": 10,
+      "name": "HID init",
+      "p95_ms": 4.27575,
+      "self_cpu_ms_per_call": 1.4465
+    },
+    {
+      "children_cpu_ms_per_call": 0,
+      "max_ms": 0.352625,
+      "mean_ms": 0.20361260000000003,
+      "median_ms": 0.197833,
+      "n": 10,
+      "name": "SMC init",
+      "p95_ms": 0.352625,
+      "self_cpu_ms_per_call": 0.21260000000000012
+    },
+    {
+      "children_cpu_ms_per_call": 0,
+      "max_ms": 54.906625,
+      "mean_ms": 46.5208209,
+      "median_ms": 46.212875,
+      "n": 10,
+      "name": "GPU init",
+      "p95_ms": 54.906625,
+      "self_cpu_ms_per_call": 46.4921
+    },
+    {
+      "children_cpu_ms_per_call": 0,
+      "max_ms": 90.306417,
+      "mean_ms": 40.59290249000001,
+      "median_ms": 36.90775,
+      "n": 100,
+      "name": "HID read",
+      "p95_ms": 60.5315,
+      "self_cpu_ms_per_call": 1.1926499999999998
+    },
+    {
+      "children_cpu_ms_per_call": 0,
+      "max_ms": 2.73525,
+      "mean_ms": 0.2097845600000002,
+      "median_ms": 0.176209,
+      "n": 100,
+      "name": "temperature select and sort",
+      "p95_ms": 0.245958,
+      "self_cpu_ms_per_call": 0.19987999999999942
+    },
+    {
+      "children_cpu_ms_per_call": 0,
+      "max_ms": 1.912709,
+      "mean_ms": 1.1456700100000003,
+      "median_ms": 1.097375,
+      "n": 100,
+      "name": "SMC fans",
+      "p95_ms": 1.57275,
+      "self_cpu_ms_per_call": 0.1760200000000009
+    },
+    {
+      "children_cpu_ms_per_call": 0,
+      "max_ms": 0.879458,
+      "mean_ms": 0.27356213,
+      "median_ms": 0.244,
+      "n": 100,
+      "name": "SMC power",
+      "p95_ms": 0.646333,
+      "self_cpu_ms_per_call": 0.06744000000000028
+    },
+    {
+      "children_cpu_ms_per_call": 0,
+      "max_ms": 2.382583,
+      "mean_ms": 1.9578691200000007,
+      "median_ms": 1.925792,
+      "n": 100,
+      "name": "GPU energy sample",
+      "p95_ms": 2.205375,
+      "self_cpu_ms_per_call": 1.9581599999999992
+    },
+    {
+      "children_cpu_ms_per_call": 0,
+      "max_ms": 0.7395,
+      "mean_ms": 0.03812083,
+      "median_ms": 0.024,
+      "n": 100,
+      "name": "CPU ticks",
+      "p95_ms": 0.068625,
+      "self_cpu_ms_per_call": 0.036750000000000685
+    },
+    {
+      "children_cpu_ms_per_call": 0,
+      "max_ms": 0.133209,
+      "mean_ms": 0.028221720000000002,
+      "median_ms": 0.025542,
+      "n": 100,
+      "name": "system memory",
+      "p95_ms": 0.050209,
+      "self_cpu_ms_per_call": 0.03356999999999971
+    },
+    {
+      "children_cpu_ms_per_call": 0,
+      "max_ms": 163.967375,
+      "mean_ms": 28.727083679999996,
+      "median_ms": 24.934917,
+      "n": 100,
+      "name": "app footprints",
+      "p95_ms": 50.527083,
+      "self_cpu_ms_per_call": 26.072029999999998
+    },
+    {
+      "children_cpu_ms_per_call": 0,
+      "max_ms": 0.080666,
+      "mean_ms": 0.03251454,
+      "median_ms": 0.027542,
+      "n": 100,
+      "name": "footprint ranking",
+      "p95_ms": 0.071625,
+      "self_cpu_ms_per_call": 0.039190000000003236
+    },
+    {
+      "children_cpu_ms_per_call": 31.500566666666668,
+      "max_ms": 241.840291,
+      "mean_ms": 131.78425126666667,
+      "median_ms": 126.983833,
+      "n": 30,
+      "name": "process snapshot",
+      "p95_ms": 153.761333,
+      "self_cpu_ms_per_call": 31.86876666666667
+    },
+    {
+      "children_cpu_ms_per_call": 0,
+      "max_ms": 0.289875,
+      "mean_ms": 0.18931541999999996,
+      "median_ms": 0.183708,
+      "n": 100,
+      "name": "process aggregation",
+      "p95_ms": 0.244958,
+      "self_cpu_ms_per_call": 0.19832000000000335
+    }
+  ],
+  "view_results": [
+    {
+      "max_ms": 54.523709,
+      "median_ms": 50.788959,
+      "n": 10,
+      "name": "preview monitor initialization",
+      "p95_ms": 54.523709
+    },
+    {
+      "max_ms": 44.368333,
+      "median_ms": 39.031208,
+      "n": 30,
+      "name": "refresh without footprints",
+      "p95_ms": 41.435292
+    },
+    {
+      "max_ms": 64.750125,
+      "median_ms": 59.973208,
+      "n": 30,
+      "name": "refresh with footprints",
+      "p95_ms": 63.521584
+    },
+    {
+      "max_ms": 343.857709,
+      "median_ms": 93.704125,
+      "n": 15,
+      "name": "cold image render heat",
+      "p95_ms": 343.857709
+    },
+    {
+      "max_ms": 81.414709,
+      "median_ms": 74.906583,
+      "n": 15,
+      "name": "cold image render cpu",
+      "p95_ms": 81.414709
+    },
+    {
+      "max_ms": 253.734167,
+      "median_ms": 75.449291,
+      "n": 15,
+      "name": "cold image render ram",
+      "p95_ms": 253.734167
+    },
+    {
+      "max_ms": 208.5975,
+      "median_ms": 193.512459,
+      "n": 15,
+      "name": "cold image render CPU 48 cores",
+      "p95_ms": 208.5975
+    },
+    {
+      "max_ms": 31.682,
+      "median_ms": 28.63325,
+      "n": 15,
+      "name": "cold image render settings",
+      "p95_ms": 31.682
+    },
+    {
+      "max_ms": 7.501917,
+      "median_ms": 0.364,
+      "n": 100,
+      "name": "menu image body",
+      "p95_ms": 0.618542
+    },
+    {
+      "max_ms": 0.002875,
+      "median_ms": 0.00025,
+      "n": 1000,
+      "name": "history bucketing",
+      "p95_ms": 0.000333
+    },
+    {
+      "max_ms": 0.00275,
+      "median_ms": 0.000708,
+      "n": 1000,
+      "name": "temperature trend",
+      "p95_ms": 0.000916
+    }
+  ],
+  "installed_capture": {
+    "seconds": 60.207980583,
+    "observations": 61,
+    "panel_visibility": "unverified",
+    "one_core_cpu_percent": 0.10855832626689178,
+    "child_cpu_ns_delta": 0,
+    "counters": {
+      "footprint": {
+        "start": 197706856,
+        "end": 197821544,
+        "min": 197690472,
+        "max": 202376296,
+        "delta": 114688
+      },
+      "resident": {
+        "start": 62849024,
+        "end": 56901632,
+        "min": 36012032,
+        "max": 65273856,
+        "delta": -5947392
+      },
+      "idle_wakeups": {
+        "start": 935,
+        "end": 938,
+        "min": 935,
+        "max": 938,
+        "delta": 3
+      },
+      "interrupt_wakeups": {
+        "start": 238898,
+        "end": 242041,
+        "min": 238898,
+        "max": 242041,
+        "delta": 3143
+      },
+      "disk_read": {
+        "start": 30871552,
+        "end": 33271808,
+        "min": 30871552,
+        "max": 33271808,
+        "delta": 2400256
+      },
+      "disk_write": {
+        "start": 0,
+        "end": 0,
+        "min": 0,
+        "max": 0,
+        "delta": 0
+      }
+    }
+  },
+  "spaced_hid_results": [
+    {
+      "children_cpu_ms_per_call": 0,
+      "max_ms": 77.8645,
+      "mean_ms": 41.50778535,
+      "median_ms": 36.759042,
+      "n": 20,
+      "name": "HID read at 3-second cadence",
+      "p95_ms": 65.3005,
+      "self_cpu_ms_per_call": 1.4003
+    }
+  ],
+  "raw_artifacts": {
+    "sensors.json": {
+      "path": "build/performance-2026-10-28/sensors.json",
+      "sha256": "c59e92c8b2df841376a83a2b93acaefd3d7f1c99582ca1020ce16d084e2ca6e5"
+    },
+    "view-probes.json": {
+      "path": "build/performance-2026-10-28/view-probes.json",
+      "sha256": "f7ad02b2103272a148f128cc9aa3a83d029bab34707293847d38ea9a5e79c408"
+    },
+    "installed-idle.json": {
+      "path": "build/performance-2026-10-28/installed-idle.json",
+      "sha256": "25702d715545a21930fa4c762af1a3a36b3c5a4cada52a74aa7895bda50c6b1f"
+    },
+    "installed-idle-sample.txt": {
+      "path": "build/performance-2026-10-28/installed-idle-sample.txt",
+      "sha256": "6c1b99819bcbdb23426fac0a41bbd51890f0cd7c1d106d5a851f1ec2a2df60b2"
+    },
+    "installed-vmmap.txt": {
+      "path": "build/performance-2026-10-28/installed-vmmap.txt",
+      "sha256": "b3b2aca2b0dafa36bee771e5c099a43c39b57ab1f3efff7aaca5544eed0f8dd6"
+    },
+    "hid-spaced.json": {
+      "path": "build/performance-2026-10-28/hid-spaced.json",
+      "sha256": "d9f4a9fb8fd4ca75223aea0a34b70dfe85671e85b6d54d3917ba6b8786c8fb43"
+    }
+  },
+  "source_only_addendum_revision": "3bb435c8da1ac06881235788298196a50b208abe"
+}
