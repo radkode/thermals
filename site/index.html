@@ -12,7 +12,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Thermals</title>
-<meta name="description" content="Thermals is a split-flap board for your Mac's heat: the CPU die temperature in the menu bar, and one click for every sensor, core, fan and the apps behind it.">
+<meta name="description" content="Thermals is a split-flap board for your Mac's heat: the CPU die temperature in the menu bar, and one click for every sensor, core, fan and the apps behind it. Free and open source under the MIT license.">
 <meta property="og:title" content="Thermals">
 <meta property="og:description" content="How hot your Mac is running, in the menu bar.">
 <meta property="og:image" content="https://thermals.dev/icon.png">
@@ -222,11 +222,14 @@ button, .button { font: inherit; color: inherit; cursor: pointer; border: 0; bac
 .steps p { margin: 0; font-size: 18px; line-height: 1.45; color: var(--letter-white); }
 .steps p span { color: var(--steel-light); }
 .steps .command { margin-top: 10px; }
-.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-top: 26px; padding-top: 20px; border-top: 1px solid rgba(91, 94, 99, 0.45); }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-top: 26px; padding-top: 20px; border-top: 1px solid rgba(91, 94, 99, 0.45); }
 .facts p { margin: 6px 0 0; font-size: 16px; line-height: 1.4; color: var(--letter-white); }
 footer { max-width: 1320px; margin: 0 auto; padding: 0 var(--gutter) 40px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 footer a { text-decoration: none; color: var(--steel-light); }
 footer a:hover { color: var(--amber); }
+.footer-links { display: flex; gap: 20px; flex-wrap: wrap; }
+.requirements a, .facts a { text-decoration: underline; text-decoration-color: var(--steel-mid); text-underline-offset: 3px; }
+.requirements a:hover, .facts a:hover { color: var(--amber); text-decoration-color: currentColor; }
 
 @media (prefers-reduced-motion: reduce) {
   .half.falling, .half.rising { animation: none; display: none; }
@@ -253,7 +256,7 @@ footer a:hover { color: var(--amber); }
       </div>
       <span class="download-housing"><a class="download" href="https://github.com/radkode/homebrew-thermals/releases/latest"><span class="lamp" aria-hidden="true"></span>DOWNLOAD</a></span>
     </div>
-    <p class="label requirements">Apple Silicon &middot; macOS 14 or later &middot; notarized by Apple</p>
+    <p class="label requirements">Apple Silicon &middot; macOS 14 or later &middot; notarized by Apple &middot; <a href="https://github.com/radkode/thermals">open source, MIT</a></p>
   </section>
 
   <section class="platforms" aria-labelledby="platforms-title">
@@ -320,6 +323,7 @@ footer a:hover { color: var(--amber); }
         <div><span class="label">Runs on</span><p>Apple Silicon Macs with macOS 14 or later. Intel Macs aren't supported yet.</p></div>
         <div><span class="label">Readings</span><p>Temperatures come from the same Apple Silicon sensor source Stats and iStat Menus use. A reading it can't get shows as unavailable, never a guess.</p></div>
         <div><span class="label">Distribution</span><p>Signed with a Developer ID and notarized by Apple, outside the Mac App Store, since the sandbox can't read sensor temperatures.</p></div>
+        <div><span class="label">Source</span><p>Free and open source under the MIT license. <a href="https://github.com/radkode/thermals">Read the code</a>, open an issue or send a pull request. Report security problems <a href="https://github.com/radkode/thermals/security/advisories/new">privately</a>, never in a public issue.</p></div>
       </div>
     </div>
   </section>
@@ -328,7 +332,7 @@ footer a:hover { color: var(--amber); }
 <p class="visually-hidden" id="copy-status" role="status"></p>
 <footer>
   <span class="label">thermals.dev</span>
-  <a class="label" href="https://github.com/radkode/homebrew-thermals">Releases on GitHub</a>
+  <span class="footer-links"><a class="label" href="https://github.com/radkode/thermals">Source on GitHub</a><a class="label" href="https://github.com/radkode/homebrew-thermals">Releases</a></span>
 </footer>
 
 <script>

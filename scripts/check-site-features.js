@@ -10,6 +10,7 @@ async page => {
   await page.locator('#work-session').scrollIntoViewIfNeeded();
   assert((await page.locator('#preview-note').innerText()).includes('Included in Thermals 0.5.0'), 'Identify the features in the published release');
   assert(await page.getByRole('button', {name: 'Start a sample work session', exact: true}).isVisible(), 'Session actions must be exposed to accessibility');
+  assert(await page.locator('footer a[href="https://github.com/radkode/thermals"]').isVisible() && await page.locator('.facts a[href="https://github.com/radkode/thermals/security/advisories/new"]').isVisible(), 'Link the public source and private security reporting');
   assert(!await page.locator('#last-session').isVisible(), 'No completed receipt before an explicit session');
   const alignment = await page.locator('#board-heat .stats').evaluate(el => {
     const stats = [...el.querySelectorAll('.stat')].map(s => s.getBoundingClientRect());
