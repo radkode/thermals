@@ -39,4 +39,7 @@ jobs:
       - name: Check release dry-run isolation
         run: python3 scripts/test-release-dry-run.py
       - name: Package without production signing keys
-        run: scripts/release.sh --dry-run
+        run: |
+          scripts/release.sh --dry-run
+          ditto -x -k build/release/*/Thermals-*.zip "$RUNNER_TEMP/thermals-package"
+          scripts/check-licenses.sh "$RUNNER_TEMP/thermals-package/Thermals.app"

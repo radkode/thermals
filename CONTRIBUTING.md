@@ -6,7 +6,7 @@ The maintainer may land changes directly on `main`. That internal workflow does 
 
 ## Build and test
 
-Use an Apple Silicon Mac with macOS 14 or later, full Xcode selected with `xcode-select`, and XcodeGen 2.46.0. The current local reference toolchain is Xcode 27.1; CI uses the default Xcode on GitHub's `macos-26` image and prints its version. The minimum build Xcode version has not been established. Runtime macOS support does not imply that every older Xcode can build the source.
+Use an Apple Silicon Mac with macOS 14 or later, full Xcode selected with `xcode-select`, and XcodeGen 2.46.0. The build is verified with Xcode 26.6 in CI and Xcode 27.1 locally. CI uses the default Xcode on GitHub's `macos-26` image and prints its version; earlier Xcode versions have not been validated. Runtime macOS support does not imply that every older Xcode can build the source.
 
 ```sh
 brew install xcodegen

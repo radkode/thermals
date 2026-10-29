@@ -25,7 +25,7 @@ xcodebuild -project Thermals.xcodeproj -scheme Thermals -destination 'platform=m
 
 The Xcode project is generated and not committed; edit `project.yml`, then rerun `xcodegen generate`.
 
-Debug development does not require release credentials. The reference local toolchain is Xcode 27.1 with XcodeGen 2.46.0; the minimum build Xcode version is not yet established. See the contributor guide for the distinction between Debug development and Release packaging.
+Debug development does not require release credentials. XcodeGen 2.46.0 is verified with Xcode 26.6 in CI and Xcode 27.1 locally; earlier build toolchains have not been validated. See the contributor guide for the distinction between Debug development and Release packaging.
 
 ## Privacy
 
