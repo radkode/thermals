@@ -47,6 +47,10 @@ final class Monitor {
     /// GPU power in watts, from IOReport; nil until its energy counter has moved.
     private(set) var gpuPower: Double?
     private(set) var dailyPeak: DailyPeak?
+    private(set) var heatActivity: HeatActivity?
+    var samplesHeatActivity = false {
+        didSet { if samplesHeatActivity && timer != nil { sampleHeatActivity(at: .now) } }
+    }
     private(set) var temperatureState = ReadingState.loading
     private(set) var cpuState = ReadingState.loading
     private(set) var memoryState = ReadingState.loading
@@ -96,6 +100,9 @@ final class Monitor {
     @ObservationIgnored private var tracksPeak = false
     @ObservationIgnored private var peakSampledAt: Date?
     @ObservationIgnored private var peakTask: Task<Void, Never>?
+    @ObservationIgnored private let activitySampler = ActivitySampler()
+    @ObservationIgnored private var activityTask: Task<Void, Never>?
+    @ObservationIgnored private var activityRequestedAt: Date?
     @ObservationIgnored private let coreNames = CoreLayout.names(for: CoreLayout.read())
     @ObservationIgnored private let processSampler = ProcessSampler()
     @ObservationIgnored private var previousTicks: [CPUTicks]?
@@ -125,6 +132,7 @@ final class Monitor {
         systemPower: Double? = nil,
         gpuPower: Double? = nil,
         dailyPeak: DailyPeak? = nil,
+        heatActivity: HeatActivity? = nil,
         sampledAt: Date? = nil,
         processState: ReadingState? = nil,
         appMemoryState: ReadingState? = nil,
@@ -146,6 +154,7 @@ final class Monitor {
         self.systemPower = systemPower
         self.gpuPower = gpuPower
         self.dailyPeak = dailyPeak
+        self.heatActivity = heatActivity
         let now = sampledAt ?? history.last?.date ?? loadHistory.last?.date ?? memoryHistory.last?.date ?? Date.now
         temperatureState = cpuTemperature == nil ? .unavailable : .available(now)
         cpuState = cpuLoad == nil ? .unavailable : .available(now)
@@ -157,7 +166,7 @@ final class Monitor {
 
     init() {
         rate = UserDefaults.standard.string(forKey: Self.rateKey).flatMap(SampleRate.init(rawValue:)) ?? .six
-        heatAlerts = HeatAlerts()
+        heatAlerts = HeatAlerts(activitySampler: activitySampler)
         tracksPeak = true
         dailyPeak = UserDefaults.standard.data(forKey: DailyPeak.storageKey).flatMap { try? JSONDecoder().decode(DailyPeak.self, from: $0) }
         refresh()
@@ -200,6 +209,10 @@ final class Monitor {
         if tracksPeak, let cpuTemperature { trackPeak(cpuTemperature, at: now) }
         if let memory { memoryHistory.append(TimedValue(date: now, value: memory.usedPercent)) }
         pruneHistory(at: now)
+        if HeatActivity.shouldSample(celsius: cpuTemperature, pressure: thermalState,
+                                     trend: TemperatureTrend(history, now: now), visible: samplesHeatActivity) {
+            sampleHeatActivity(at: now)
+        }
         if samplesAppMemory { sampleAppMemory(at: now) }
         if samplesProcesses { sampleProcesses() }
     }
@@ -211,8 +224,10 @@ final class Monitor {
         peakSampledAt = now
         let date = peak.date
         peakTask = Task { [weak self] in
-            let culprit = await ProcessSampler.busiest()
             guard let self else { return }
+            let activity = await activitySampler.sample()
+            let culprit = activity.process
+            heatActivity = activity
             peakTask = nil
             if let current = dailyPeak { setPeak(current.attributed(culprit?.name, for: date)) }
         }
@@ -221,6 +236,17 @@ final class Monitor {
     private func setPeak(_ peak: DailyPeak) {
         dailyPeak = peak
         if let data = try? JSONEncoder().encode(peak) { UserDefaults.standard.set(data, forKey: DailyPeak.storageKey) }
+    }
+
+    private func sampleHeatActivity(at now: Date) {
+        guard tracksPeak, activityTask == nil,
+              activityRequestedAt.map({ now.timeIntervalSince($0) >= 30 }) ?? true else { return }
+        activityRequestedAt = now
+        activityTask = Task { [weak self] in
+            guard let self else { return }
+            heatActivity = await activitySampler.sample()
+            activityTask = nil
+        }
     }
 
     func updateCPU(ticks: [CPUTicks]?, at now: Date) {
@@ -278,6 +304,8 @@ final class Monitor {
                 if let sample = processSampler.sample(snapshot) {
                     processes = sample.ranked
                     processState = .available(.now)
+                    activitySampler.record(sample.ranked.first, at: .now)
+                    heatActivity = HeatActivity(process: sample.ranked.first, date: .now)
                     hiddenLoad = cpuLoad.map { Self.hiddenLoad(totalFraction: $0, cores: coreLoads.count, visibleTotal: sample.visibleTotal) }
                     return
                 }

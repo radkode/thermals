@@ -104,7 +104,8 @@ enum PreviewMonitors {
             fans: fans,
             systemPower: 6 + 52 * load,
             gpuPower: 1.5 + 21 * load,
-            dailyPeak: DailyPeak(celsius: peak + 3, date: now.addingTimeInterval(-5_400), culprit: load > 0.5 ? "xcodebuild" : "Google Chrome")
+            dailyPeak: DailyPeak(celsius: peak + 3, date: now.addingTimeInterval(-5_400), culprit: load > 0.5 ? "xcodebuild" : "Google Chrome"),
+            heatActivity: HeatActivity(process: processes.first, date: now)
         )
     }
 }

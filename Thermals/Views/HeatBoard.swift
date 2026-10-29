@@ -11,12 +11,7 @@ struct HeatBoard: View {
         VStack(alignment: .leading, spacing: 14) {
             header
             ReadingNotice(state: monitor.temperatureState, source: "CPU temperature", retry: monitor.refresh)
-            HStack {
-                BoardNote("Pressure: macOS assessment.")
-                    .help("Thermal pressure is macOS's assessment, not a temperature limit.")
-                Spacer(minLength: 8)
-                FlapButton(title: "CPU", accessibilityName: "Inspect current CPU activity", action: inspectCPU)
-            }
+            activityRow
             LampMeter(
                 readings: monitor.history,
                 scale: .temperature,
@@ -35,7 +30,7 @@ struct HeatBoard: View {
     private var header: some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 5) {
-                ColumnLabel("CPU DIE")
+                ColumnLabel("CPU DIE\(direction.map { " · \($0)" } ?? "")")
                 FlapText(
                     text: monitor.cpuTemperature.map { Format.degrees($0, unit: unit) } ?? "--°",
                     cells: 4,
@@ -59,9 +54,31 @@ struct HeatBoard: View {
                 GridRow {
                     watts("GPU", monitor.gpuPower)
                     BoardStat(label: "PRESSURE", value: monitor.thermalState.boardTitle, cells: 8, ink: monitor.thermalState.ink)
+                        .help("Thermal pressure is macOS's assessment, not a temperature limit.")
                 }
             }
         }
+    }
+
+    private var direction: String? {
+        guard !monitor.temperatureState.isStale(at: now, interval: monitor.rate.seconds), monitor.cpuTemperature != nil else { return nil }
+        return TemperatureTrend(monitor.history, now: now).map {
+            switch $0 { case .rising: "RISING"; case .falling: "COOLING"; case .steady: "STEADY" }
+        }
+    }
+
+    private var activityRow: some View {
+        let activity = monitor.heatActivity.flatMap { $0.isFresh(at: now) ? $0 : nil }
+        let process = activity?.process
+        let placeholder = monitor.heatActivity == nil ? "SAMPLING" : activity == nil ? "STALE" : "UNAVAILABLE"
+        return HStack(spacing: 6) {
+            ColumnLabel("TOP CPU")
+            FlapText(text: process?.name ?? placeholder, cells: 12, ink: Board.steelLight)
+            Spacer(minLength: 0)
+            FlapText(text: process.map { "\(Int($0.percent.rounded()))%" } ?? "--", cells: 5, alignment: .trailing)
+            FlapButton(title: "CPU", accessibilityName: "Inspect current CPU activity", action: inspectCPU)
+        }
+        .help(process.map { "\($0.name) uses \(Int($0.percent.rounded()))% of one CPU core. Activity does not prove the source of all heat." } ?? "Process activity is sampled every 30 seconds on HEAT or while the Mac is hot or warming. Stale samples are hidden.")
     }
 
     private var todaysPeak: DailyPeak? {

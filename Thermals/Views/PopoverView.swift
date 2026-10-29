@@ -228,6 +228,7 @@ struct PopoverView: View {
     private func sample(_ board: BoardKind?) {
         guard !preview else { return }
         monitor.samplesProcesses = board == .cpu
+        monitor.samplesHeatActivity = board == .heat
         monitor.samplesAppMemory = board == .ram
     }
 }

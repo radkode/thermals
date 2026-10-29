@@ -36,6 +36,8 @@ HEAT ALERTS (on by default) sends one notification when the CPU has been at 85°
 
 PEAK TODAY, at the bottom of HEAT's LAST 3 MIN panel, is the hottest CPU die reading since local midnight (`DailyPeak` in `Thermals/DailyPeak.swift`), saved in user defaults so a relaunch keeps it. Only a reading a whole degree hotter replaces it. When a peak at or above 50°C is set, the busiest process is sampled the same way as for alerts (`ProcessSampler.busiest`), at most every 30 seconds; a rising peak keeps the last name until the next sample. The time is 24-hour (`Format.clock`).
 
+HEAT's TOP CPU row shows current activity, with temperature direction beside CPU DIE. `ActivitySampler` coalesces concurrent requests from HEAT, peaks and alerts and reuses CPU-board results up to five seconds old. HEAT requests activity at most every 30 seconds while visible, or in the background when at least 75°C, rising, or under serious/critical pressure. Activity older than 45 seconds is hidden; failed samples show UNAVAILABLE. Percentages are of one core. The busiest process is observed activity, not proof of the source of all heat.
+
 ## Boards
 
 The 400pt-wide popover has three boards, switched with HEAT / CPU / RAM or Cmd-1/2/3. Each board uses its natural height, bounded only by the current screen's visible height minus 32pt. Ordinary readings stay fully visible whenever they fit. Only overflow scrolls; tabs, available updates and the footer stay reachable. CPU puts attribution before per-core detail. Settings (Cmd-comma) replaces readings, and Back or Escape returns. Its heading shows the running app’s version and build, read from `Bundle.main` rather than the update feed. Closing the panel stops expensive process/footprint sampling.

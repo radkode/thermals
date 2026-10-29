@@ -73,6 +73,9 @@ final class HeatAlerts {
 
     private var trigger = HeatAlertTrigger()
     private var sending = false
+    private let activitySampler: ActivitySampler
+
+    init(activitySampler: ActivitySampler = ActivitySampler()) { self.activitySampler = activitySampler }
 
     func observe(celsius: Double?, thermalState: ProcessInfo.ThermalState) {
         guard trigger.observe(celsius: celsius, thermalState: thermalState, at: .now),
@@ -87,7 +90,7 @@ final class HeatAlerts {
         let unit = UserDefaults.standard.string(forKey: "temperatureUnit").flatMap(TemperatureUnit.init(rawValue:)) ?? .system
         Task {
             defer { sending = false }
-            let culprit = await ProcessSampler.busiest()
+            let culprit = await activitySampler.sample().process
             let center = UNUserNotificationCenter.current()
             // Permission is asked only once there is something to announce.
             guard (try? await center.requestAuthorization(options: [.alert])) == true,
