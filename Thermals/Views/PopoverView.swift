@@ -8,6 +8,7 @@ struct PopoverView: View {
     var updater: Updater?
     var shortcut: GlobalShortcut?
     var closePanel: (() -> Void)?
+    var panelIsVisible = true
     var pinnedBoard: BoardKind?
     var pinnedUnit: TemperatureUnit?
     var previewLoginError = false
@@ -61,6 +62,7 @@ struct PopoverView: View {
         .onAppear { updateSampling() }
         .onChange(of: board) { _, _ in updateSampling() }
         .onChange(of: showsSettings) { _, _ in updateSampling() }
+        .onChange(of: panelIsVisible) { _, _ in updateSampling() }
         .onDisappear { sample(nil) }
         .task { await refreshPermissions() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
@@ -235,7 +237,7 @@ struct PopoverView: View {
         if notificationAccess == .allowed { notificationError = false }
     }
 
-    private func updateSampling() { sample(settingsOpen ? nil : board) }
+    private func updateSampling() { sample(settingsOpen || !panelIsVisible ? nil : board) }
     private func sample(_ board: BoardKind?) {
         guard !preview else { return }
         monitor.samplesProcesses = board == .cpu

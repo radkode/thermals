@@ -17,7 +17,7 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         super.init()
         if registersShortcut { shortcut = GlobalShortcut { [weak self] in self?.toggle() } }
         let host = NSHostingController(rootView: PopoverView(monitor: monitor, updater: updater, shortcut: shortcut,
-                                                           closePanel: { [weak self] in self?.close() }))
+                                                           closePanel: { [weak self] in self?.close() }, panelIsVisible: false))
         host.sizingOptions = [.minSize, .maxSize, .preferredContentSize]
         host.view.setFrameSize(host.view.fittingSize)
         popover.contentViewController = host
@@ -53,7 +53,12 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         }
     }
 
+    func popoverDidShow(_ notification: Notification) {
+        (popover.contentViewController as? NSHostingController<PopoverView>)?.rootView.panelIsVisible = true
+    }
+
     func popoverDidClose(_ notification: Notification) {
+        (popover.contentViewController as? NSHostingController<PopoverView>)?.rootView.panelIsVisible = false
         monitor.samplesProcesses = false
         monitor.samplesHeatActivity = false
         monitor.samplesAppMemory = false

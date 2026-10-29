@@ -46,6 +46,7 @@ struct GlobalShortcutTests {
         _ = try #require(controller.item.button?.window, "The system must attach the status item before it can anchor a popover")
         // AppKit connects the status-item scene asynchronously, after creating its local NSWindow.
         try await Task.sleep(for: .milliseconds(150))
+        #expect(!monitor.samplesProcesses && !monitor.samplesHeatActivity && !monitor.samplesAppMemory)
         var invocations = 0
         let shortcut = GlobalShortcut(defaults: defaults) {
             invocations += 1
@@ -64,6 +65,7 @@ struct GlobalShortcutTests {
         #expect(invocations == 1)
         try await Task.sleep(for: .milliseconds(150))
         #expect(controller.popover.isShown)
+        #expect(monitor.samplesProcesses || monitor.samplesHeatActivity || monitor.samplesAppMemory)
         let view = try #require(controller.popover.contentViewController?.view)
         #expect(view.frame.width == 400)
         #expect(view.frame.height > 300 && view.frame.height < 736)
@@ -73,6 +75,8 @@ struct GlobalShortcutTests {
         #expect(!monitor.samplesProcesses && !monitor.samplesHeatActivity && !monitor.samplesAppMemory)
         controller.toggle()
         #expect(controller.popover.isShown)
+        try await Task.sleep(for: .milliseconds(100))
+        #expect(monitor.samplesProcesses || monitor.samplesHeatActivity || monitor.samplesAppMemory)
         controller.close()
         #expect(!controller.popover.isShown)
     }
