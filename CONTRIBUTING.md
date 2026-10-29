@@ -2,7 +2,9 @@
 
 Outside pull requests are welcome. For a substantial behavior or architecture change, open an issue first so we can agree on the scope. Keep each change focused and describe the problem, result and verification. Contributions are made under the project's [MIT license](./LICENSE); retain dependency and asset licenses.
 
-The maintainer may land changes directly on `main`. That internal workflow does not require outside contributors to have write access. Fork the repository and open your PR against `main`. Do not change the app version or release workflow unless the task specifically calls for it.
+All changes, including maintainer changes, go through a pull request against `main`. Outside contributors should fork the repository. Keep the branch up to date with main, pass the native `test` and secret `scan` checks, and resolve review conversations before merging. These checks must come from GitHub Actions; direct pushes, force pushes and branch deletion are blocked, with no bypass actors.
+
+The maintainer reviews outside contributions and controls merging. A second approval is not mechanically required for the solo maintainer's own PRs, but PR and CI requirements still apply. CI is evidence for review, not a substitute for reviewing behavior, security and scope. Do not change the app version or release workflow unless the task specifically calls for it.
 
 ## Build and test
 
@@ -43,7 +45,7 @@ The website is static and has no package install or build step. The committed ch
 
 Bug reports should include the app version/build, macOS version, chip model, expected and actual behavior, and reproducible steps. Remove unrelated process names or other personal details from logs and screenshots. For vulnerabilities use [SECURITY.md](./SECURITY.md), not a public issue.
 
-Native changes run tests and license-resource checks on main and PRs without release secrets. Secret scanning runs on all main pushes and PRs. Run the relevant local checks before proposing a change and report limitations honestly. Hardware support depends on private macOS interfaces; one machine's result is not proof for every Apple Silicon model.
+Every PR, including documentation-only changes, runs native tests, license-resource checks and secret scanning without release secrets. Main pushes also run these checks. Outside contributors need maintainer approval before fork workflows run. Run the relevant local checks before proposing a change and report limitations honestly. Hardware support depends on private macOS interfaces; one machine's result is not proof for every Apple Silicon model.
 
 ## Dependency maintenance
 
