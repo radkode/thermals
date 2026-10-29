@@ -8,7 +8,7 @@ async page => {
   await page.goto(url);
   await page.evaluate(() => document.fonts.ready);
   await page.locator('#work-session').scrollIntoViewIfNeeded();
-  assert((await page.locator('#preview-note').innerText()).includes('current 0.4.4 release'), 'Distinguish the preview from the download');
+  assert((await page.locator('#preview-note').innerText()).includes('Included in Thermals 0.5.0'), 'Identify the features in the published release');
   assert(await page.getByRole('button', {name: 'Start a sample work session', exact: true}).isVisible(), 'Session actions must be exposed to accessibility');
   assert(!await page.locator('#last-session').isVisible(), 'No completed receipt before an explicit session');
   const alignment = await page.locator('#board-heat .stats').evaluate(el => {
